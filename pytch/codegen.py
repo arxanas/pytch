@@ -1,16 +1,41 @@
+"""Generate Python code from Pytch code.
+
+Generates the AST for the Pytch code, then emits code for that AST.
+"""
 import contextlib
 
 
 class Scope(object):
+    """A scope for variables.
+
+    A scope is a map from variable names to information about those variables.
+    As we descend into the AST, we make scopes that may, for example, shadow
+    variables from outer scopes.
+    """
     def __init__(self, parent):
-        self.symbols = {}
-        self.code = ""
-        self.parent = parent
+        """Initialize the scope with its parent scope.
+
+        :param Scope|None parent: The parent scope of this scope. This is the
+            scope that is used to look up variables if a given variable is not
+            found in this scope.
+        """
+        self._symbols = {}
+        self._parent = parent
 
     def make_symbol(self, preferred_name):
+        """Produce a unique variable name.
+
+        A variable name is "unique" if it is not the same as any variable in
+        the current scope or in any parent scope.
+
+        :param str preferred_name: The preferred name of the variable.
+        :returns str: The preferred name, potentially suffixed with something
+            if there is a name clash.
+        """
         name = next(i for i in self._suggestions_for_name(preferred_name)
                     if not self._is_symbol_in_use(i))
-        self.symbols[name] = None
+        # TODO: Maybe associate information with that variable here.
+        self._symbols[name] = None
         return name
 
     def _suggestions_for_name(self, name):
@@ -20,19 +45,14 @@ class Scope(object):
             yield "{}{}".format(name, i)
 
     def _is_symbol_in_use(self, name):
-        if name in self.symbols:
+        if name in self._symbols:
             return True
-        if self.parent:
-            return self.parent._is_symbol_in_use(name)
+        if self._parent:
+            return self._parent._is_symbol_in_use(name)
         return False
 
 
 class Env(object):
-    """The environment in which the code is generated.
-
-    This lets generated code define variables local to the current scope, for
-    example.
-    """
     def __init__(self):
         self.global_scope = Scope(parent=None)
         self.scopes = [self.global_scope]
@@ -42,38 +62,56 @@ class Env(object):
         assert self.scopes
         return self.scopes[-1]
 
-    def add_code(self, code):
-        self.current_scope.code += code.code
-        return code
-
     @contextlib.contextmanager
     def scope(self):
         scope = Scope(parent=self.current_scope)
         self.scopes.append(scope)
         yield scope
         self.scopes.pop()
-        self.current_scope.code += scope.code
 
 
 def compile_ast(filename, ast):
     ast = Program.from_node(ast)
     env = Env()
-    ast.emit(env)
-    return env.global_scope.code
+    code = ast.emit(env)
+    lines_of_code = code.setup + code.code
+    return "".join(i + "\n" for i in lines_of_code)
 
 
 class Code(object):
     """The generated code corresponding to an AST node.
 
-    :ivar str code: The generated Python code.
-    :ivar str expr: A Python code snippet to execute that evaluates to the
-        value of this code block.
     :ivar Node node: The node that generated this code.
+    :ivar list setup: The list of lines of code that should be inserted at the
+        beginning of this scope.
+    :ivar list code: The list of lines of code that should be inserted at the
+        current position.
+    :ivar str|None expr: A Python code snippet to execute that evaluates to the
+        value of this code block, if any.
     """
-    def __init__(self, code, expr, node):
-        self.code = code
+    def __init__(self, node, setup, code, expr):
         self.node = node
+        self.setup = setup
+        self.code = code
         self.expr = expr
+
+    def __repr__(self):
+        return ("<Code node={node} setup={setup} code={code} expr={expr}>"
+                .format(
+                    node=repr(self.node),
+                    setup=repr(self.setup),
+                    code=repr(self.code),
+                    expr=repr(self.expr),
+                ))
+
+    @classmethod
+    def no_code(cls, node):
+        return Code(
+            node=node,
+            setup=[],
+            code=[],
+            expr=None,
+        )
 
 
 class AstNode(object):
@@ -96,7 +134,7 @@ class AstNode(object):
 
 class Program(AstNode):
     def __init__(self, node, statements):
-        super().__init__(node)
+        super(Program, self).__init__(node)
         self.statements = statements
 
     def __repr__(self):
@@ -104,8 +142,13 @@ class Program(AstNode):
         return "(Program {})".format(children)
 
     def emit(self, env):
-        for i in self.statements:
-            i.emit(env)
+        code = [i.emit(env) for i in self.statements]
+        return Code(
+            node=self,
+            setup=_sum_lists(i.setup for i in code),
+            code=_sum_lists(i.code for i in code),
+            expr=None,
+        )
 
     @classmethod
     def from_node(cls, node):
@@ -131,7 +174,7 @@ class TopLevelStmt(AstNode):
 
 class ValStmt(AstNode):
     def __init__(self, node, ident, type_sig):
-        super().__init__(node)
+        super(ValStmt, self).__init__(node)
         self.ident = ident
         self.type_sig = type_sig
 
@@ -139,7 +182,7 @@ class ValStmt(AstNode):
         return "(Val {} {})".format(repr(self.ident), repr(self.type_sig))
 
     def emit(self, env):
-        return
+        return Code.no_code(self.node)
 
     @classmethod
     def from_node(cls, node):
@@ -151,16 +194,17 @@ class LetStmt(AstNode):
     @classmethod
     def from_node(cls, node):
         stmt = node.children[0]
-        assert stmt.expr_name in ["plain_let_stmt", "func_let_stmt"]
-        if stmt.expr_name == "plain_let_stmt":
-            return PlainLetStmt.from_node(stmt)
-        elif stmt.expr_name == "func_let_stmt":
-            return FuncLetStmt.from_node(stmt)
+        stmt_types = {
+            "plain_let_stmt": PlainLetStmt,
+            "func_let_stmt": FuncLetStmt,
+            "let_in_stmt": LetInStmt,
+        }
+        return stmt_types[stmt.expr_name].from_node(stmt)
 
 
 class PlainLetStmt(AstNode):
     def __init__(self, node, name, value):
-        super().__init__(node)
+        super(PlainLetStmt, self).__init__(node)
         self.name = name
         self.value = value
 
@@ -168,13 +212,20 @@ class PlainLetStmt(AstNode):
         return "(PlainLet {} {})".format(repr(self.name), repr(self.value))
 
     def emit(self, env):
-        name = self.name.emit(env).expr
-        v = self.value.emit(env)
-        code = v.code
-        value = v.expr
-        code += "{} = {}\n".format(name, value)
-        code = Code(code=code, expr=name, node=self)
-        return env.add_code(code)
+        name = self.name.emit(env)
+        value = self.value.emit(env)
+        code = ["{} = {}".format(name.expr, value.expr)]
+        return Code(
+            node=self,
+            setup=_sum_lists([
+                name.setup,
+                name.code,
+                value.setup,
+                value.code,
+            ]),
+            code=code,
+            expr=name.expr,
+        )
 
     @classmethod
     def from_node(cls, node):
@@ -185,7 +236,7 @@ class PlainLetStmt(AstNode):
 
 class FuncLetStmt(AstNode):
     def __init__(self, node, name, params, value):
-        super().__init__(node)
+        super(FuncLetStmt, self).__init__(node)
         self.name = name
         self.params = params
         self.value = value
@@ -198,13 +249,26 @@ class FuncLetStmt(AstNode):
         )
 
     def emit(self, env):
-        name = self.name.emit(env).expr
+        name = self.name.emit(env)
         with env.scope():
-            params = self.params.emit(env)
-            code = "def {}{}:\n".format(name, params.code)
+            idents = [i.emit(env) for i in self.params]
             body = self.value.emit(env)
-            code += _indent("return {}".format(body.expr)) + "\n"
-        return env.add_code(Code(code=code, expr=name, node=self))
+            body_code = body.code + ["return {}".format(body.expr)]
+            setup = (
+                name.setup
+                + _sum_lists(i.setup for i in idents)
+                + body.setup
+            )
+            code = name.code + ["def {}({}):".format(
+                name.expr,
+                ", ".join(i.expr for i in idents),
+            )] + [_indent(i) for i in body_code]
+        return Code(
+            node=self,
+            setup=setup,
+            code=code,
+            expr=name.expr,
+        )
 
     @classmethod
     def from_node(cls, node):
@@ -218,9 +282,44 @@ class FuncLetStmt(AstNode):
         )
 
 
+class LetInStmt(AstNode):
+    def __init__(self, node, let_stmt, expr):
+        super(LetInStmt, self).__init__(node)
+        self.let_stmt = let_stmt
+        self.expr = expr
+
+    def __repr__(self):
+        return "(LetInStmt {} {})".format(
+            repr(self.let_stmt),
+            repr(self.expr),
+        )
+
+    def emit(self, env):
+        let_stmt = self.let_stmt.emit(env)
+        expr = self.expr.emit(env)
+        setup = let_stmt.setup + expr.setup
+        code = let_stmt.code + expr.code
+        return Code(
+            node=self,
+            setup=setup,
+            code=code,
+            expr=expr.expr,
+        )
+
+    @classmethod
+    def from_node(cls, node):
+        children = _filter_whitespace(node.children)
+        let_stmt, _, expr = children
+        return cls(
+            node,
+            LetStmt.from_node(let_stmt),
+            Expr.from_node(expr),
+        )
+
+
 class TypeSig(AstNode):
     def __init__(self, node, type_decls):
-        super().__init__(node)
+        super(TypeSig, self).__init__(node)
         self.type_decls = type_decls
 
     def __repr__(self):
@@ -236,7 +335,7 @@ class TypeSig(AstNode):
 
 class TypeDecl(AstNode):
     def __init__(self, node, ident=None, type_sig=None):
-        super().__init__(node)
+        super(TypeDecl, self).__init__(node)
         self.ident = ident
         self.type_sig = type_sig
 
@@ -256,14 +355,19 @@ class TypeDecl(AstNode):
 
 class Ident(AstNode):
     def __init__(self, node, value):
-        super().__init__(node)
+        super(Ident, self).__init__(node)
         self.value = value
 
     def __repr__(self):
         return "(Ident {})".format(repr(self.value))
 
     def emit(self, env):
-        return Code(code="", expr=self.value, node=self)
+        return Code(
+            node=self,
+            setup=[],
+            code=[],
+            expr=self.value,
+        )
 
     @classmethod
     def from_node(cls, node):
@@ -272,58 +376,51 @@ class Ident(AstNode):
 
 
 class Params(AstNode):
-    def __init__(self, node, params):
-        super().__init__(node)
-        self.params = params
-
-    def __repr__(self):
-        params = " ".join(repr(i) for i in self.params)
-        return "(Params {})".format(params)
-
-    def emit(self, env):
-        code = "({})".format(", ".join(i.emit(env).expr for i in self.params))
-        return Code(code=code, expr="", node=self)
-
-    @classmethod
-    def from_node(cls, node):
-        params = [Ident.from_node(i)
-                  for i in _traverse(node)
-                  if i.expr_name == "ident"]
-        return cls(node, params)
+    @staticmethod
+    def from_node(node):
+        return [Ident.from_node(i)
+                for i in _traverse(node)
+                if i.expr_name == "ident"]
 
 
 class Expr(AstNode):
     def __init__(self, node):
-        super().__init__(node)
+        super(Expr, self).__init__(node)
 
     @classmethod
     def from_node(cls, node):
         child = _first_non_trivial_node(node.children)
-        if child.expr_name == "int_literal":
-            return IntLiteral.from_node(child)
-        elif child.expr_name == "string_literal":
-            return StringLiteral.from_node(child)
-        elif child.expr_name == "ident":
-            return Ident.from_node(child)
-        elif child.expr_name == "function_call":
-            return FunctionCall.from_node(child)
-        elif child.expr_name == "expr":
-            return Expr.from_node(child)
-        else:
+        expr_types = {
+            "int_literal": IntLiteral,
+            "string_literal": StringLiteral,
+            "ident": Ident,
+            "function_call": FunctionCall,
+            "expr": Expr,
+            "let_in_stmt": LetInStmt,
+        }
+        try:
+            expr_type = expr_types[child.expr_name]
+        except KeyError:
             raise NotImplementedError("expr not implemented: '{}'"
                                       .format(child.expr_name))
+        return expr_type.from_node(child)
 
 
 class IntLiteral(AstNode):
     def __init__(self, node, value):
-        super().__init__(node)
+        super(IntLiteral, self).__init__(node)
         self.value = value
 
     def __repr__(self):
         return "(IntLiteral {})".format(repr(self.value))
 
     def emit(self, env):
-        return Code(code="", expr=repr(self.value), node=self)
+        return Code(
+            node=self,
+            setup=[],
+            code=[],
+            expr=repr(self.value),
+        )
 
     @classmethod
     def from_node(cls, node):
@@ -333,14 +430,19 @@ class IntLiteral(AstNode):
 
 class StringLiteral(AstNode):
     def __init__(self, node, value):
-        super().__init__(node)
+        super(StringLiteral, self).__init__(node)
         self.value = value
 
     def __repr__(self):
         return "(StringLiteral {})".format(repr(self.value))
 
     def emit(self, env):
-        return Code(code="", expr=repr(self.value), node=self)
+        return Code(
+            node=self,
+            setup=[],
+            code=[],
+            expr=repr(self.value),
+        )
 
     @classmethod
     def from_node(cls, node):
@@ -352,7 +454,7 @@ class StringLiteral(AstNode):
 
 class FunctionCall(AstNode):
     def __init__(self, node, name, args):
-        super().__init__(node)
+        super(FunctionCall, self).__init__(node)
         self.name = name
         self.args = args
 
@@ -363,10 +465,23 @@ class FunctionCall(AstNode):
         )
 
     def emit(self, env):
-        args = ", ".join("{}".format(i.emit(env).expr) for i in self.args)
-        func_name = self.name.emit(env).expr
-        code = "{}({})".format(func_name, args)
-        return Code(code="", expr=code, node=self)
+        name = self.name.emit(env)
+        args = [i.emit(env) for i in self.args]
+        setup = name.setup + _sum_lists(i.setup for i in args)
+        assert not any(i.code for i in args), (
+            "Not implemented: we need to store args into temporary " +
+            "variables if they generate any appreciable amount of code."
+        )
+        expr = "{}({})".format(
+            name.expr,
+            ", ".join(i.expr for i in args),
+        )
+        return Code(
+            node=self,
+            setup=setup,
+            code=[],
+            expr=expr,
+        )
 
     @classmethod
     def from_node(cls, node):
@@ -404,3 +519,10 @@ def _filter_whitespace(children):
 
 def _lines_to_str(lines):
     return "".join(i + "\n" for i in lines)
+
+
+def _sum_lists(lists):
+    ret = []
+    for i in lists:
+        ret.extend(i)
+    return ret

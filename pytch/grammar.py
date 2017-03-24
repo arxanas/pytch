@@ -7,10 +7,12 @@ type_sig = type_decl _ ("->" _ type_decl)*
 type_decl = ident / poly_ident / ("(" type_sig ")")
 
 let_stmt = plain_let_stmt / func_let_stmt
+let_in_stmt = let_stmt _ "in" _ expr
 plain_let_stmt = "let" _ ident _ "=" _ expr
 func_let_stmt = "let" _ ident (_ ident)* _ "=" _ expr
 
 expr = (
+  let_in_stmt /
   function_call /
   ident /
   int_literal /
