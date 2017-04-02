@@ -1,0 +1,11 @@
+val foo :: int
+type foo = int
+type bar = (int, int)
+type baz = {
+  qux :: int
+}
+type grault = {
+  xyzzy :: int,
+  plugh :: int,
+}
+# TODO: Add function types

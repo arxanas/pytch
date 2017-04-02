@@ -1,7 +1,7 @@
 import os.path
 
 from pytch.codegen import compile_ast
-from pytch.grammar import grammar
+from pytch.grammar import parse
 
 PYTCH_EXTENSION = ".pytch"
 PYTHON_EXTENSION = ".py"
@@ -36,7 +36,7 @@ def gather_files(files):
 
 def get_ast(filename):
     with open(filename) as f:
-        return grammar.parse(f.read())
+        return parse(f.read())
 
 
 def get_compiled_filename(filename):

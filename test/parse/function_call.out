@@ -1,0 +1,1 @@
+(Program (LetPlainStmt (Ident 'foo') (FunctionCallExpr (FunctionCallExpr (Ident 'bar') (Ident 'baz')) (FunctionCallExpr (Ident 'qux') (Ident 'grault')))) (LetPlainStmt (Ident 'foo') (FunctionCallExpr (Ident 'bar') (Ident 'baz') (Ident 'qux') (Ident 'grault'))))

@@ -1,53 +1,186 @@
-r"""
-program = toplevel_stmt? (_ toplevel_stmt)* _?
-toplevel_stmt = val_stmt / type_stmt / let_stmt
+import os
 
-val_stmt = "val" _ ident _ "::" _ type_expr
-type_stmt = "type" _ ident _ "=" _ type_expr
-type_expr =
-  type_expr_atom /
-  type_expr_function /
-  type_expr_record /
-  type_expr_tuple /
-  ("(" _ type_expr _ ")")
-type_expr_function = type_expr _ ("->" _ type_expr)+
-type_expr_record = "{"
-  _ type_expr_record_field
-  (_ type_expr_record_field  _";")*
-  (_ ";")?
-_ "}"
-type_expr_record_field = ident _ "::" _ type_expr
-type_expr_tuple = "(" _ type_expr (_ "," _ type_expr)+ _ ")"
-type_expr_atom = ident / poly_ident
+from pyparsing import (
+    dblQuotedString,
+    FollowedBy,
+    Forward,
+    Group,
+    Keyword,
+    lineStart,
+    Literal,
+    Optional,
+    Or,
+    ParserElement,
+    pyparsing_common,
+    pythonStyleComment,
+    Suppress,
+    ZeroOrMore,
+)
 
-let_stmt = let_plain_expr / let_func_expr
-let_in_expr = let_stmt _ "in" _ expr
-let_plain_expr = "let" _ ident _ "=" _ expr
-let_func_expr = "let" _ ident (_ ident)* _ "=" _ expr
+from .parse import (
+    FunctionCallExpr,
+    FunctionTypeExpr,
+    Ident,
+    IntLiteral,
+    LetFuncStmt,
+    LetInExpr,
+    LetPlainStmt,
+    Program,
+    RecordTypeExpr,
+    StringLiteral,
+    TupleTypeExpr,
+    TypeExprAtom,
+    TypeStmt,
+    ValStmt,
+)
 
-expr =
-  let_in_expr /
-  function_call /
-  ident /
-  int_literal /
-  string_literal
+ParserElement.enablePackrat()
 
-int_literal = ~r"[0-9]+"
 
-string_literal = "\"" string_contents "\""
-string_contents = (escaped_char / char)*
-escaped_char = "\\" ~r"."
-char = ~r"[^\"]"
+############
+#  TOKENS  #
+############
 
-function_call = ident (_ expr)+
 
-keyword = (~r"\bval\b" / ~r"\blet\b" / ~r"\bin\b")
-ident = !keyword ~r"[a-zA-Z_][a-zA-Z_0-9]*"
-poly_ident = "'" ident
+t_in = Keyword("in")
+t_let = Keyword("let")
+t_type = Keyword("type")
+t_val = Keyword("val")
+keywords = [t_in, t_let, t_type, t_val]
 
-_ = meaninglessness*
-meaninglessness = ~r"\s+" / comment
-comment = ~r"#[^\r\n]*"
-"""
-from parsimonious.grammar import Grammar
-grammar = Grammar(__doc__)
+t_arrow = Literal("->")
+t_comma = Literal(",")
+t_dcolon = Literal("::")
+t_equals = Literal("=")
+t_lbrace = Literal("{")
+t_lparen = Literal("(")
+t_rbrace = Literal("}")
+t_rparen = Literal(")")
+t_squote = Literal("'")
+
+
+#############
+#  HELPERS  #
+#############
+
+
+def delimited_list(element, delim):
+    """Denotes a list delimited by a given token.
+
+    Similar to PyParsing's `delimitedList`, but always looks ahead of the
+    delimiter to make sure that there is another of the element type following
+    it.
+
+    This might not actually be better than `delimitedList`, but I'm not sure.
+    """
+    return (
+        # Use '+' after delimiter, because sometimes we want to allow a
+        # trailing delimiter but not require that another element follow it.
+        ZeroOrMore(element + Suppress(delim) + FollowedBy(element)) - element
+    )
+
+
+#############
+#  GRAMMAR  #
+#############
+
+
+comment = pythonStyleComment
+
+string_literal = dblQuotedString
+string_literal.setParseAction(StringLiteral)
+
+# TODO: Handle both int literals and float literals.
+number_literal = pyparsing_common.number
+number_literal.setParseAction(IntLiteral)
+
+# Note that `~Or` doesn't advance the cursor.
+ident = ~Or(keywords) + pyparsing_common.identifier
+ident.setParseAction(Ident)
+poly_ident = Suppress(t_squote) - ident
+
+expr = Forward()
+
+
+def let_parse_action(text, location, tokens):
+    if len(tokens) == 2:
+        return LetPlainStmt(text, location, tokens)
+    else:
+        assert len(tokens) > 2
+        return LetFuncStmt(text, location, tokens)
+
+
+let_stmt = (
+    Suppress(t_let) - ident - ZeroOrMore(ident) - Suppress(t_equals) - expr
+)
+let_stmt.setParseAction(let_parse_action).setName("let statement")
+let_in_expr = ~lineStart + (let_stmt - Suppress(t_in) - expr)
+let_in_expr.setParseAction(LetInExpr).setName("let-in expression")
+
+non_function_call_expr = (
+    let_in_expr |
+    ident |
+    number_literal |
+    string_literal |
+    Suppress(t_lparen) - expr - Suppress(t_rparen)
+)
+function_call_expr = non_function_call_expr * (2,)
+function_call_expr.setParseAction(FunctionCallExpr).setName("function call")
+
+expr << (function_call_expr | non_function_call_expr)
+expr.setName("expression")
+
+type_expr_atom = ident | poly_ident
+type_expr_atom.setParseAction(TypeExprAtom).setName("type name")
+type_expr = Forward()
+function_type_expr = type_expr + t_arrow - type_expr
+function_type_expr.setParseAction(FunctionTypeExpr).setName("function type")
+record_field = Group(ident - Suppress(t_dcolon) - type_expr)
+record_type_expr = (
+    Suppress(t_lbrace) -
+    delimited_list(record_field, t_comma) -
+    Suppress(Optional(t_comma)) -
+    Suppress(t_rbrace)
+)
+record_type_expr.setParseAction(RecordTypeExpr).setName("record type")
+tuple_type_expr = (
+    Suppress(t_lparen) -
+    delimited_list(type_expr, t_comma) -
+    Suppress(Optional(t_comma)) -
+    Suppress(t_rparen)
+)
+tuple_type_expr.setParseAction(TupleTypeExpr).setName("tuple type")
+type_expr << (
+    type_expr_atom |
+    # function_type_expr | # NOCOMMIT
+    record_type_expr |
+    tuple_type_expr |
+    # TODO: Test along with function type exprs.
+    Suppress(t_lparen) - type_expr - Suppress(t_rparen)
+)
+
+val_stmt = Suppress(t_val) - ident - Suppress(t_dcolon) - type_expr
+val_stmt.setParseAction(ValStmt).setName("val declaration")
+type_stmt = Suppress(t_type) - ident - Suppress(t_equals) - type_expr
+type_stmt.setParseAction(TypeStmt).setName("type declaration")
+
+top_level_stmt = val_stmt | type_stmt | let_stmt
+top_level_stmt.setName("top-level statement")
+program = ZeroOrMore(top_level_stmt)
+program.setParseAction(Program).setName("program")
+program.ignore(comment)
+
+if os.environ.get("DEBUG"):
+    program.validate()
+    program.setDebug(True)
+
+
+#############
+#  EXPORTS  #
+#############
+
+
+def parse(contents):
+    nodes = program.parseString(contents, parseAll=True)
+    assert len(nodes) == 1, "Number of `Program` nodes in parse tree != 1"
+    return nodes[0]
