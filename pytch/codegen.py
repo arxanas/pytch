@@ -173,21 +173,21 @@ class TopLevelStmt(AstNode):
 
 
 class ValStmt(AstNode):
-    def __init__(self, node, ident, type_sig):
+    def __init__(self, node, ident, type_expr):
         super(ValStmt, self).__init__(node)
         self.ident = ident
-        self.type_sig = type_sig
+        self.type_expr = type_expr
 
     def __repr__(self):
-        return "(Val {} {})".format(repr(self.ident), repr(self.type_sig))
+        return "(Val {} {})".format(repr(self.ident), repr(self.type_expr))
 
     def emit(self, env):
         return Code.no_code(self.node)
 
     @classmethod
     def from_node(cls, node):
-        _, ident, _, type_sig = _filter_whitespace(node.children)
-        return cls(node, Ident.from_node(ident), TypeSig.from_node(type_sig))
+        _, ident, _, type_expr = _filter_whitespace(node.children)
+        return cls(node, Ident.from_node(ident), TypeExpr.from_node(type_expr))
 
 
 class LetStmt(AstNode):
@@ -195,16 +195,16 @@ class LetStmt(AstNode):
     def from_node(cls, node):
         stmt = node.children[0]
         stmt_types = {
-            "plain_let_stmt": PlainLetStmt,
-            "func_let_stmt": FuncLetStmt,
-            "let_in_stmt": LetInStmt,
+            "let_plain_expr": LetPlainExpr,
+            "let_func_expr": FuncLetExpr,
+            "let_in_expr": LetInExpr,
         }
         return stmt_types[stmt.expr_name].from_node(stmt)
 
 
-class PlainLetStmt(AstNode):
+class LetPlainExpr(AstNode):
     def __init__(self, node, name, value):
-        super(PlainLetStmt, self).__init__(node)
+        super(LetPlainExpr, self).__init__(node)
         self.name = name
         self.value = value
 
@@ -234,9 +234,9 @@ class PlainLetStmt(AstNode):
         return cls(node, Ident.from_node(name), Expr.from_node(value))
 
 
-class FuncLetStmt(AstNode):
+class FuncLetExpr(AstNode):
     def __init__(self, node, name, params, value):
-        super(FuncLetStmt, self).__init__(node)
+        super(FuncLetExpr, self).__init__(node)
         self.name = name
         self.params = params
         self.value = value
@@ -282,14 +282,14 @@ class FuncLetStmt(AstNode):
         )
 
 
-class LetInStmt(AstNode):
+class LetInExpr(AstNode):
     def __init__(self, node, let_stmt, expr):
-        super(LetInStmt, self).__init__(node)
+        super(LetInExpr, self).__init__(node)
         self.let_stmt = let_stmt
         self.expr = expr
 
     def __repr__(self):
-        return "(LetInStmt {} {})".format(
+        return "(LetInExpr {} {})".format(
             repr(self.let_stmt),
             repr(self.expr),
         )
@@ -317,30 +317,30 @@ class LetInStmt(AstNode):
         )
 
 
-class TypeSig(AstNode):
-    def __init__(self, node, type_decls):
-        super(TypeSig, self).__init__(node)
-        self.type_decls = type_decls
+class TypeExpr(AstNode):
+    def __init__(self, node, type_expr_atoms):
+        super(TypeExpr, self).__init__(node)
+        self.type_expr_atoms = type_expr_atoms
 
     def __repr__(self):
-        type_decls = " ".join(repr(i) for i in self.type_decls)
-        return "(TypeSig {})".format(type_decls)
+        type_expr_atoms = " ".join(repr(i) for i in self.type_expr_atoms)
+        return "(TypeExpr {})".format(type_expr_atoms)
 
     @classmethod
     def from_node(cls, node):
-        type_decls = [TypeDecl.from_node(i)
-                      for i in _filter_whitespace(node.children)]
-        return cls(node, type_decls)
+        type_expr_atoms = [TypeExprAtom.from_node(i)
+                           for i in _filter_whitespace(node.children)]
+        return cls(node, type_expr_atoms)
 
 
-class TypeDecl(AstNode):
-    def __init__(self, node, ident=None, type_sig=None):
-        super(TypeDecl, self).__init__(node)
+class TypeExprAtom(AstNode):
+    def __init__(self, node, ident=None, type_expr=None):
+        super(TypeExprAtom, self).__init__(node)
         self.ident = ident
-        self.type_sig = type_sig
+        self.type_expr = type_expr
 
     def __repr__(self):
-        return "(TypeDecl {})".format(repr(self.ident))
+        return "(TypeExprAtom {})".format(repr(self.ident))
 
     @classmethod
     def from_node(cls, node):
@@ -396,7 +396,7 @@ class Expr(AstNode):
             "ident": Ident,
             "function_call": FunctionCall,
             "expr": Expr,
-            "let_in_stmt": LetInStmt,
+            "let_in_expr": LetInExpr,
         }
         try:
             expr_type = expr_types[child.expr_name]
