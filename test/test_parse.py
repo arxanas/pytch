@@ -25,7 +25,7 @@ def test_parse(input_filename, output_filename):
         output = output_file.read()
 
     ast = parse(input)
-    assert repr(ast) == output
+    assert _pretty_print_ast(ast) == output
 
 
 @pytest.mark.generate
@@ -37,8 +37,29 @@ def test_generate_parse_output():
             input = input_file.read()
         print(f"parsing {input_filename}")
         ast = parse(input)
+        ast = _pretty_print_ast(ast)
         if not os.path.exists(output_filename):
-            with open(output_filename, "wb") as output_file:
-                output_file.write(repr(ast).encode("utf-8"))
+            with open(output_filename, "w") as output_file:
+                output_file.write(ast)
         else:
             print(f"file exists, not generating: {output_filename}")
+
+
+def _pretty_print_ast(ast):
+    ast = repr(ast)
+    printed = ""
+    indent_level = -1
+    # Assumes that there are no parentheses in strings, for example.
+    for c in ast:
+        if c == "(":
+            # Remove trailing spaces.
+            printed = printed.rstrip()
+            if indent_level >= 0:
+                printed += "\n"
+            indent_level += 1
+            printed += "  " * indent_level
+        elif c == ")":
+            indent_level -= 1
+        printed += c
+    printed += "\n"
+    return printed
