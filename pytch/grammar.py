@@ -64,7 +64,7 @@ t_squote = Literal("'")
 #############
 
 
-def delimited_list(element, delim):
+def delimited_list(element, delim, min=1):
     """Denotes a list delimited by a given token.
 
     Similar to PyParsing's `delimitedList`, but always looks ahead of the
@@ -73,10 +73,12 @@ def delimited_list(element, delim):
 
     This might not actually be better than `delimitedList`, but I'm not sure.
     """
+    # We have (min - 1) or more delimited elements plus 1 trailing element.
+    min -= 1
     return (
         # Use '+' after delimiter, because sometimes we want to allow a
         # trailing delimiter but not require that another element follow it.
-        ZeroOrMore(element + Suppress(delim) + FollowedBy(element)) - element
+        ((element + Suppress(delim) + FollowedBy(element)) * (min,)) - element
     )
 
 
@@ -133,8 +135,6 @@ expr.setName("expression")
 type_expr_atom = ident | poly_ident
 type_expr_atom.setParseAction(TypeExprAtom).setName("type name")
 type_expr = Forward()
-function_type_expr = type_expr + t_arrow - type_expr
-function_type_expr.setParseAction(FunctionTypeExpr).setName("function type")
 record_field = Group(ident - Suppress(t_dcolon) - type_expr)
 record_type_expr = (
     Suppress(t_lbrace) -
@@ -144,20 +144,22 @@ record_type_expr = (
 )
 record_type_expr.setParseAction(RecordTypeExpr).setName("record type")
 tuple_type_expr = (
-    Suppress(t_lparen) -
-    delimited_list(type_expr, t_comma) -
+    Suppress(t_lparen) +
+    delimited_list(type_expr, t_comma, min=2) -
     Suppress(Optional(t_comma)) -
     Suppress(t_rparen)
 )
 tuple_type_expr.setParseAction(TupleTypeExpr).setName("tuple type")
-type_expr << (
+non_function_type_expr = (
     type_expr_atom |
-    # function_type_expr | # NOCOMMIT
     record_type_expr |
     tuple_type_expr |
-    # TODO: Test along with function type exprs.
     Suppress(t_lparen) - type_expr - Suppress(t_rparen)
 )
+function_type_expr = delimited_list(non_function_type_expr, t_arrow, min=2)
+function_type_expr.setParseAction(FunctionTypeExpr).setName("function type")
+type_expr << (function_type_expr | non_function_type_expr)
+type_expr.setName("type expression")
 
 val_stmt = Suppress(t_val) - ident - Suppress(t_dcolon) - type_expr
 val_stmt.setParseAction(ValStmt).setName("val declaration")

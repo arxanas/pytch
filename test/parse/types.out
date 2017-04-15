@@ -31,4 +31,19 @@
       (RecordField
         (Ident 'plugh')
         (TypeExprAtom
-          (Ident 'int'))))))
+          (Ident 'int')))))
+  (TypeStmt
+    (Ident 'corge')
+    (FunctionTypeExpr
+      (FunctionTypeExpr
+        (TypeExprAtom
+          (Ident 'int'))
+        (TupleTypeExpr
+          (TypeExprAtom
+            (Ident 'int'))
+          (TypeExprAtom
+            (Ident 'int')))
+        (TypeExprAtom
+          (Ident 'bool')))
+      (TypeExprAtom
+        (Ident 'bool')))))

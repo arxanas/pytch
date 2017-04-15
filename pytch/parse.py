@@ -78,7 +78,9 @@ class TypeStmt(AstNode):
 
 
 class TypeExprAtom(AstNode):
-    pass
+    def __init__(self, text, location, tokens):
+        super().__init__(text, location, tokens)
+        self.name, = tokens
 
 
 class FunctionTypeExpr(AstNode):

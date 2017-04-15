@@ -8,4 +8,4 @@ type grault = {
   xyzzy :: int,
   plugh :: int,
 }
-# TODO: Add function types
+type corge = (int -> (int, int) -> bool) -> bool
