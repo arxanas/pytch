@@ -157,7 +157,7 @@ def emit(env, node):
         isinstance(node, ValStmt) or
         isinstance(node, TypeStmt)
     ):
-        return Code.no_code()
+        return Code.no_code(node)
 
     elif isinstance(node, LetPlainStmt):
         name = recurse(node.ident)

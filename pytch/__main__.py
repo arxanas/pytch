@@ -1,12 +1,9 @@
-import sys
+import click
 
 from pytch import compile_files
 
 
-def main():
-    files = sys.argv[1:]
+@click.command()
+@click.argument("files", nargs=-1)
+def main(files):
     compile_files(files)
-
-
-if __name__ == "__main__":
-    main()
