@@ -5,8 +5,10 @@ from .ast import (
     LetFuncStmt,
     LetInExpr,
     LetPlainStmt,
+    ListLiteral,
     Program,
     StringLiteral,
+    TupleLiteral,
     TypeStmt,
     ValStmt,
 )
@@ -145,11 +147,11 @@ def emit(env, node):
         return emit(env, node)
 
     if isinstance(node, Program):
-        code = [recurse(statement) for statement in node.statements]
+        statements = [recurse(statement) for statement in node.statements]
         return Code(
             node=node,
-            setup=_sum_lists(i.setup for i in code),
-            code=_sum_lists(i.code for i in code),
+            setup=_sum_setups(statements),
+            code=_sum_codes(statements),
             expr=None,
         )
 
@@ -180,11 +182,7 @@ def emit(env, node):
         idents = [recurse(param) for param in node.params]
         body = recurse(node.value)
         body_code = body.code + ["return {}".format(body.expr)]
-        setup = (
-            name.setup
-            + _sum_lists(i.setup for i in idents)
-            + body.setup
-        )
+        setup = name.setup + _sum_setups(idents) + body.setup
         code = name.code + ["def {}({}):".format(
             name.expr,
             ", ".join(i.expr for i in idents),
@@ -211,7 +209,7 @@ def emit(env, node):
     elif isinstance(node, FunctionCallExpr):
         name = recurse(node.ident)
         args = [recurse(arg) for arg in node.args]
-        setup = name.setup + _sum_lists(i.setup for i in args)
+        setup = name.setup + _sum_setups(args)
         assert not any(i.code for i in args), (
             "Not implemented: we need to store args into temporary " +
             "variables if they generate any appreciable amount of code."
@@ -251,6 +249,32 @@ def emit(env, node):
             expr=repr(node.value),
         )
 
+    elif isinstance(node, ListLiteral):
+        elements = [recurse(value) for value in node.values]
+        expr = "[{}]".format(
+            ", ".join(element.expr for element in elements),
+        )
+        return Code(
+            node=node,
+            setup=_sum_setups(elements),
+            code=_sum_codes(elements),
+            expr=expr,
+        )
+
+    elif isinstance(node, TupleLiteral):
+        elements = [recurse(value) for value in node.values]
+        expr = "({}{})".format(
+            ", ".join(element.expr for element in elements),
+            # Add a trailing comma if a 1-tuple, as per Python syntax.
+            "," if len(elements) == 1 else "",
+        )
+        return Code(
+            node=node,
+            setup=_sum_setups(elements),
+            code=_sum_codes(elements),
+            expr=expr,
+        )
+
     else:
         assert False, "unhandled emit: {}".format(node.__class__.__name__)
 
@@ -264,3 +288,11 @@ def _sum_lists(lists):
     for i in lists:
         ret.extend(i)
     return ret
+
+
+def _sum_setups(code_list):
+    return _sum_lists(i.setup for i in code_list)
+
+
+def _sum_codes(code_list):
+    return _sum_lists(i.code for i in code_list)

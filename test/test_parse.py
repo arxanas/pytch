@@ -20,13 +20,13 @@ def _pretty_print_ast(ast):
     # Assumes that there are no parentheses in strings, for example.
     for c in ast:
         if c == "(":
-            # Remove trailing spaces.
             printed = printed.rstrip()
             if indent_level >= 0:
                 printed += "\n"
             indent_level += 1
             printed += "  " * indent_level
         elif c == ")":
+            printed = printed.rstrip()
             indent_level -= 1
         printed += c
     printed += "\n"

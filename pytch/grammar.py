@@ -23,9 +23,11 @@ from .ast import (
     LetFuncStmt,
     LetInExpr,
     LetPlainStmt,
+    ListLiteral,
     Program,
     RecordTypeExpr,
     StringLiteral,
+    TupleLiteral,
     TupleTypeExpr,
     TypeExprAtom,
     TypeStmt,
@@ -51,8 +53,10 @@ t_comma = Literal(",")
 t_dcolon = Literal("::")
 t_equals = Literal("=")
 t_lbrace = Literal("{")
+t_lbracket = Literal("[")
 t_lparen = Literal("(")
 t_rbrace = Literal("}")
+t_rbracket = Literal("]")
 t_rparen = Literal(")")
 t_squote = Literal("'")
 
@@ -88,15 +92,15 @@ def delimited_list(element, delim, min=1):
 comment = pythonStyleComment
 
 string_literal = dblQuotedString
-string_literal.setParseAction(StringLiteral)
+string_literal.setParseAction(StringLiteral).setName("string")
 
 # TODO: Handle both int literals and float literals.
 number_literal = pyparsing_common.number
-number_literal.setParseAction(IntLiteral)
+number_literal.setParseAction(IntLiteral).setName("number")
 
 # Note that `~Or` doesn't advance the cursor.
 ident = ~Or(keywords) + pyparsing_common.identifier
-ident.setParseAction(Ident)
+ident.setParseAction(Ident).setName("identifier")
 poly_ident = Suppress(t_squote) - ident
 
 expr = Forward()
@@ -117,12 +121,43 @@ let_stmt.setParseAction(let_parse_action).setName("let statement")
 let_in_expr = ~lineStart + (let_stmt - Suppress(t_in) - expr)
 let_in_expr.setParseAction(LetInExpr).setName("let-in expression")
 
+list_literal = (
+    Suppress(t_lbracket) - delimited_list(expr, t_comma) - Suppress(t_rbracket)
+)
+list_literal.setParseAction(ListLiteral).setName("list")
+
+
+def parse_paren_expr(text, location, tokens):
+    # () and (foo, bar) are tuples. But (foo) is a parenthesized expression. As
+    # in Python, a 1-tuple is indicated with a trailing comma, such as (foo,).
+    if len(tokens) == 1:
+        return tokens[0]
+    if tokens and tokens[-1] == ",":
+        tokens = tokens[:-1]
+    return TupleLiteral(text, location, tokens)
+
+
+paren_expr = (
+    Suppress(t_lparen) -
+    (
+        Suppress(t_rparen) |
+        (
+            delimited_list(expr, t_comma) -
+            Optional(t_comma) -
+            Suppress(t_rparen)
+        )
+    )
+)
+paren_expr.setParseAction(parse_paren_expr)
+paren_expr.setName("parenthesized expression or tuple")
+
 non_function_call_expr = (
     let_in_expr |
     ident |
     number_literal |
     string_literal |
-    Suppress(t_lparen) - expr - Suppress(t_rparen)
+    list_literal |
+    paren_expr
 )
 function_call_expr = non_function_call_expr * (2,)
 function_call_expr.setParseAction(FunctionCallExpr).setName("function call")

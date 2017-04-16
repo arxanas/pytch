@@ -1,0 +1,27 @@
+(Program
+  (LetPlainStmt
+    (Ident 'foo')
+    (IntLiteral 1))
+  (LetPlainStmt
+    (Ident 'bar')
+    (StringLiteral 'bar'))
+  (LetPlainStmt
+    (Ident 'baz')
+    (ListLiteral
+      (IntLiteral 1)
+      (IntLiteral 2)))
+  (LetPlainStmt
+    (Ident 'qux')
+    (TupleLiteral))
+  (LetPlainStmt
+    (Ident 'quux')
+    (TupleLiteral
+      (IntLiteral 3)))
+  (LetPlainStmt
+    (Ident 'grault')
+    (IntLiteral 3))
+  (LetPlainStmt
+    (Ident 'xyzzy')
+    (TupleLiteral
+      (IntLiteral 3)
+      (IntLiteral 4))))

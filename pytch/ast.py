@@ -141,3 +141,15 @@ class StringLiteral(AstNode):
 
     def __repr__(self):
         return "(StringLiteral {})".format(repr(self.value))
+
+
+class ListLiteral(AstNode):
+    def __init__(self, text, location, tokens):
+        super().__init__(text, location, tokens)
+        self.values = list(tokens)
+
+
+class TupleLiteral(AstNode):
+    def __init__(self, text, location, tokens):
+        super().__init__(text, location, tokens)
+        self.values = tuple(tokens)
