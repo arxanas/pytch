@@ -8,9 +8,10 @@ PYTHON_EXTENSION = ".py"
 
 
 def compile_files(files):
+    all_files = set(gather_files(files))
     asts = {
         i: get_ast(i)
-        for i in gather_files(files)
+        for i in all_files
     }
     for filename, ast in asts.items():
         out_filename = get_compiled_filename(filename)
