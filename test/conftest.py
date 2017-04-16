@@ -7,11 +7,6 @@ def pytest_addoption(parser):
     parser.addoption("-G", "--generate", action="store_true")
 
 
-def pytest_configure(config):
-    import os
-    os.environ["DEBUG"] = "1"
-
-
 def pytest_runtest_setup(item):
     should_generate = item.config.getoption("--generate")
     generate_marker = item.get_marker("generate") is not None

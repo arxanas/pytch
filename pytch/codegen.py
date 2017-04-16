@@ -1,11 +1,18 @@
-"""Generate Python code from Pytch code.
+from .ast import (
+    FunctionCallExpr,
+    Ident,
+    IntLiteral,
+    LetFuncStmt,
+    LetInExpr,
+    LetPlainStmt,
+    Program,
+    StringLiteral,
+    TypeStmt,
+    ValStmt,
+)
 
-Generates the AST for the Pytch code, then emits code for that AST.
-"""
-import contextlib
 
-
-class Scope(object):
+class Scope:
     """A scope for variables.
 
     A scope is a map from variable names to information about those variables.
@@ -21,6 +28,12 @@ class Scope(object):
         """
         self._symbols = {}
         self._parent = parent
+
+    def __getitem__(self, name):
+        return self._names[name]
+
+    def __setitem__(self, name):
+        self._names[name] = name
 
     def make_symbol(self, preferred_name):
         """Produce a unique variable name.
@@ -52,30 +65,11 @@ class Scope(object):
         return False
 
 
-class Env(object):
+class Env:
     def __init__(self):
-        self.global_scope = Scope(parent=None)
-        self.scopes = [self.global_scope]
-
-    @property
-    def current_scope(self):
-        assert self.scopes
-        return self.scopes[-1]
-
-    @contextlib.contextmanager
-    def scope(self):
-        scope = Scope(parent=self.current_scope)
-        self.scopes.append(scope)
-        yield scope
-        self.scopes.pop()
-
-
-def compile_ast(filename, ast):
-    ast = Program.from_node(ast)
-    env = Env()
-    code = ast.emit(env)
-    lines_of_code = code.setup + code.code
-    return "".join(i + "\n" for i in lines_of_code)
+        self.naming_scope = Scope(parent=None)
+        self.emit_scope = Scope(parent=None)
+        self.references = {}
 
 
 class Code(object):
@@ -114,109 +108,63 @@ class Code(object):
         )
 
 
-class AstNode(object):
-    def __init__(self, node):
-        self.node = node
-
-    def __repr__(self):
-        raise NotImplementedError("__repr__ not implemented: '{}'"
-                                  .format(self.__class__))
-
-    def emit(self, env):
-        raise NotImplementedError("emit not implemented: '{}'"
-                                  .format(self.__class__))
-
-    @classmethod
-    def from_node(cls, node):
-        raise NotImplementedError("from_node not implemented: '{}'"
-                                  .format(cls.__name__))
+def compile_ast(ast):
+    env = Env()
+    naming(env, ast)
+    code = emit(env, ast)
+    lines_of_code = code.setup + code.code
+    return "".join(i + "\n" for i in lines_of_code)
 
 
-class Program(AstNode):
-    def __init__(self, node, statements):
-        super(Program, self).__init__(node)
-        self.statements = statements
+def naming(env, node):
+    def recurse(node):
+        return emit(env, node)
 
-    def __repr__(self):
-        children = " ".join(repr(i) for i in self.statements)
-        return "(Program {})".format(children)
+    if isinstance(node, Program):
+        for statement in node.statements:
+            recurse(statement)
 
-    def emit(self, env):
-        code = [i.emit(env) for i in self.statements]
+    elif isinstance(node, ValStmt):
+        env.current_scope[node.ident.value] = node
+
+    elif isinstance(node, TypeStmt):
+        env.current_scope[node.ident.value] = node
+
+    elif isinstance(node, LetPlainStmt):
+        env.current_scope[node.ident.value] = node
+
+    elif isinstance(node, LetFuncStmt):
+        env.current_scope[node.ident.value] = node
+
+    else:
+        assert False, "unhandled naming: {}".format(node.__class__.__name__)
+
+
+def emit(env, node):
+    def recurse(node):
+        return emit(env, node)
+
+    if isinstance(node, Program):
+        code = [recurse(statement) for statement in node.statements]
         return Code(
-            node=self,
+            node=node,
             setup=_sum_lists(i.setup for i in code),
             code=_sum_lists(i.code for i in code),
             expr=None,
         )
 
-    @classmethod
-    def from_node(cls, node):
-        statements = [TopLevelStmt.from_node(i)
-                      for i in _traverse(node)
-                      if i.expr_name == "toplevel_stmt"]
-        return cls(node, statements)
+    elif (
+        isinstance(node, ValStmt) or
+        isinstance(node, TypeStmt)
+    ):
+        return Code.no_code()
 
-
-class TopLevelStmt(AstNode):
-    @classmethod
-    def from_node(cls, node):
-        while node.expr_name not in ["val_stmt", "let_stmt"]:
-            node = _filter_whitespace(node.children)[0]
-
-        if node.expr_name == "val_stmt":
-            return ValStmt.from_node(node)
-        elif node.expr_name == "let_stmt":
-            return LetStmt.from_node(node)
-        else:
-            assert False
-
-
-class ValStmt(AstNode):
-    def __init__(self, node, ident, type_expr):
-        super(ValStmt, self).__init__(node)
-        self.ident = ident
-        self.type_expr = type_expr
-
-    def __repr__(self):
-        return "(Val {} {})".format(repr(self.ident), repr(self.type_expr))
-
-    def emit(self, env):
-        return Code.no_code(self.node)
-
-    @classmethod
-    def from_node(cls, node):
-        _, ident, _, type_expr = _filter_whitespace(node.children)
-        return cls(node, Ident.from_node(ident), TypeExpr.from_node(type_expr))
-
-
-class LetStmt(AstNode):
-    @classmethod
-    def from_node(cls, node):
-        stmt = node.children[0]
-        stmt_types = {
-            "let_plain_expr": LetPlainExpr,
-            "let_func_expr": FuncLetExpr,
-            "let_in_expr": LetInExpr,
-        }
-        return stmt_types[stmt.expr_name].from_node(stmt)
-
-
-class LetPlainExpr(AstNode):
-    def __init__(self, node, name, value):
-        super(LetPlainExpr, self).__init__(node)
-        self.name = name
-        self.value = value
-
-    def __repr__(self):
-        return "(PlainLet {} {})".format(repr(self.name), repr(self.value))
-
-    def emit(self, env):
-        name = self.name.emit(env)
-        value = self.value.emit(env)
+    elif isinstance(node, LetPlainStmt):
+        name = recurse(node.ident)
+        value = recurse(node.value)
         code = ["{} = {}".format(name.expr, value.expr)]
         return Code(
-            node=self,
+            node=node,
             setup=_sum_lists([
                 name.setup,
                 name.code,
@@ -227,246 +175,42 @@ class LetPlainExpr(AstNode):
             expr=name.expr,
         )
 
-    @classmethod
-    def from_node(cls, node):
-        children = _filter_whitespace(node.children)
-        _, name, _, value = children
-        return cls(node, Ident.from_node(name), Expr.from_node(value))
-
-
-class FuncLetExpr(AstNode):
-    def __init__(self, node, name, params, value):
-        super(FuncLetExpr, self).__init__(node)
-        self.name = name
-        self.params = params
-        self.value = value
-
-    def __repr__(self):
-        return "(FuncLet {} {} {})".format(
-            repr(self.name),
-            repr(self.params),
-            repr(self.value),
+    elif isinstance(node, LetFuncStmt):
+        name = recurse(node.ident)
+        idents = [recurse(param) for param in node.params]
+        body = recurse(node.value)
+        body_code = body.code + ["return {}".format(body.expr)]
+        setup = (
+            name.setup
+            + _sum_lists(i.setup for i in idents)
+            + body.setup
         )
-
-    def emit(self, env):
-        name = self.name.emit(env)
-        with env.scope():
-            idents = [i.emit(env) for i in self.params]
-            body = self.value.emit(env)
-            body_code = body.code + ["return {}".format(body.expr)]
-            setup = (
-                name.setup
-                + _sum_lists(i.setup for i in idents)
-                + body.setup
-            )
-            code = name.code + ["def {}({}):".format(
-                name.expr,
-                ", ".join(i.expr for i in idents),
-            )] + [_indent(i) for i in body_code]
+        code = name.code + ["def {}({}):".format(
+            name.expr,
+            ", ".join(i.expr for i in idents),
+        )] + [_indent(i) for i in body_code]
         return Code(
-            node=self,
+            node=node,
             setup=setup,
             code=code,
             expr=name.expr,
         )
 
-    @classmethod
-    def from_node(cls, node):
-        children = _filter_whitespace(node.children)
-        _, name, params, _, value = children
-        return cls(
-            node,
-            Ident.from_node(name),
-            Params.from_node(params),
-            Expr.from_node(value),
-        )
-
-
-class LetInExpr(AstNode):
-    def __init__(self, node, let_stmt, expr):
-        super(LetInExpr, self).__init__(node)
-        self.let_stmt = let_stmt
-        self.expr = expr
-
-    def __repr__(self):
-        return "(LetInExpr {} {})".format(
-            repr(self.let_stmt),
-            repr(self.expr),
-        )
-
-    def emit(self, env):
-        let_stmt = self.let_stmt.emit(env)
-        expr = self.expr.emit(env)
+    elif isinstance(node, LetInExpr):
+        let_stmt = recurse(node.let_stmt)
+        expr = recurse(node.expr)
         setup = let_stmt.setup + expr.setup
         code = let_stmt.code + expr.code
         return Code(
-            node=self,
+            node=node,
             setup=setup,
             code=code,
             expr=expr.expr,
         )
 
-    @classmethod
-    def from_node(cls, node):
-        children = _filter_whitespace(node.children)
-        let_stmt, _, expr = children
-        return cls(
-            node,
-            LetStmt.from_node(let_stmt),
-            Expr.from_node(expr),
-        )
-
-
-class TypeExpr(AstNode):
-    def __init__(self, node, type_expr_atoms):
-        super(TypeExpr, self).__init__(node)
-        self.type_expr_atoms = type_expr_atoms
-
-    def __repr__(self):
-        type_expr_atoms = " ".join(repr(i) for i in self.type_expr_atoms)
-        return "(TypeExpr {})".format(type_expr_atoms)
-
-    @classmethod
-    def from_node(cls, node):
-        type_expr_atoms = [TypeExprAtom.from_node(i)
-                           for i in _filter_whitespace(node.children)]
-        return cls(node, type_expr_atoms)
-
-
-class TypeExprAtom(AstNode):
-    def __init__(self, node, ident=None, type_expr=None):
-        super(TypeExprAtom, self).__init__(node)
-        self.ident = ident
-        self.type_expr = type_expr
-
-    def __repr__(self):
-        return "(TypeExprAtom {})".format(repr(self.ident))
-
-    @classmethod
-    def from_node(cls, node):
-        if node.children[0].expr_name == "ident":
-            node = node.children[0]
-            return cls(node, ident=Ident.from_node(node))
-        else:
-            raise NotImplementedError(
-                    "type decl for non-ident types not implemented: '{}'"
-                    .format(node.expr_name))
-
-
-class Ident(AstNode):
-    def __init__(self, node, value):
-        super(Ident, self).__init__(node)
-        self.value = value
-
-    def __repr__(self):
-        return "(Ident {})".format(repr(self.value))
-
-    def emit(self, env):
-        return Code(
-            node=self,
-            setup=[],
-            code=[],
-            expr=self.value,
-        )
-
-    @classmethod
-    def from_node(cls, node):
-        assert node.expr_name == "ident"
-        return cls(node, node.text)
-
-
-class Params(AstNode):
-    @staticmethod
-    def from_node(node):
-        return [Ident.from_node(i)
-                for i in _traverse(node)
-                if i.expr_name == "ident"]
-
-
-class Expr(AstNode):
-    def __init__(self, node):
-        super(Expr, self).__init__(node)
-
-    @classmethod
-    def from_node(cls, node):
-        child = _first_non_trivial_node(node.children)
-        expr_types = {
-            "int_literal": IntLiteral,
-            "string_literal": StringLiteral,
-            "ident": Ident,
-            "function_call": FunctionCall,
-            "expr": Expr,
-            "let_in_expr": LetInExpr,
-        }
-        try:
-            expr_type = expr_types[child.expr_name]
-        except KeyError:
-            raise NotImplementedError("expr not implemented: '{}'"
-                                      .format(child.expr_name))
-        return expr_type.from_node(child)
-
-
-class IntLiteral(AstNode):
-    def __init__(self, node, value):
-        super(IntLiteral, self).__init__(node)
-        self.value = value
-
-    def __repr__(self):
-        return "(IntLiteral {})".format(repr(self.value))
-
-    def emit(self, env):
-        return Code(
-            node=self,
-            setup=[],
-            code=[],
-            expr=repr(self.value),
-        )
-
-    @classmethod
-    def from_node(cls, node):
-        value = int(node.text)
-        return cls(node, value)
-
-
-class StringLiteral(AstNode):
-    def __init__(self, node, value):
-        super(StringLiteral, self).__init__(node)
-        self.value = value
-
-    def __repr__(self):
-        return "(StringLiteral {})".format(repr(self.value))
-
-    def emit(self, env):
-        return Code(
-            node=self,
-            setup=[],
-            code=[],
-            expr=repr(self.value),
-        )
-
-    @classmethod
-    def from_node(cls, node):
-        # Get node in between quotes.
-        node = node.children[1]
-        value = node.text
-        return cls(node, value)
-
-
-class FunctionCall(AstNode):
-    def __init__(self, node, name, args):
-        super(FunctionCall, self).__init__(node)
-        self.name = name
-        self.args = args
-
-    def __repr__(self):
-        return "(FunctionCall {} {})".format(
-            repr(self.name),
-            " ".join(repr(i) for i in self.args),
-        )
-
-    def emit(self, env):
-        name = self.name.emit(env)
-        args = [i.emit(env) for i in self.args]
+    elif isinstance(node, FunctionCallExpr):
+        name = recurse(node.ident)
+        args = [recurse(arg) for arg in node.args]
         setup = name.setup + _sum_lists(i.setup for i in args)
         assert not any(i.code for i in args), (
             "Not implemented: we need to store args into temporary " +
@@ -477,48 +221,42 @@ class FunctionCall(AstNode):
             ", ".join(i.expr for i in args),
         )
         return Code(
-            node=self,
+            node=node,
             setup=setup,
             code=[],
             expr=expr,
         )
 
-    @classmethod
-    def from_node(cls, node):
-        children = _filter_whitespace(node.children)
-        name = Ident.from_node(children[0])
-        args = [Expr.from_node(i) for i in children[1:]]
-        return FunctionCall(node, name, args)
+    elif isinstance(node, Ident):
+        return Code(
+            node=node,
+            setup=[],
+            code=[],
+            expr=node.value,
+        )
+
+    elif isinstance(node, IntLiteral):
+        return Code(
+            node=node,
+            setup=[],
+            code=[],
+            expr=repr(node.value),
+        )
+
+    elif isinstance(node, StringLiteral):
+        return Code(
+            node=node,
+            setup=[],
+            code=[],
+            expr=repr(node.value),
+        )
+
+    else:
+        assert False, "unhandled emit: {}".format(node.__class__.__name__)
 
 
 def _indent(string):
     return "\n".join("    " + i for i in string.split("\n"))
-
-
-def _traverse(node):
-    yield node
-    for i in node.children:
-        yield from _traverse(i)
-
-
-def _first_non_trivial_node(nodes):
-    queue = list(nodes)
-    while queue:
-        node = queue.pop()
-        if node.expr_name and node.expr_name != "_":
-            return node
-        queue.extend(node.children)
-    assert False, "no non-trivial node underneath node: {}".format(node)
-
-
-def _filter_whitespace(children):
-    return [i for i in children
-            if i.expr_name != "_"
-            if i.text]
-
-
-def _lines_to_str(lines):
-    return "".join(i + "\n" for i in lines)
 
 
 def _sum_lists(lists):

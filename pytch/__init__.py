@@ -14,7 +14,7 @@ def compile_files(files):
     }
     for filename, ast in asts.items():
         out_filename = get_compiled_filename(filename)
-        compiled_code = compile_ast(filename, ast)
+        compiled_code = compile_ast(ast)
         with open(out_filename, "w") as f:
             f.write(compiled_code)
 

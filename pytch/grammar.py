@@ -1,5 +1,3 @@
-import os
-
 from pyparsing import (
     dblQuotedString,
     FollowedBy,
@@ -17,7 +15,7 @@ from pyparsing import (
     ZeroOrMore,
 )
 
-from .parse import (
+from .ast import (
     FunctionCallExpr,
     FunctionTypeExpr,
     Ident,
@@ -171,10 +169,6 @@ top_level_stmt.setName("top-level statement")
 program = ZeroOrMore(top_level_stmt)
 program.setParseAction(Program).setName("program")
 program.ignore(comment)
-
-if os.environ.get("DEBUG"):
-    program.validate()
-    program.setDebug(True)
 
 
 #############

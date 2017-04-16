@@ -44,19 +44,19 @@ class ValStmt(AstNode):
 class FunctionCallExpr(AstNode):
     def __init__(self, text, location, tokens):
         super().__init__(text, location, tokens)
-        self.name, *self.args = tokens
+        self.ident, *self.args = tokens
 
 
 class LetPlainStmt(AstNode):
     def __init__(self, text, location, tokens):
         super().__init__(text, location, tokens)
-        self.name, self.value = tokens
+        self.ident, self.value = tokens
 
 
 class LetFuncStmt(AstNode):
     def __init__(self, text, location, tokens):
         super().__init__(text, location, tokens)
-        self.name, self.params, self.value = tokens
+        self.ident, *self.params, self.value = tokens
 
 
 class LetInExpr(AstNode):
@@ -80,7 +80,7 @@ class TypeStmt(AstNode):
 class TypeExprAtom(AstNode):
     def __init__(self, text, location, tokens):
         super().__init__(text, location, tokens)
-        self.name, = tokens
+        self.ident, = tokens
 
 
 class FunctionTypeExpr(AstNode):
