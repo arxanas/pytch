@@ -149,7 +149,7 @@ paren_expr = (
     )
 )
 paren_expr.setParseAction(parse_paren_expr)
-paren_expr.setName("parenthesized expression or tuple")
+paren_expr.setName("parenthesized expression | tuple")
 
 non_function_call_expr = (
     let_in_expr |
