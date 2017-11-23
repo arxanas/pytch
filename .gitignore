@@ -1,5 +1,5 @@
 
-# Created by https://www.gitignore.io/api/python
+# Created by https://www.gitignore.io/api/python,visualstudiocode
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
@@ -12,7 +12,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -47,7 +46,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*,cover
+*.cover
 .hypothesis/
 
 # Translations
@@ -80,18 +79,37 @@ target/
 # celery beat schedule file
 celerybeat-schedule
 
-# dotenv
-.env
+# SageMath parsed files
+*.sage.py
 
-# virtualenv
+# Environments
+.env
 .venv
+env/
 venv/
 ENV/
+env.bak/
+venv.bak/
 
 # Spyder project settings
 .spyderproject
+.spyproject
 
 # Rope project settings
 .ropeproject
 
-# End of https://www.gitignore.io/api/python
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history
+
+# End of https://www.gitignore.io/api/python,visualstudiocode
