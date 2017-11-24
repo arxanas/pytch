@@ -1,4 +1,0 @@
-let foo = 1
-let foo bar =
-  let baz = 3 in
-  bar

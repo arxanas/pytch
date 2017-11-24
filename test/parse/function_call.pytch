@@ -1,5 +1,0 @@
-let foo =
-  (bar baz) (qux grault)
-
-let foo =
-  bar baz qux grault
