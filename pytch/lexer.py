@@ -92,8 +92,10 @@ WHITESPACE_RE = re.compile("[ \t]+")
 NEWLINE_RE = re.compile("\n")
 IDENTIFIER_RE = re.compile("[a-zA-Z_][a-zA-Z0-9_]*")
 INT_LITERAL_RE = re.compile("[0-9]+")
-EQUAL_RE = re.compile("=")
+EQUALS_RE = re.compile("=")
 LET_RE = re.compile("let")
+LPAREN_RE = re.compile("\(")
+RPAREN_RE = re.compile("\)")
 
 
 class Lexer:
@@ -179,8 +181,10 @@ class Lexer:
         token = self._lex_next_token_by_patterns({
             TokenKind.IDENTIFIER: IDENTIFIER_RE,
             TokenKind.INT_LITERAL: INT_LITERAL_RE,
-            TokenKind.EQUALS: EQUAL_RE,
+            TokenKind.EQUALS: EQUALS_RE,
             TokenKind.LET: LET_RE,
+            TokenKind.LPAREN: LPAREN_RE,
+            TokenKind.RPAREN: RPAREN_RE,
         })
         return token
 

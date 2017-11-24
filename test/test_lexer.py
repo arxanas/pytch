@@ -85,6 +85,14 @@ def reconstruct_trivia(trivia: List[Tr]) -> List[Trivium]:
         T("=", TokenKind.EQUALS),
         T("2", TokenKind.INT_LITERAL),
     ])
+), (
+    """print(1)""",
+    reconstruct([
+        T("print", TokenKind.IDENTIFIER),
+        T("(", TokenKind.LPAREN),
+        T("1", TokenKind.INT_LITERAL),
+        T(")", TokenKind.RPAREN),
+    ]),
 )])
 def test_lexer(source_code: str, tokens: List[Token]):
     lexation = lex(source_code)
