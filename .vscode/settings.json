@@ -3,5 +3,10 @@
     "python.unitTest.pyTestArgs": [],
     "python.unitTest.pyTestEnabled": true,
     "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true
+    "python.linting.flake8Enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.mypyArgs": [
+        "--ignore-missing-imports",
+        "--strict-optional"
+    ]
 }
