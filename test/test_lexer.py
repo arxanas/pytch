@@ -63,6 +63,28 @@ def reconstruct_trivia(trivia: List[Tr]) -> List[Trivium]:
             trailing=[Tr("\n", TriviumKind.NEWLINE)]
         ),
     ]),
+), (
+    """let foo = 1  \nlet bar=2""",
+    reconstruct([
+        T("let", TokenKind.LET),
+        T("foo", TokenKind.IDENTIFIER,
+          leading=[Tr(" ", TriviumKind.WHITESPACE)]),
+        T("=", TokenKind.EQUALS, leading=[Tr(" ", TriviumKind.WHITESPACE)]),
+        T(
+            "1",
+            TokenKind.INT_LITERAL,
+            leading=[Tr(" ", TriviumKind.WHITESPACE)],
+            trailing=[
+                Tr("  ", TriviumKind.WHITESPACE),
+                Tr("\n", TriviumKind.NEWLINE),
+            ],
+        ),
+        T("let", TokenKind.LET),
+        T("bar", TokenKind.IDENTIFIER,
+          leading=[Tr(" ", TriviumKind.WHITESPACE)]),
+        T("=", TokenKind.EQUALS),
+        T("2", TokenKind.INT_LITERAL),
+    ])
 )])
 def test_lexer(source_code: str, tokens: List[Token]):
     lexation = lex(source_code)

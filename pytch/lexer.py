@@ -14,6 +14,8 @@ class TriviumKind(Enum):
 class TokenKind(Enum):
     IDENTIFIER = "identifier"
     LET = "let"
+    INT_LITERAL = "int_literal"
+    EQUALS = "="
     LPAREN = "("
     RPAREN = ")"
 
@@ -89,6 +91,9 @@ class Lexation:
 WHITESPACE_RE = re.compile("[ \t]+")
 NEWLINE_RE = re.compile("\n")
 IDENTIFIER_RE = re.compile("[a-zA-Z_][a-zA-Z0-9_]*")
+INT_LITERAL_RE = re.compile("[0-9]+")
+EQUAL_RE = re.compile("=")
+LET_RE = re.compile("let")
 
 
 class Lexer:
@@ -109,6 +114,13 @@ class Lexer:
             self._consume_item(token)
 
             trailing_trivia = self._lex_trailing_trivia()
+            if not any(
+                trivium.kind == TriviumKind.NEWLINE
+                for trivium in trailing_trivia
+            ):
+                # If we're not about to consume the end of the line, let this
+                # trivia be the leading trivia of the next token instead.
+                trailing_trivia = []
             for trivium in trailing_trivia:
                 self._consume_item(trivium)
 
@@ -124,24 +136,26 @@ class Lexer:
         self._offset += item.width
 
     def _lex_leading_trivia(self) -> List[Trivium]:
-        return self._lex_trivia({
+        return self._lex_next_trivia_by_patterns({
             TriviumKind.WHITESPACE: WHITESPACE_RE,
         })
 
     def _lex_trailing_trivia(self) -> List[Trivium]:
-        return self._lex_trivia({
+        return self._lex_next_trivia_by_patterns({
             TriviumKind.WHITESPACE: WHITESPACE_RE,
             TriviumKind.NEWLINE: NEWLINE_RE,
         })
 
-    def _lex_trivia(self, trivia_regexes: Mapping[TriviumKind, Pattern]
-                    ) -> List[Trivium]:
+    def _lex_next_trivia_by_patterns(
+        self,
+        trivia_patterns: Mapping[TriviumKind, Pattern],
+    ) -> List[Trivium]:
         trivia: List[Trivium] = []
         offset = self._offset
         while True:
             matches = [
                 (trivium_kind, regex.match(self._source_code, pos=offset))
-                for trivium_kind, regex in trivia_regexes.items()
+                for trivium_kind, regex in trivia_patterns.items()
             ]
             matches = [
                 (trivium_kind, match)
@@ -162,9 +176,12 @@ class Lexer:
             offset += trivium.width
 
     def _lex_next_token(self) -> Token:
-        token = self._lex_next_identifier()
-        assert token is not None, \
-            "next: " + self._source_code[self._offset:self._offset + 5]
+        token = self._lex_next_token_by_patterns({
+            TokenKind.IDENTIFIER: IDENTIFIER_RE,
+            TokenKind.INT_LITERAL: INT_LITERAL_RE,
+            TokenKind.EQUALS: EQUAL_RE,
+            TokenKind.LET: LET_RE,
+        })
         return token
 
     def _lex_next_token_by_patterns(
