@@ -1,3 +1,53 @@
+"""Lexes the source code into a series of tokens.
+
+The token design is roughly based on the tokens in Roslyn.
+
+# Trivia
+
+Each token has associated "trivia". Trivia accounts for whitespace in the
+source code, so that we can apply modifications to the original source code
+(such as autoformatting or refactorings) without losing data.
+
+There are two types of trivia: leading and trailing. The leading trivia comes
+before the token, and the trailing trivia comes after. Consider the following
+code (the newline is explicitly written out):
+
+    let foo = 1\n
+
+This has four tokens:
+
+    let:
+        leading: []
+        trailing: []
+    foo:
+        leading: [" "]
+        trailing: []
+    =:
+        leading: [" "]
+        trailing: []
+    1:
+        leading: [" "]
+        trailing: ["\n"]
+
+The basic rule is that if possible, a trivium is allocated to the leading
+trivia of the next token rather than the trailing trivia of the previous
+token.
+
+Whitespace and comments are the types of trivia.
+
+# Token fields
+
+Tokens contain their kind, text, and trivia. They don't contain their
+position: this allows us to potentially do incremental reparsing, since we
+can modify tokens directly without having to adjust the positions of all the
+following tokens.
+
+# Kinds
+
+The "kind" of a token indicates what kind of token it was. For example, each
+keyword and symbol has its own kind, as well as things like identifiers and
+strings.
+"""
 from enum import Enum
 import re
 from typing import List, Mapping, Optional, Pattern, Sequence
