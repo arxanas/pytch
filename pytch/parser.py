@@ -1,3 +1,14 @@
+"""Parses a series of tokens into a syntax tree.
+
+The syntax tree is not quite an abstract syntax tree: the tokens contained
+therein are enough to reconstitute the source code. The non-meaningful parts
+of the program are contained within "trivia" nodes. See the lexer for more
+information.
+
+The syntax tree is considered to be immutable and must not be modified.
+Therefore, its nodes and tokens can be checked for referential equality and
+used as keys into maps.
+"""
 from typing import List, Sequence, Union
 
 from .lexer import Token, TokenKind
