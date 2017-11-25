@@ -1,6 +1,6 @@
 from enum import Enum
 import re
-from typing import List, Mapping, Match, Optional, Pattern
+from typing import List, Mapping, Optional, Pattern, Sequence
 
 from typing_extensions import Protocol
 
@@ -27,33 +27,57 @@ class Item(Protocol):
 
 
 class Trivium:
-    def __init__(self, kind: TriviumKind, width: int) -> None:
-        self.kind = kind
-        self.width = width
+    def __init__(self, kind: TriviumKind, text: str) -> None:
+        self._kind = kind
+        self._text = text
+
+    @property
+    def kind(self) -> TriviumKind:
+        return self._kind
+
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @property
+    def width(self) -> int:
+        return len(self._text)
 
     def __repr__(self) -> str:
-        return f"<Trivium kind={self.kind} width={self.width}>"
+        return f"<Trivium kind={self.kind} text={self.text}>"
 
     def __eq__(self, other: object) -> bool:
         if self is other:
             return True
         if not isinstance(other, Trivium):
             return False
-        return self.kind == other.kind and self.width == other.width
+        return self.kind == other.kind and self.text == other.text
 
 
 class Token:
     def __init__(
         self,
         kind: TokenKind,
-        width: int,
+        text: str,
         leading_trivia: List[Trivium],
         trailing_trivia: List[Trivium]
     ) -> None:
-        self.kind = kind
-        self.width = width
-        self.leading_trivia = leading_trivia
-        self.trailing_trivia = trailing_trivia
+        self._kind = kind
+        self._text = text
+        self._leading_trivia = leading_trivia
+        self._trailing_trivia = trailing_trivia
+
+    @property
+    def kind(self) -> TokenKind:
+        return self._kind
+
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @property
+    def width(self) -> int:
+        return len(self._text)
 
     @property
     def full_width(self) -> int:
@@ -62,12 +86,20 @@ class Token:
         trailing_width = sum(trivium.width for trivium in self.trailing_trivia)
         return leading_width + self.width + trailing_width
 
+    @property
+    def leading_trivia(self) -> Sequence[Trivium]:
+        return self._leading_trivia
+
+    @property
+    def trailing_trivia(self) -> Sequence[Trivium]:
+        return self._trailing_trivia
+
     def __repr__(self) -> str:
-        r = f"<Token width={self.width}"
+        r = f"<Token text={self.text!r}"
         if self.leading_trivia:
-            r += f" leading={self.leading_trivia}"
+            r += f" leading={self.leading_trivia!r}"
         if self.trailing_trivia:
-            r += f" trailing={self.trailing_trivia}"
+            r += f" trailing={self.trailing_trivia!r}"
         r += ">"
         return r
 
@@ -77,7 +109,7 @@ class Token:
         if not isinstance(other, Token):
             return False
         return (
-            self.width == other.width
+            self.text == other.text
             and self.leading_trivia == other.leading_trivia
             and self.trailing_trivia == other.trailing_trivia
         )
@@ -133,13 +165,13 @@ class Lexer:
             for trivium in trailing_trivia:
                 self._consume_item(trivium)
 
-            token.leading_trivia = leading_trivia
-            token.trailing_trivia = trailing_trivia
-            tokens.append(token)
+            tokens.append(Token(
+                kind=token.kind,
+                text=token.text,
+                leading_trivia=leading_trivia,
+                trailing_trivia=trailing_trivia,
+            ))
         return Lexation(tokens=tokens, errors=errors)
-
-    def _match_width(self, match: Match) -> int:
-        return match.end() - match.start()
 
     def _consume_item(self, item: Item) -> None:
         self._offset += item.width
@@ -179,7 +211,7 @@ class Lexer:
 
             trivium = Trivium(
                 kind=trivium_kind,
-                width=self._match_width(match)
+                text=match.group(),
             )
             trivia.append(trivium)
             offset += trivium.width
@@ -219,11 +251,11 @@ class Lexer:
                 self._source_code[self._offset:self._offset + 5] +
                 "'",
             )
-        longest_match = max(matches, key=lambda x: self._match_width(x[1]))
+        longest_match = max(matches, key=lambda x: len(x[1].group()))
         kind, match = longest_match
         return Token(
             kind=kind,
-            width=self._match_width(match),
+            text=match.group(),
             leading_trivia=[],
             trailing_trivia=[],
         )
@@ -234,7 +266,7 @@ class Lexer:
             return None
         return Token(
             kind=TokenKind.IDENTIFIER,
-            width=self._match_width(match),
+            text=match.group(),
             leading_trivia=[],
             trailing_trivia=[],
         )
