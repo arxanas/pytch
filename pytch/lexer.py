@@ -55,6 +55,13 @@ class Token:
         self.leading_trivia = leading_trivia
         self.trailing_trivia = trailing_trivia
 
+    @property
+    def full_width(self) -> int:
+        """The width of the token, including leading and trailing trivia."""
+        leading_width = sum(trivium.width for trivium in self.leading_trivia)
+        trailing_width = sum(trivium.width for trivium in self.trailing_trivia)
+        return leading_width + self.width + trailing_width
+
     def __repr__(self) -> str:
         r = f"<Token width={self.width}"
         if self.leading_trivia:
@@ -178,14 +185,18 @@ class Lexer:
             offset += trivium.width
 
     def _lex_next_token(self) -> Token:
-        token = self._lex_next_token_by_patterns({
-            TokenKind.IDENTIFIER: IDENTIFIER_RE,
-            TokenKind.INT_LITERAL: INT_LITERAL_RE,
-            TokenKind.EQUALS: EQUALS_RE,
-            TokenKind.LET: LET_RE,
-            TokenKind.LPAREN: LPAREN_RE,
-            TokenKind.RPAREN: RPAREN_RE,
-        })
+        try:
+            token = self._lex_next_token_by_patterns({
+                TokenKind.INT_LITERAL: INT_LITERAL_RE,
+                TokenKind.EQUALS: EQUALS_RE,
+                TokenKind.LET: LET_RE,
+                TokenKind.LPAREN: LPAREN_RE,
+                TokenKind.RPAREN: RPAREN_RE,
+            })
+        except ValueError:
+            token = self._lex_next_token_by_patterns({
+                TokenKind.IDENTIFIER: IDENTIFIER_RE,
+            })
         return token
 
     def _lex_next_token_by_patterns(
