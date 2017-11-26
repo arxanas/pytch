@@ -1,5 +1,5 @@
 import textwrap
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import pytest
 
@@ -9,7 +9,7 @@ from pytch.parser import Node, parse
 
 def render_ast(
     source_code: str,
-    ast_node: Node,
+    ast_node: Union[Node, Token],
     offset: int = 0,
 ) -> Tuple[int, List[str]]:
     if isinstance(ast_node, Token):
@@ -57,6 +57,26 @@ def render_ast(
                     Leading ' '
                     Token '1'
         """,
+    ), (
+        """let foo = print(1)""",
+        """
+        Ast
+            LetStatement
+                Token 'let'
+                VariablePattern
+                    Leading ' '
+                    Token 'foo'
+                Leading ' '
+                Token '='
+                FunctionCallExpr
+                    IdentifierExpr
+                        Leading ' '
+                        Token 'print'
+                    Token '('
+                    IntLiteralExpr
+                        Token '1'
+                    Token ')'
+        """
     )
 ])
 def test_parser(source_code: str, output: str) -> None:

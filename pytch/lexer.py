@@ -64,6 +64,7 @@ class TriviumKind(Enum):
 class TokenKind(Enum):
     IDENTIFIER = "identifier"
     LET = "let"
+    COMMA = ","
     INT_LITERAL = "int_literal"
     EQUALS = "="
     LPAREN = "("
