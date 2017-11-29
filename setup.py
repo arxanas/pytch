@@ -16,6 +16,5 @@ setup(
     """,
     install_requires=[
         "click==6.7",
-        "pyparsing==2.1.10",
     ],
 )
