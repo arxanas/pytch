@@ -1,28 +1,104 @@
 import os.path
+from typing import Callable, Iterator, Optional, Sequence
 
-from pytch import PYTCH_EXTENSION
+
+class TestCaseInfo:
+    def __init__(
+        self,
+        input_filename: str,
+        output_filename: str,
+        error_filename: Optional[str],
+    ) -> None:
+        self._input_filename = input_filename
+        self._output_filename = output_filename
+        self._error_filename = error_filename
+
+    @property
+    def name(self) -> str:
+        return os.path.splitext(self.input_filename)[0]
+
+    @property
+    def input_filename(self) -> str:
+        return self._input_filename
+
+    @property
+    def output_filename(self) -> str:
+        return self._output_filename
+
+    @property
+    def error_filename(self) -> Optional[str]:
+        return self._error_filename
 
 
-def find_tests(dir_name):
+class TestCaseResult:
+    def __init__(self, output: str, error: Optional[str]) -> None:
+        self._output = output
+        self._error = error
+
+    @property
+    def output(self) -> str:
+        return self._output
+
+    @property
+    def error(self) -> Optional[str]:
+        return self._error
+
+
+def find_tests(
+    dir_name: str,
+    input_extension: str,
+    output_extension: str = ".out",
+    error_extension: str = ".err"
+) -> Iterator[TestCaseInfo]:
     current_dir = os.path.dirname(__file__)
     tests_dir = os.path.join(current_dir, dir_name)
     tests = set(os.path.splitext(filename)[0]
                 for filename in os.listdir(tests_dir)
-                if filename.endswith(PYTCH_EXTENSION))
-    for test in tests:
-        input_filename = os.path.join(tests_dir, f"{test}{PYTCH_EXTENSION}")
-        output_filename = os.path.join(tests_dir, f"{test}.out")
-        yield (input_filename, output_filename)
+                if filename.endswith(input_extension))
+    for test_name in tests:
+        input_filename = os.path.join(tests_dir, test_name + input_extension)
+        output_filename = os.path.join(tests_dir, test_name + output_extension)
+        error_filename = os.path.join(
+            tests_dir,
+            test_name + error_extension,
+        )
 
-
-def generate(tests, make_output):
-    for input_filename, output_filename in tests:
-        with open(input_filename) as input_file:
-            input = input_file.read()
-        print(f"processing {input_filename}")
-        output = make_output(input)
         if not os.path.exists(output_filename):
-            with open(output_filename, "w") as output_file:
+            raise RuntimeError(
+                f"Expected test case {test_name} to "
+                f"have an output file at {output_filename}"
+            )
+
+        if not os.path.exists(error_filename):
+            error_filename = None  # type: ignore
+        yield TestCaseInfo(
+            input_filename=input_filename,
+            output_filename=output_filename,
+            error_filename=error_filename,
+        )
+
+
+def generate(
+    tests: Sequence[TestCaseInfo],
+    make_result: Callable[[str], TestCaseResult],
+) -> None:
+    for test_info in tests:
+        with open(test_info.input_filename) as input_file:
+            input = input_file.read()
+        print(f"processing {test_info.input_filename}")
+        result = make_result(input)
+        output = result.output
+        error = result.error
+        if not os.path.exists(test_info.output_filename):
+            with open(test_info.output_filename, "w") as output_file:
                 output_file.write(output)
+            if error is not None:
+                assert test_info.error_filename is not None, (
+                    f"Test case result for test {test_info.name} generated "
+                    "error output, but no error filename is defined for this "
+                    "test case"
+                )
+                with open(test_info.error_filename, "w") as error_file:
+                    error_file.write(error)
         else:
-            print(f"file exists, not generating: {output_filename}")
+            print(f"file exists, not generating: {test_info.output_filename}")
