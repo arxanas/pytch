@@ -2,7 +2,9 @@ import os.path
 from typing import Callable, Iterator, Optional, Sequence
 
 
-class TestCaseInfo:
+# Note that we can't call this `TestCaseInfo` because then it would be
+# collected as a test.
+class CaseInfo:
     def __init__(
         self,
         input_filename: str,
@@ -22,15 +24,38 @@ class TestCaseInfo:
         return self._input_filename
 
     @property
+    def input(self) -> str:
+        with open(self._input_filename) as f:
+            return f.read()
+
+    @property
     def output_filename(self) -> str:
         return self._output_filename
+
+    @property
+    def output(self) -> str:
+        if not os.path.exists(self._output_filename):
+            raise RuntimeError(
+                f"Expected test case {self.name} to "
+                f"have an output file at {self._output_filename}. "
+                f"Do you need to regenerate it?"
+            )
+        with open(self._output_filename) as f:
+            return f.read()
 
     @property
     def error_filename(self) -> Optional[str]:
         return self._error_filename
 
+    @property
+    def error(self) -> Optional[str]:
+        if self.error_filename is None:
+            return None
+        with open(self.error_filename) as f:
+            return f.read()
 
-class TestCaseResult:
+
+class CaseResult:
     def __init__(self, output: str, error: Optional[str]) -> None:
         self._output = output
         self._error = error
@@ -49,7 +74,7 @@ def find_tests(
     input_extension: str,
     output_extension: str = ".out",
     error_extension: str = ".err"
-) -> Iterator[TestCaseInfo]:
+) -> Iterator[CaseInfo]:
     current_dir = os.path.dirname(__file__)
     tests_dir = os.path.join(current_dir, dir_name)
     tests = set(os.path.splitext(filename)[0]
@@ -63,15 +88,9 @@ def find_tests(
             test_name + error_extension,
         )
 
-        if not os.path.exists(output_filename):
-            raise RuntimeError(
-                f"Expected test case {test_name} to "
-                f"have an output file at {output_filename}"
-            )
-
         if not os.path.exists(error_filename):
             error_filename = None  # type: ignore
-        yield TestCaseInfo(
+        yield CaseInfo(
             input_filename=input_filename,
             output_filename=output_filename,
             error_filename=error_filename,
@@ -79,8 +98,8 @@ def find_tests(
 
 
 def generate(
-    tests: Sequence[TestCaseInfo],
-    make_result: Callable[[str], TestCaseResult],
+    tests: Sequence[CaseInfo],
+    make_result: Callable[[str], CaseResult],
 ) -> None:
     for test_info in tests:
         with open(test_info.input_filename) as input_file:

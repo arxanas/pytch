@@ -1,8 +1,9 @@
-import textwrap
-from typing import List, Tuple, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 import pytest
+from utils import CaseInfo, CaseResult, find_tests, generate
 
+from pytch.errors import Error, get_error_lines
 from pytch.lexer import lex, Token
 from pytch.parser import Node, parse
 
@@ -41,52 +42,38 @@ def render_ast(
         return (offset, lines)
 
 
-@pytest.mark.parametrize("source_code, output", [
-    (
-        """let foo = 1""",
-        """
-        Ast
-            LetStatement
-                Token 'let'
-                VariablePattern
-                    Leading ' '
-                    Token 'foo'
-                Leading ' '
-                Token '='
-                IntLiteralExpr
-                    Leading ' '
-                    Token '1'
-        """,
-    ), (
-        """let foo = print(1)""",
-        """
-        Ast
-            LetStatement
-                Token 'let'
-                VariablePattern
-                    Leading ' '
-                    Token 'foo'
-                Leading ' '
-                Token '='
-                FunctionCallExpr
-                    IdentifierExpr
-                        Leading ' '
-                        Token 'print'
-                    Token '('
-                    IntLiteralExpr
-                        Token '1'
-                    Token ')'
-        """
-    )
-])
-def test_parser(source_code: str, output: str) -> None:
-    tokens = lex(source_code).tokens
-    ast = parse(source_code=source_code, tokens=tokens)
-    offset, rendered_ast_lines = render_ast(source_code, ast)
-    assert offset == len(source_code)
-    rendered_ast = "\n".join(rendered_ast_lines)
+def get_parser_tests() -> Iterator[CaseInfo]:
+    return find_tests("parser", input_extension=".pytch")
 
-    output = "\n".join(output.split("\n")[1:-1])
-    output = textwrap.dedent(output)
-    output = output.strip()
-    assert rendered_ast == output
+
+def make_result(source_code: str) -> CaseResult:
+    lexation = lex(source_code)
+    parsation = parse(source_code=source_code, tokens=lexation.tokens)
+    offset, rendered_ast_lines = render_ast(source_code, parsation.ast)
+    assert offset == len(source_code)
+    output = "".join(line + "\n" for line in rendered_ast_lines)
+
+    error_lines = []
+    errors: List[Error] = lexation.errors + parsation.errors  # type: ignore
+    for i in errors:
+        error_lines.extend(get_error_lines(i, ascii=True))
+
+    error: Optional[str]
+    if error_lines:
+        error = "".join(line + "\n" for line in error_lines)
+    else:
+        error = None
+
+    return CaseResult(output=output, error=error)
+
+
+@pytest.mark.parametrize("test_case_info", get_parser_tests())
+def test_parser(test_case_info: CaseInfo) -> None:
+    result = make_result(test_case_info.input)
+    assert result.output == test_case_info.output
+    assert result.error == test_case_info.error
+
+
+@pytest.mark.generate
+def test_generate_parser_tests():
+    generate(get_parser_tests(), make_result)

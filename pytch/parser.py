@@ -11,6 +11,7 @@ used as keys into maps.
 """
 from typing import List, Optional, Sequence, Union
 
+import pytch.errors
 from .lexer import Token, TokenKind
 
 
@@ -95,6 +96,12 @@ class FunctionCallExpr(Expr):
         self.t_rparen = t_rparen
 
 
+class Parsation:
+    def __init__(self, ast: Ast, errors: List[pytch.errors.Error]) -> None:
+        self.ast = ast
+        self.errors = errors
+
+
 class Parser:
     def __init__(self, source_code: str, tokens: List[Token]) -> None:
         self.source_code = source_code
@@ -102,7 +109,7 @@ class Parser:
         self.token_index = 0
         self.offset = 0
 
-    def parse(self) -> Ast:
+    def parse(self) -> Parsation:
         top_level_stmts = []
         last_index = -1
         while self.token_index < len(self.tokens):
@@ -111,7 +118,10 @@ class Parser:
             last_index = self.token_index
             stmt_let = self._parse_stmt_let()
             top_level_stmts.append(stmt_let)
-        return Ast(n_statements=top_level_stmts)
+        ast = Ast(n_statements=top_level_stmts)
+        # TODO
+        errors: List[pytch.errors.Error] = []
+        return Parsation(ast=ast, errors=errors)
 
     def _parse_stmt_let(self) -> LetStatement:
         t_let = self._expect_token([TokenKind.LET])
@@ -227,7 +237,7 @@ class Parser:
         return token
 
 
-def parse(source_code: str, tokens: List[Token]) -> Ast:
+def parse(source_code: str, tokens: List[Token]) -> Parsation:
     parser = Parser(source_code=source_code, tokens=tokens)
     return parser.parse()
 
