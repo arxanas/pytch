@@ -54,6 +54,8 @@ from typing import List, Mapping, Optional, Pattern, Sequence
 
 from typing_extensions import Protocol
 
+from . import FileInfo
+
 
 class TriviumKind(Enum):
     WHITESPACE = "whitespace"
@@ -195,15 +197,19 @@ RPAREN_RE = re.compile("\)")
 
 
 class Lexer:
-    def __init__(self, source_code: str) -> None:
-        self._source_code = source_code
-        self._offset = 0
+    def __init__(self, file_info: FileInfo) -> None:
+        self.file_info = file_info
+        self.offset = 0
+
+    @property
+    def source_code(self) -> str:
+        return self.file_info.source_code
 
     def lex(self) -> Lexation:
         tokens = []
         # TODO: Shouldn't need type annotation.
         errors: List[Error] = []
-        while self._offset < len(self._source_code):
+        while self.offset < len(self.source_code):
             leading_trivia = self._lex_leading_trivia()
             for trivium in leading_trivia:
                 self._consume_item(trivium)
@@ -231,7 +237,7 @@ class Lexer:
         return Lexation(tokens=tokens, errors=errors)
 
     def _consume_item(self, item: Item) -> None:
-        self._offset += item.width
+        self.offset += item.width
 
     def _lex_leading_trivia(self) -> List[Trivium]:
         return self._lex_next_trivia_by_patterns({
@@ -249,10 +255,10 @@ class Lexer:
         trivia_patterns: Mapping[TriviumKind, Pattern],
     ) -> List[Trivium]:
         trivia: List[Trivium] = []
-        offset = self._offset
+        offset = self.offset
         while True:
             matches = [
-                (trivium_kind, regex.match(self._source_code, pos=offset))
+                (trivium_kind, regex.match(self.source_code, pos=offset))
                 for trivium_kind, regex in trivia_patterns.items()
             ]
             matches = [
@@ -293,7 +299,7 @@ class Lexer:
         token_patterns: Mapping[TokenKind, Pattern],
     ) -> Token:
         matches = [
-            (token_kind, regex.match(self._source_code, pos=self._offset))
+            (token_kind, regex.match(self.source_code, pos=self.offset))
             for token_kind, regex in token_patterns.items()
         ]
         matches = [
@@ -305,7 +311,7 @@ class Lexer:
             # TODO: This should be a formal lexing error.
             raise ValueError(
                 "no match: '" +
-                self._source_code[self._offset:self._offset + 5] +
+                self.source_code[self.offset:self.offset + 5] +
                 "'",
             )
         longest_match = max(matches, key=lambda x: len(x[1].group()))
@@ -318,7 +324,7 @@ class Lexer:
         )
 
     def _lex_next_identifier(self) -> Optional[Token]:
-        match = IDENTIFIER_RE.match(self._source_code, pos=self._offset)
+        match = IDENTIFIER_RE.match(self.source_code, pos=self.offset)
         if match is None:
             return None
         return Token(
@@ -329,8 +335,8 @@ class Lexer:
         )
 
 
-def lex(source_code: str) -> Lexation:
-    lexer = Lexer(source_code=source_code)
+def lex(file_info: FileInfo) -> Lexation:
+    lexer = Lexer(file_info=file_info)
     return lexer.lex()
 
 

@@ -2,6 +2,7 @@ from typing import List
 
 import pytest
 
+from pytch import FileInfo
 from pytch.lexer import lex, Token, TokenKind, Trivium, TriviumKind
 
 
@@ -73,5 +74,6 @@ def Tr(text: str, kind: TriviumKind) -> Trivium:
     ],
 )])
 def test_lexer(source_code: str, tokens: List[Token]):
-    lexation = lex(source_code)
+    file_info = FileInfo(file_path="dummy.pytch", source_code=source_code)
+    lexation = lex(file_info=file_info)
     assert lexation.tokens == tokens

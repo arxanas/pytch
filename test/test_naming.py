@@ -1,3 +1,4 @@
+from pytch import FileInfo
 from pytch.lexer import lex
 from pytch.naming import name
 from pytch.parser import parse
@@ -8,6 +9,7 @@ def test_naming():
     # throw an exception.
     source_code = """let foo = 1
 let bar = foo"""
-    tokens = lex(source_code=source_code).tokens
-    ast = parse(source_code=source_code, tokens=tokens)
+    file_info = FileInfo(file_path="dummy.pytch", source_code=source_code)
+    tokens = lex(file_info=file_info).tokens
+    ast = parse(file_info=file_info, tokens=tokens)
     name(ast)

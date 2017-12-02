@@ -99,13 +99,13 @@ def find_tests(
 
 def generate(
     tests: Sequence[CaseInfo],
-    make_result: Callable[[str], CaseResult],
+    make_result: Callable[[str, str], CaseResult],
 ) -> None:
     for test_info in tests:
         with open(test_info.input_filename) as input_file:
             input = input_file.read()
         print(f"processing {test_info.input_filename}")
-        result = make_result(input)
+        result = make_result(test_info.input_filename, input)
         output = result.output
         error = result.error
         if not os.path.exists(test_info.output_filename):

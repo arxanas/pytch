@@ -12,6 +12,7 @@ used as keys into maps.
 from typing import List, Optional, Sequence, Union
 
 import pytch.errors
+from . import FileInfo, OffsetRange
 from .lexer import Token, TokenKind
 
 
@@ -102,32 +103,41 @@ class Parsation:
         self.errors = errors
 
 
+class ParseException(Exception):
+    def __init__(self, error: pytch.errors.Error) -> None:
+        self.error = error
+
+
 class Parser:
-    def __init__(self, source_code: str, tokens: List[Token]) -> None:
-        self.source_code = source_code
+    def __init__(self, file_info: FileInfo, tokens: List[Token]) -> None:
+        self.file_info = file_info
         self.tokens = tokens
         self.token_index = 0
         self.offset = 0
 
     def parse(self) -> Parsation:
+        errors = []
         top_level_stmts = []
         last_index = -1
         while self.token_index < len(self.tokens):
-            assert self.token_index > last_index, \
-                f"Didn't make progress in parsing at token {self.token_index}"
-            last_index = self.token_index
-            stmt_let = self._parse_stmt_let()
-            top_level_stmts.append(stmt_let)
+            try:
+                assert self.token_index > last_index, (
+                    f"Didn't make progress in parsing "
+                    f"at token {self.token_index}"
+                )
+                last_index = self.token_index
+                stmt_let = self.parse_stmt_let()
+                top_level_stmts.append(stmt_let)
+            except ParseException as e:
+                errors.append(e.error)
         ast = Ast(n_statements=top_level_stmts)
-        # TODO
-        errors: List[pytch.errors.Error] = []
         return Parsation(ast=ast, errors=errors)
 
-    def _parse_stmt_let(self) -> LetStatement:
-        t_let = self._expect_token([TokenKind.LET])
-        n_pattern = self._parse_pattern()
-        t_equals = self._expect_token([TokenKind.EQUALS])
-        n_value = self._parse_expr_with_left_recursion()
+    def parse_stmt_let(self) -> LetStatement:
+        t_let = self.expect_token([TokenKind.LET])
+        n_pattern = self.parse_pattern()
+        t_equals = self.expect_token([TokenKind.EQUALS])
+        n_value = self.parse_expr_with_left_recursion()
         return LetStatement(
             t_let=t_let,
             n_pattern=n_pattern,
@@ -135,27 +145,27 @@ class Parser:
             n_value=n_value,
         )
 
-    def _parse_pattern(self) -> Pattern:
+    def parse_pattern(self) -> Pattern:
         # TODO: Parse more kinds of patterns.
-        t_identifier = self._expect_token([TokenKind.IDENTIFIER])
+        t_identifier = self.expect_token([TokenKind.IDENTIFIER])
         return VariablePattern(t_identifier=t_identifier)
 
-    def _parse_expr_with_left_recursion(self) -> Expr:
+    def parse_expr_with_left_recursion(self) -> Expr:
         """Parse an expression, even if that parse involves left-recursion.
 
         To overcome left-recursion issues, simply parse an expression, and
         then look ahead one token. If the token is appropriate, continue
         parsing an expression.
         """
-        n_expr = self._parse_expr()
+        n_expr = self.parse_expr()
         while True:
-            token = self._current_token()
+            token = self.current_token()
             if token is None:
                 break
             if token.kind == TokenKind.LPAREN:
-                t_lparen = self._expect_token([TokenKind.LPAREN])
-                arguments = self._parse_function_call_arguments()
-                t_rparen = self._expect_token([TokenKind.RPAREN])
+                t_lparen = self.expect_token([TokenKind.LPAREN])
+                arguments = self.parse_function_call_arguments()
+                t_rparen = self.expect_token([TokenKind.RPAREN])
                 n_expr = FunctionCallExpr(
                     n_receiver=n_expr,
                     t_lparen=t_lparen,
@@ -166,54 +176,73 @@ class Parser:
                 break
         return n_expr
 
-    def _parse_expr(self) -> Expr:
+    def parse_expr(self) -> Expr:
         # TODO: Parse more kinds of expressions.
-        token = self._current_token()
+        token = self.current_token()
         if token is None:
-            raise ValueError("expected an expression")
+            previous_token = self.previous_token()
+            assert previous_token is not None
+            raise ParseException(pytch.errors.Error(
+                file_info=self.file_info,
+                severity=pytch.errors.Severity.ERROR,
+                title="Expected expression.",
+                code=1001,
+                message=(
+                    "I was expecting an expression but " +
+                    "instead got to end-of-file."
+                ),
+                offset_range=OffsetRange(
+                    start=(
+                        self.offset
+                        - (previous_token.width + previous_token.trailing_width)
+                    ),
+                    end=self.offset,
+                ),
+                notes=[],
+            ))
         if token.kind == TokenKind.IDENTIFIER:
             # TODO: Potentially look ahead to parse a bigger expression.
-            return self._parse_identifier()
+            return self.parse_identifier()
         elif token.kind == TokenKind.INT_LITERAL:
-            return self._parse_int_literal()
+            return self.parse_int_literal()
         raise ValueError(
             f"tried to parse expression of unsupported token kind {token.kind}"
         )
 
-    def _parse_function_call_arguments(self) -> List[Union[Token, Expr]]:
+    def parse_function_call_arguments(self) -> List[Union[Token, Expr]]:
         is_first = True
         arguments: List[Union[Token, Expr]] = []
         while True:
-            token = self._current_token()
+            token = self.current_token()
             if token is None:
                 raise ValueError("expected ')'")
             if token.kind == TokenKind.RPAREN:
                 break
             if not is_first:
-                arguments.append(self._expect_token([TokenKind.COMMA]))
+                arguments.append(self.expect_token([TokenKind.COMMA]))
                 is_first = False
 
-            token = self._current_token()
+            token = self.current_token()
             if token is None:
                 raise ValueError("expected ')'")
             if token.kind == TokenKind.RPAREN:
                 # We had a trailing comma.
                 break
-            arguments.append(self._parse_expr_with_left_recursion())
+            arguments.append(self.parse_expr_with_left_recursion())
         return arguments
 
-    def _parse_identifier(self) -> IdentifierExpr:
-        t_identifier = self._expect_token([TokenKind.IDENTIFIER])
+    def parse_identifier(self) -> IdentifierExpr:
+        t_identifier = self.expect_token([TokenKind.IDENTIFIER])
         return IdentifierExpr(t_identifier=t_identifier)
 
-    def _parse_int_literal(self) -> IntLiteralExpr:
-        t_int_literal = self._expect_token([TokenKind.INT_LITERAL])
+    def parse_int_literal(self) -> IntLiteralExpr:
+        t_int_literal = self.expect_token([TokenKind.INT_LITERAL])
         return IntLiteralExpr(t_int_literal=t_int_literal)
 
-    def _expect_token(self, possible_tokens: List[TokenKind]) -> Token:
-        token = self._current_token()
+    def expect_token(self, possible_tokens: List[TokenKind]) -> Token:
+        token = self.current_token()
         if token is not None and token.kind in possible_tokens:
-            return self._consume_token()
+            return self.consume_token()
 
         if token is not None:
             raise ValueError(
@@ -224,21 +253,27 @@ class Parser:
                 f"expected one of {possible_tokens!r}, got end-of-file",
             )
 
-    def _current_token(self) -> Optional[Token]:
+    def previous_token(self) -> Optional[Token]:
+        if self.token_index > 0:
+            return self.tokens[self.token_index - 1]
+        else:
+            return None
+
+    def current_token(self) -> Optional[Token]:
         try:
             return self.tokens[self.token_index]
         except IndexError:
             return None
 
-    def _consume_token(self) -> Token:
+    def consume_token(self) -> Token:
         token = self.tokens[self.token_index]
         self.token_index += 1
         self.offset += token.full_width
         return token
 
 
-def parse(source_code: str, tokens: List[Token]) -> Parsation:
-    parser = Parser(source_code=source_code, tokens=tokens)
+def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
+    parser = Parser(file_info=file_info, tokens=tokens)
     return parser.parse()
 
 

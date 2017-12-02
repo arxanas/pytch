@@ -3,6 +3,7 @@ from typing import Iterator, List, Optional, Tuple, Union
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
+from pytch import FileInfo
 from pytch.errors import Error, get_error_lines
 from pytch.lexer import lex, Token
 from pytch.parser import Node, parse
@@ -46,9 +47,13 @@ def get_parser_tests() -> Iterator[CaseInfo]:
     return find_tests("parser", input_extension=".pytch")
 
 
-def make_result(source_code: str) -> CaseResult:
-    lexation = lex(source_code)
-    parsation = parse(source_code=source_code, tokens=lexation.tokens)
+def make_result(input_filename: str, source_code: str) -> CaseResult:
+    file_info = FileInfo(
+        file_path=input_filename,
+        source_code=source_code,
+    )
+    lexation = lex(file_info=file_info)
+    parsation = parse(file_info=file_info, tokens=lexation.tokens)
     offset, rendered_ast_lines = render_ast(source_code, parsation.ast)
     assert offset == len(source_code)
     output = "".join(line + "\n" for line in rendered_ast_lines)
@@ -69,7 +74,7 @@ def make_result(source_code: str) -> CaseResult:
 
 @pytest.mark.parametrize("test_case_info", get_parser_tests())
 def test_parser(test_case_info: CaseInfo) -> None:
-    result = make_result(test_case_info.input)
+    result = make_result(test_case_info.input_filename, test_case_info.input)
     assert result.output == test_case_info.output
     assert result.error == test_case_info.error
 
