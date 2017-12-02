@@ -133,17 +133,23 @@ class Token:
     @property
     def full_width(self) -> int:
         """The width of the token, including leading and trailing trivia."""
-        leading_width = sum(trivium.width for trivium in self.leading_trivia)
-        trailing_width = sum(trivium.width for trivium in self.trailing_trivia)
-        return leading_width + self.width + trailing_width
+        return self.leading_width + self.width + self.trailing_width
 
     @property
     def leading_trivia(self) -> Sequence[Trivium]:
         return self._leading_trivia
 
     @property
+    def leading_width(self) -> int:
+        return sum(trivium.width for trivium in self.leading_trivia)
+
+    @property
     def trailing_trivia(self) -> Sequence[Trivium]:
         return self._trailing_trivia
+
+    @property
+    def trailing_width(self) -> int:
+        return sum(trivium.width for trivium in self.trailing_trivia)
 
     def __repr__(self) -> str:
         r = f"<Token text={self.text!r}"
