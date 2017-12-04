@@ -11,7 +11,7 @@ used as keys into maps.
 """
 from typing import List, Optional, Sequence, Union
 
-import pytch.errors
+from pytch.errors import Error, Severity
 from . import FileInfo, OffsetRange
 from .lexer import Token, TokenKind
 
@@ -98,13 +98,13 @@ class FunctionCallExpr(Expr):
 
 
 class Parsation:
-    def __init__(self, ast: Ast, errors: List[pytch.errors.Error]) -> None:
+    def __init__(self, ast: Ast, errors: List[Error]) -> None:
         self.ast = ast
         self.errors = errors
 
 
 class ParseException(Exception):
-    def __init__(self, error: pytch.errors.Error) -> None:
+    def __init__(self, error: Error) -> None:
         self.error = error
 
 
@@ -182,9 +182,9 @@ class Parser:
         if token is None:
             previous_token = self.previous_token()
             assert previous_token is not None
-            raise ParseException(pytch.errors.Error(
+            raise ParseException(Error(
                 file_info=self.file_info,
-                severity=pytch.errors.Severity.ERROR,
+                severity=Severity.ERROR,
                 title="Expected expression.",
                 code=1001,
                 message=(
