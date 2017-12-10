@@ -9,92 +9,21 @@ The syntax tree is considered to be immutable and must not be modified.
 Therefore, its nodes and tokens can be checked for referential equality and
 used as keys into maps.
 """
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Union
 
 from pytch.errors import Error, Severity
 from . import FileInfo, OffsetRange
+from .ast import (
+    Ast,
+    Expr,
+    FunctionCallExpr,
+    IdentifierExpr,
+    IntLiteralExpr,
+    LetStatement,
+    Pattern,
+    VariablePattern,
+)
 from .lexer import Token, TokenKind
-
-
-class Node:
-    def __init__(self, children: Sequence[Union["Node", Token]]) -> None:
-        self.children = children
-
-
-TopLevelStatement = Union["LetStatement"]
-
-
-class Ast(Node):
-    def __init__(self, n_statements: List[TopLevelStatement]) -> None:
-        super().__init__(children=n_statements)
-        self.n_statements = n_statements
-
-
-# TODO
-class Pattern(Node):
-    pass
-
-
-class VariablePattern(Pattern):
-    def __init__(self, t_identifier: Token) -> None:
-        super().__init__([t_identifier])
-        self.t_identifier = t_identifier
-
-
-class Expr(Node):
-    pass
-
-
-class LetStatement(Node):
-    def __init__(
-        self,
-        t_let: Token,
-        n_pattern: Pattern,
-        t_equals: Token,
-        n_value: Expr,
-    ) -> None:
-        super().__init__(children=[t_let, n_pattern, t_equals, n_value])
-        self.t_let = t_let
-        self.n_pattern = n_pattern
-        self.t_equals = t_equals
-        self.n_value = n_value
-
-
-class LetExpr(Expr):
-    def __init__(self, n_let_stmt: LetStatement, n_body: Expr) -> None:
-        super().__init__(children=[n_let_stmt, n_body])
-        self.n_let_stmt = n_let_stmt
-        self.n_body = n_body
-
-
-class IdentifierExpr(Expr):
-    def __init__(self, t_identifier: Token) -> None:
-        super().__init__(children=[t_identifier])
-        self.t_identifier = t_identifier
-
-
-class IntLiteralExpr(Expr):
-    def __init__(self, t_int_literal: Token) -> None:
-        super().__init__(children=[t_int_literal])
-        self.t_int_literal = t_int_literal
-
-
-class FunctionCallExpr(Expr):
-    def __init__(
-        self,
-        n_receiver: Expr,
-        t_lparen: Token,
-
-        # This contains both the actual arguments and their interspersed commas.
-        arguments: List[Union[Expr, Token]],
-
-        t_rparen: Token
-    ) -> None:
-        super().__init__(children=[n_receiver, t_lparen, *arguments, t_rparen])
-        self.n_receiver = n_receiver
-        self.t_lparen = t_lparen
-        self.arguments = arguments
-        self.t_rparen = t_rparen
 
 
 class Parsation:
@@ -277,4 +206,4 @@ def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
     return parser.parse()
 
 
-__all__ = ["Node", "parse"]
+__all__ = ["parse"]

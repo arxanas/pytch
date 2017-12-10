@@ -1,0 +1,11 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Generate AST data structures",
+            "type": "shell",
+            "group": "build",
+            "command": "./bin/generate_ast.sh"
+        }
+    ]
+}

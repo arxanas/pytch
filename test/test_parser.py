@@ -4,17 +4,20 @@ import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
 from pytch import FileInfo
+from pytch.ast import Node
 from pytch.errors import Error, get_error_lines
 from pytch.lexer import lex, Token
-from pytch.parser import Node, parse
+from pytch.parser import parse
 
 
 def render_ast(
     source_code: str,
-    ast_node: Union[Node, Token],
+    ast_node: Union[Node, Token, None],
     offset: int = 0,
 ) -> Tuple[int, List[str]]:
-    if isinstance(ast_node, Token):
+    if ast_node is None:
+        return (offset, ["<missing>"])
+    elif isinstance(ast_node, Token):
         token = ast_node
         lines = []
         for trivium in token.leading_trivia:
@@ -55,7 +58,6 @@ def make_result(input_filename: str, source_code: str) -> CaseResult:
     lexation = lex(file_info=file_info)
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
     offset, rendered_ast_lines = render_ast(source_code, parsation.ast)
-    assert offset == len(source_code)
     output = "".join(line + "\n" for line in rendered_ast_lines)
 
     error_lines = []

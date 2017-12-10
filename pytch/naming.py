@@ -16,7 +16,7 @@ Scopes are immutable.
 """
 from typing import Dict, Mapping, Optional
 
-from .parser import Ast, LetExpr, LetStatement, Node, VariablePattern
+from .ast import Ast, LetExpr, LetStatement, Node, VariablePattern
 
 
 class Scope:
@@ -36,9 +36,11 @@ class Scope:
         return None
 
 
-def get_names_declared_by(node: Node) -> Mapping[str, Node]:
+def get_names_declared_by(node: Optional[Node]) -> Mapping[str, Node]:
     raise NotImplementedError()
-    if isinstance(node, VariablePattern):
+    if node is None:
+        return {}
+    elif isinstance(node, VariablePattern):
         return node.t_identifier
     else:
         raise ValueError(f"Node of type {type(node)} does not declare names")
