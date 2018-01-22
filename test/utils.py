@@ -77,6 +77,13 @@ def find_tests(
 ) -> Iterator[CaseInfo]:
     current_dir = os.path.dirname(__file__)
     tests_dir = os.path.join(current_dir, dir_name)
+
+    # Take the relative path so that the display name for the tests doesn't
+    # include the path to your home directory. This makes the test names
+    # consistent across systems, and also makes them much shorter and easier to
+    # read.
+    tests_dir = os.path.relpath(tests_dir)
+
     tests = set(os.path.splitext(filename)[0]
                 for filename in os.listdir(tests_dir)
                 if filename.endswith(input_extension))
