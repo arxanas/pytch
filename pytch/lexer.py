@@ -210,14 +210,14 @@ class Lexer:
         # TODO: Shouldn't need type annotation.
         errors: List[Error] = []
         while self.offset < len(self.source_code):
-            leading_trivia = self._lex_leading_trivia()
+            leading_trivia = self.lex_leading_trivia()
             for trivium in leading_trivia:
-                self._consume_item(trivium)
+                self.consume_item(trivium)
 
-            token = self._lex_next_token()
-            self._consume_item(token)
+            token = self.lex_next_token()
+            self.consume_item(token)
 
-            trailing_trivia = self._lex_trailing_trivia()
+            trailing_trivia = self.lex_trailing_trivia()
             if not any(
                 trivium.kind == TriviumKind.NEWLINE
                 for trivium in trailing_trivia
@@ -226,7 +226,7 @@ class Lexer:
                 # trivia be the leading trivia of the next token instead.
                 trailing_trivia = []
             for trivium in trailing_trivia:
-                self._consume_item(trivium)
+                self.consume_item(trivium)
 
             tokens.append(Token(
                 kind=token.kind,
@@ -236,21 +236,21 @@ class Lexer:
             ))
         return Lexation(tokens=tokens, errors=errors)
 
-    def _consume_item(self, item: Item) -> None:
+    def consume_item(self, item: Item) -> None:
         self.offset += item.width
 
-    def _lex_leading_trivia(self) -> List[Trivium]:
-        return self._lex_next_trivia_by_patterns({
+    def lex_leading_trivia(self) -> List[Trivium]:
+        return self.lex_next_trivia_by_patterns({
             TriviumKind.WHITESPACE: WHITESPACE_RE,
         })
 
-    def _lex_trailing_trivia(self) -> List[Trivium]:
-        return self._lex_next_trivia_by_patterns({
+    def lex_trailing_trivia(self) -> List[Trivium]:
+        return self.lex_next_trivia_by_patterns({
             TriviumKind.WHITESPACE: WHITESPACE_RE,
             TriviumKind.NEWLINE: NEWLINE_RE,
         })
 
-    def _lex_next_trivia_by_patterns(
+    def lex_next_trivia_by_patterns(
         self,
         trivia_patterns: Mapping[TriviumKind, Pattern],
     ) -> List[Trivium]:
@@ -279,9 +279,9 @@ class Lexer:
             trivia.append(trivium)
             offset += trivium.width
 
-    def _lex_next_token(self) -> Token:
+    def lex_next_token(self) -> Token:
         try:
-            token = self._lex_next_token_by_patterns({
+            token = self.lex_next_token_by_patterns({
                 TokenKind.INT_LITERAL: INT_LITERAL_RE,
                 TokenKind.EQUALS: EQUALS_RE,
                 TokenKind.LET: LET_RE,
@@ -289,12 +289,12 @@ class Lexer:
                 TokenKind.RPAREN: RPAREN_RE,
             })
         except ValueError:
-            token = self._lex_next_token_by_patterns({
+            token = self.lex_next_token_by_patterns({
                 TokenKind.IDENTIFIER: IDENTIFIER_RE,
             })
         return token
 
-    def _lex_next_token_by_patterns(
+    def lex_next_token_by_patterns(
         self,
         token_patterns: Mapping[TokenKind, Pattern],
     ) -> Token:
@@ -323,7 +323,7 @@ class Lexer:
             trailing_trivia=[],
         )
 
-    def _lex_next_identifier(self) -> Optional[Token]:
+    def lex_next_identifier(self) -> Optional[Token]:
         match = IDENTIFIER_RE.match(self.source_code, pos=self.offset)
         if match is None:
             return None
