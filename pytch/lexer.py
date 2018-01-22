@@ -67,7 +67,7 @@ class TokenKind(Enum):
     IDENTIFIER = "identifier"
     LET = "let"
     COMMA = ","
-    INT_LITERAL = "int_literal"
+    INT_LITERAL = "integer literal"
     EQUALS = "="
     LPAREN = "("
     RPAREN = ")"
@@ -113,7 +113,7 @@ class Token:
         kind: TokenKind,
         text: str,
         leading_trivia: List[Trivium],
-        trailing_trivia: List[Trivium]
+        trailing_trivia: List[Trivium],
     ) -> None:
         self._kind = kind
         self._text = text
