@@ -29,3 +29,34 @@ qux"""
         actual_position = file_info.get_position_for_offset(i)
         assert actual_position.line == expected_position.line
         assert actual_position.character == expected_position.character
+
+
+def test_fileinfo_get_position_for_offset_exclusive_end():
+    source_code = """foo
+barbaz
+qux"""
+    file_info = FileInfo(file_path="dummy", source_code=source_code)
+
+    expected_position = slower_get_position_for_offset(
+        source_code=source_code,
+        offset=len(source_code),
+    )
+    actual_position = file_info.get_position_for_offset(len(source_code))
+    assert actual_position.line == expected_position.line
+    assert actual_position.character == expected_position.character
+
+
+def test_fileinfo_get_position_for_offset_exclusive_end_newline():
+    source_code = """foo
+barbaz
+qux
+"""
+    file_info = FileInfo(file_path="dummy", source_code=source_code)
+
+    expected_position = slower_get_position_for_offset(
+        source_code=source_code,
+        offset=len(source_code),
+    )
+    actual_position = file_info.get_position_for_offset(len(source_code))
+    assert actual_position.line == expected_position.line
+    assert actual_position.character == expected_position.character

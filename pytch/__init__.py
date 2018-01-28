@@ -70,12 +70,20 @@ class FileInfo:
         return list(self._lines)
 
     def get_position_for_offset(self, offset: int) -> Position:
+        # 0-based index ranges are inclusive on the left and exclusive on the
+        # right, which means that the length of the source code is a valid
+        # index for constructing a range.
+        assert offset <= len(self._source_code)
+
         current_offset = 0
         current_line = 0
 
         # Add 1 to the length of the line to account for the removed "\n"
         # character.
-        while current_offset + len(self._lines[current_line]) + 1 <= offset:
+        while (
+            current_line < len(self._lines)
+            and current_offset + len(self._lines[current_line]) + 1 <= offset
+        ):
             current_offset += len(self._lines[current_line]) + 1
             current_line += 1
         character = offset - current_offset
