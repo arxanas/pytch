@@ -1,0 +1,3 @@
+leading whitespace '  '
+identifier 'foo'
+trailing newline '\n'
