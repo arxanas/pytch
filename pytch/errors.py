@@ -284,7 +284,8 @@ class Segment:
 
         for gutter_line, message_line in zip(gutter_lines, self._message_lines):
             gutter = gutter_line.rjust(gutter_width - 2)
-            gutter = " " + gutter + " "
+            if gutter:
+                gutter = " " + gutter + " "
 
             message = (
                 self._glyphs.box_vertical
