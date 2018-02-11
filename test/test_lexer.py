@@ -14,7 +14,12 @@ def render_token_stream(tokens: List[Token]) -> str:
             output_lines.append(
                 f"leading {trivium.kind.value} {trivium.text!r}"
             )
-        output_lines.append(f"{token.kind.value} {token.text!r}")
+
+        if not token.text or token.kind.value == repr(token.text):
+            output_lines.append(token.kind.value)
+        else:
+            output_lines.append(f"{token.kind.value} {token.text!r}")
+
         for trivium in token.trailing_trivia:
             output_lines.append(
                 f"trailing {trivium.kind.value} {trivium.text!r}"
