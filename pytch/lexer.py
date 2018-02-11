@@ -64,13 +64,16 @@ class TriviumKind(Enum):
 
 
 class TokenKind(Enum):
+    INDENT = "indent"
+    DEDENT = "dedent"
+
     IDENTIFIER = "identifier"
-    LET = "let"
-    COMMA = ","
+    LET = "'let'"
+    COMMA = "','"
     INT_LITERAL = "integer literal"
-    EQUALS = "="
-    LPAREN = "("
-    RPAREN = ")"
+    EQUALS = "'='"
+    LPAREN = "'('"
+    RPAREN = "')'"
 
 
 class Item(Protocol):
@@ -97,7 +100,7 @@ class Trivium:
         return len(self._text)
 
     def __repr__(self) -> str:
-        return f"<Trivium kind={self.kind} text={self.text}>"
+        return f"<Trivium kind={self.kind.value} text='{self.text}'>"
 
     def __eq__(self, other: object) -> bool:
         if self is other:
@@ -129,6 +132,14 @@ class Token:
         return self._text
 
     @property
+    def full_text(self) -> str:
+        return (
+            "".join(trivium.text for trivium in self.leading_trivia) +
+            self.text +
+            "".join(trivium.text for trivium in self.trailing_trivia)
+        )
+
+    @property
     def width(self) -> int:
         return len(self._text)
 
@@ -153,8 +164,19 @@ class Token:
     def trailing_width(self) -> int:
         return sum(trivium.width for trivium in self.trailing_trivia)
 
+    @property
+    def is_followed_by_newline(self) -> bool:
+        return any(
+            trivium.kind == TriviumKind.NEWLINE
+            for trivium in self.trailing_trivia
+        )
+
     def __repr__(self) -> str:
-        r = f"<Token text={self.text!r}"
+        r = f"<Token"
+        if self.kind not in [TokenKind.INDENT, TokenKind.DEDENT]:
+            r += f" text={self.text!r}"
+        else:
+            r += f" kind={self.kind.value}"
         if self.leading_trivia:
             r += f" leading={self.leading_trivia!r}"
         if self.trailing_trivia:
@@ -185,6 +207,10 @@ class Lexation:
         self.tokens = tokens
         self.errors = errors
 
+    @property
+    def full_width(self) -> int:
+        return sum(token.full_width for token in self.tokens)
+
 
 WHITESPACE_RE = re.compile("[ \t]+")
 NEWLINE_RE = re.compile("\n")
@@ -206,8 +232,7 @@ class Lexer:
         return self.file_info.source_code
 
     def lex(self) -> Lexation:
-        tokens = []
-        # TODO: Shouldn't need type annotation.
+        tokens: List[Token] = []
         errors: List[Error] = []
         while self.offset < len(self.source_code):
             leading_trivia = self.lex_leading_trivia()
@@ -218,13 +243,19 @@ class Lexer:
             self.consume_item(token)
 
             trailing_trivia = self.lex_trailing_trivia()
-            if not any(
-                trivium.kind == TriviumKind.NEWLINE
-                for trivium in trailing_trivia
-            ):
-                # If we're not about to consume the end of the line, let this
-                # trivia be the leading trivia of the next token instead.
-                trailing_trivia = []
+            newline_indices = [
+                i
+                for (i, trivium) in enumerate(trailing_trivia)
+                if trivium.kind == TriviumKind.NEWLINE
+            ]
+            if newline_indices:
+                last_newline_index = newline_indices[-1] + 1
+            else:
+                last_newline_index = 0
+            # Avoid consuming whitespace or other trivia, after the last
+            # newline. We'll consume that as the leading trivia of the next
+            # token.
+            trailing_trivia = trailing_trivia[:last_newline_index]
             for trivium in trailing_trivia:
                 self.consume_item(trivium)
 
@@ -337,7 +368,15 @@ class Lexer:
 
 def lex(file_info: FileInfo) -> Lexation:
     lexer = Lexer(file_info=file_info)
-    return lexer.lex()
+    lexation = lexer.lex()
+    if not lexation.errors:
+        source_code_length = len(file_info.source_code)
+        tokens_length = lexation.full_width
+        assert source_code_length == tokens_length, (
+            f"Mismatch between source code length ({source_code_length}) "
+            f"and total length of lexed tokens ({tokens_length})"
+        )
+    return lexation
 
 
 __all__ = ["lex", "Lexation", "Token", "TokenKind", "Trivium", "TriviumKind"]

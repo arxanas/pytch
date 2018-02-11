@@ -1,0 +1,13 @@
+Ast
+    LetStatement
+        Token 'let'
+        VariablePattern
+            Leading ' '
+            Token 'foo'
+        Leading ' '
+        Token '='
+        Trailing '\n'
+        IntLiteralExpr
+            Leading '    '
+            Token '1'
+            Trailing '\n'

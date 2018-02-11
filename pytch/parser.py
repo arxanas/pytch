@@ -10,7 +10,7 @@ Therefore, its nodes and tokens can be checked for referential equality and
 used as keys into maps.
 """
 from enum import Enum
-from typing import List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 from pytch.errors import Error, Severity
 from . import FileInfo, OffsetRange
@@ -21,6 +21,7 @@ from .ast import (
     IdentifierExpr,
     IntLiteralExpr,
     LetStatement,
+    Node,
     Pattern,
     VariablePattern,
 )
@@ -32,12 +33,28 @@ class ErrorCode(Enum):
     EXPECTED_EXPRESSION = 1001
     EXPECTED_LPAREN = 1002
     EXPECTED_RPAREN = 1003
+    EXPECTED_INDENT = 1004
+    EXPECTED_DEDENT = 1005
+
+
+def walk_tokens(node: Node) -> Iterator[Token]:
+    for child in node.children:
+        if isinstance(child, Token):
+            yield child
+        elif isinstance(child, Node):
+            yield from walk_tokens(child)
+        else:
+            assert False
 
 
 class Parsation:
     def __init__(self, ast: Ast, errors: List[Error]) -> None:
         self.ast = ast
         self.errors = errors
+
+    @property
+    def full_width(self) -> int:
+        return sum(token.full_width for token in walk_tokens(self.ast))
 
 
 class ParseException(Exception):
@@ -119,6 +136,39 @@ class State:
         )
 
 
+class UnhandledParserException(Exception):
+    def __init__(self, state: State) -> None:
+        self._state = state
+
+    def __str__(self) -> str:
+        file_contents = ""
+        for i, token in enumerate(self._state.tokens):
+            if i == self._state.token_index:
+                file_contents += "<HERE>"
+            file_contents += token.full_text
+
+        error_messages = "\n".join(
+            f"[{error.code}] {error.title}: {error.message}"
+            for error in self._state.errors
+        )
+        return f"""All tokens:
+{self._state.tokens}
+
+Parser location:
+{file_contents}
+
+There are {len(self._state.tokens)} tokens total,
+and we are currently at token #{self._state.token_index},
+which is: {self._state.current_token}.
+
+Errors so far:
+{error_messages or "<none>"}
+
+Original exception:
+{self.__cause__.__class__.__name__}: {self.__cause__}
+"""
+
+
 class Parser:
     def __init__(self, file_info: FileInfo, tokens: List[Token]) -> None:
         self.file_info_UPDATE_ME = file_info
@@ -132,18 +182,23 @@ class Parser:
             offset=0,
             errors=[],
         )
-        top_level_stmts = []
-        last_index = -1
-        while state.token_index < len(state.tokens):
-            assert state.token_index > last_index, (
-                f"Didn't make progress in parsing "
-                f"at token {state.token_index}"
-            )
-            last_index = state.token_index
-            (state, stmt_let) = self.parse_stmt_let(state)
-            top_level_stmts.append(stmt_let)
-        ast = Ast(n_statements=top_level_stmts)
-        return Parsation(ast=ast, errors=state.errors)
+        try:
+            top_level_stmts = []
+            last_index = -1
+            while state.token_index < len(state.tokens):
+                assert state.token_index > last_index, (
+                    f"Didn't make progress in parsing "
+                    f"at token {state.token_index}"
+                )
+                last_index = state.token_index
+                (state, stmt_let) = self.parse_stmt_let(state)
+                top_level_stmts.append(stmt_let)
+            ast = Ast(n_statements=top_level_stmts)
+            return Parsation(ast=ast, errors=state.errors)
+        except UnhandledParserException:
+            raise
+        except Exception as e:
+            raise UnhandledParserException(state) from e
 
     def parse_stmt_let(self, state: State) -> Tuple[State, LetStatement]:
         (state, t_let) = self.expect_token(state, [TokenKind.LET])
@@ -183,7 +238,13 @@ class Parser:
         return (state, n_expr)
 
     def add_error_and_recover(self, state: State, error: Error) -> State:
-        raise NotImplementedError()
+        state = state.add_error(error)
+        while (
+            state.current_token is not None
+            and state.current_token.kind != TokenKind.DEDENT
+        ):
+            state = state.consume_token(state.current_token)
+        return state
 
     def parse_expr(self, state: State) -> Tuple[State, Optional[Expr]]:
         # TODO: Parse more kinds of expressions.
@@ -194,7 +255,7 @@ class Parser:
             state = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 severity=Severity.ERROR,
-                title="Expected expression.",
+                title="Expected expression",
                 code=ErrorCode.EXPECTED_EXPRESSION.value,
                 message=(
                     "I was expecting an expression " +
@@ -210,14 +271,54 @@ class Parser:
                 notes=[],
             ))
             return (state, None)
-        if token.kind == TokenKind.IDENTIFIER:
+        if token.kind == TokenKind.INDENT:
+            return self.parse_indented_expr(state)
+        elif token.kind == TokenKind.DEDENT:
+            # The caller should already be handling an indented block, so just
+            # leave it to them to consume the dedent token as well.
+            return (state, None)
+        elif token.kind == TokenKind.IDENTIFIER:
             # TODO: Potentially look ahead to parse a bigger expression.
             return self.parse_identifier(state)
         elif token.kind == TokenKind.INT_LITERAL:
             return self.parse_int_literal(state)
-        raise ValueError(
+        raise UnhandledParserException(
+            state,
+        ) from ValueError(
             f"tried to parse expression of unsupported token kind {token.kind}"
         )
+
+    def parse_indented_expr(
+        self,
+        state: State,
+    ) -> Tuple[State, Optional[Expr]]:
+        (state, t_indent) = self.expect_token(state, [TokenKind.INDENT])
+        if t_indent is None:
+            state = state.add_error(Error(
+                file_info=state.file_info,
+                title="Expected indent",
+                code=ErrorCode.EXPECTED_INDENT.value,
+                severity=Severity.ERROR,
+                message="I was expecting an indent and then an expression.",
+                notes=[],
+            ))
+            return (state, None)
+        (state, n_expr) = self.parse_expr_with_left_recursion(state)
+        if n_expr is None:
+            return (state, None)
+        (state, t_dedent) = self.expect_token(state, [TokenKind.DEDENT])
+        if t_dedent is None:
+            state = state.add_error(Error(
+                file_info=state.file_info,
+                title="Expected dedent",
+                code=ErrorCode.EXPECTED_DEDENT.value,
+                severity=Severity.ERROR,
+                message="I was expecting a dedent after this indented block.",
+                # TODO: Perhaps show the start of the indented block.
+                notes=[],
+            ))
+            return (state, None)
+        return (state, n_expr)
 
     def parse_function_call(
         self,
@@ -235,9 +336,9 @@ class Parser:
                 code=ErrorCode.EXPECTED_LPAREN.value,
                 severity=Severity.ERROR,
                 message=(
-                    "I expected a '(' to indicate the start of a " +
+                    "I was expecting a '(' to indicate the start of a " +
                     "function argument list, but instead got " +
-                    self.describe_token_kind(current_token) +
+                    self.describe_token_kind(current_token.kind) +
                     "."
                 ),
                 notes=[],
@@ -320,31 +421,40 @@ class Parser:
         if token is not None and token.kind in possible_tokens:
             return (state.consume_token(token), token)
 
+        assert possible_tokens
+        possible_tokens_str = self.describe_token_kind(possible_tokens[0])
+        if len(possible_tokens) > 1:
+            possible_tokens_str += ", ".join(
+                token.value for token in possible_tokens[0:-1]
+            )
+            possible_tokens_str += " or " + possible_tokens[-1].value
+
+        offset_range: Optional[OffsetRange]
         if token is not None:
             message = (
-                f"I expected one of {possible_tokens!r}, " +
+                f"I was expecting {possible_tokens_str}, " +
                 f"but instead got " +
-                self.describe_token_kind(token) +
+                self.describe_token_kind(token.kind) +
                 "."
             )
             offset_range = self.get_offset_range_from_token(state, token)
         else:
             message = (
-                f"I expected one of {possible_tokens!r}, " +
+                f"I was expecting {possible_tokens_str}, " +
                 f"but instead reached the end of the file."
             )
+            offset_range = None
 
         state = self.add_error_and_recover(state, Error(
             file_info=state.file_info,
-            title="Unexpected token.",
+            title="Unexpected token",
             code=ErrorCode.UNEXPECTED_TOKEN.value,
             severity=Severity.ERROR,
             message=message,
             notes=[],
             offset_range=offset_range,
         ))
-        token = None
-        return (state, token)
+        return (state, None)
 
     def get_offset_range_from_token(
         self,
@@ -356,17 +466,26 @@ class Parser:
             end=state.offset + token.width,
         )
 
-    def describe_token_kind(self, token: Token) -> str:
+    def describe_token_kind(self, token_kind: TokenKind) -> str:
         vowels = ["a", "e", "i", "o", "u"]
-        if any(token.kind.value.startswith(vowel) for vowel in vowels):
-            return f"an {token.kind}"
+        if any(token_kind.value.startswith(vowel) for vowel in vowels):
+            return f"an {token_kind.value}"
         else:
-            return f"a {token.kind}"
+            return f"a {token_kind.value}"
 
 
 def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
     parser = Parser(file_info=file_info, tokens=tokens)
-    return parser.parse()
+    parsation = parser.parse()
+
+    source_code_length = len(file_info.source_code)
+    tokens_length = parsation.full_width
+    assert source_code_length == tokens_length, (
+        f"Mismatch between source code length ({source_code_length}) "
+        f"and total length of parsed tokens ({tokens_length})"
+    )
+
+    return parsation
 
 
 __all__ = ["parse"]

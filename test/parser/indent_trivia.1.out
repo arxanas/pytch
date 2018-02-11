@@ -1,0 +1,24 @@
+Ast
+    LetStatement
+        Token 'let'
+        VariablePattern
+            Leading ' '
+            Token 'foo'
+        Leading ' '
+        Token '='
+        Trailing '\n'
+        FunctionCallExpr
+            IdentifierExpr
+                Leading '    '
+                Token 'bar'
+            Token '('
+            Trailing '\n'
+            Trailing '\n'
+            IdentifierExpr
+                Leading '        '
+                Token 'baz'
+                Trailing '\n'
+                Trailing '\n'
+            Leading '    '
+            Token ')'
+            Trailing '\n'
