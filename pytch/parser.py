@@ -25,7 +25,7 @@ from .ast import (
     Pattern,
     VariablePattern,
 )
-from .lexer import Token, TokenKind
+from .lexer import Token, TokenKind, TriviumKind
 
 
 class ErrorCode(Enum):
@@ -83,10 +83,35 @@ class State:
         self.errors = errors
 
     @property
-    def previous_token(self) -> Optional[Token]:
-        if 0 <= self.token_index - 1 < len(self.tokens):
-            return self.tokens[self.token_index - 1]
-        return None
+    def end_of_file_offset_range(self) -> OffsetRange:
+        last_offset = len(self.file_info.source_code)
+        last_non_empty_token = None
+        for i in range(len(self.tokens) - 1, -1, -1):
+            token = self.tokens[i]
+            if token.full_width > 0:
+                last_non_empty_token = token
+                break
+
+        if last_non_empty_token is None:
+            start = 0
+            end = 0
+        else:
+            first_trailing_newline_index = 0
+            for trivium in last_non_empty_token.trailing_trivia:
+                if trivium.kind == TriviumKind.NEWLINE:
+                    break
+                first_trailing_newline_index += 1
+            trailing_trivia_up_to_newline = \
+                last_non_empty_token.trailing_trivia[
+                    :first_trailing_newline_index + 1
+                ]
+            trailing_trivia_up_to_newline_length = sum(
+                trivium.width
+                for trivium in trailing_trivia_up_to_newline
+            )
+            start = last_offset - trailing_trivia_up_to_newline_length
+            end = start
+        return OffsetRange(start=start, end=end)
 
     @property
     def current_token(self) -> Optional[Token]:
@@ -250,8 +275,6 @@ class Parser:
         # TODO: Parse more kinds of expressions.
         token = state.current_token
         if token is None:
-            previous_token = state.previous_token
-            assert previous_token is not None
             state = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 severity=Severity.ERROR,
@@ -261,13 +284,7 @@ class Parser:
                     "I was expecting an expression " +
                     "but instead reached the end of the file."
                 ),
-                offset_range=OffsetRange(
-                    start=(
-                        state.offset
-                        - (previous_token.width + previous_token.trailing_width)
-                    ),
-                    end=state.offset,
-                ),
+                offset_range=state.end_of_file_offset_range,
                 notes=[],
             ))
             return (state, None)

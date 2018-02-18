@@ -10,6 +10,9 @@ class OffsetRange:
         self._start = start
         self._end = end
 
+    def __repr__(self) -> str:
+        return f"<OffsetRange start={self.start!r} end={self.end!r}>"
+
     @property
     def start(self) -> Offset:
         """The inclusive start offset of the range."""
@@ -26,6 +29,9 @@ class Position:
         self._line = line
         self._character = character
 
+    def __repr__(self) -> str:
+        return f"<Position line={self.line!r} character={self.character!r}>"
+
     @property
     def line(self) -> int:
         return self._line
@@ -39,6 +45,9 @@ class Range:
     def __init__(self, start: Position, end: Position) -> None:
         self._start = start
         self._end = end
+
+    def __repr__(self) -> str:
+        return f"<Range start={self.start!r} end={self.end!r}>"
 
     @property
     def start(self) -> Position:

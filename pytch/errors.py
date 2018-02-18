@@ -27,6 +27,7 @@ class Glyphs:
         underline_start_character: str,
         underline_character: str,
         underline_end_character: str,
+        underline_point_character: str,
     ) -> None:
         self.make_colored = make_colored
         self.make_bold = make_bold
@@ -42,6 +43,7 @@ class Glyphs:
         self.underline_start_character = underline_start_character
         self.underline_character = underline_character
         self.underline_end_character = underline_end_character
+        self.underline_point_character = underline_point_character
 
 
 class Note:
@@ -158,6 +160,7 @@ def get_glyphs(ascii: bool) -> Glyphs:
             underline_start_character="^",
             underline_character="~",
             underline_end_character="~",
+            underline_point_character="^",
         )
     else:
         return Glyphs(
@@ -179,6 +182,7 @@ def get_glyphs(ascii: bool) -> Glyphs:
             underline_start_character="┕",
             underline_character="━",
             underline_end_character="┙",
+            underline_point_character="↑",
         )
 
 
@@ -375,19 +379,44 @@ def underline_lines(
         if underline_start is not None and underline_end is not None:
             underline_line = " " * underline_start
 
-            underline = (
-                glyphs.underline_character
-                * (underline_end - underline_start - 2)
+            underline_width = underline_end - underline_start + 1
+            assert underline_width > 0, (
+                f"The index of the end of the underline ({underline_end}) on "
+                f"line #{line_num} was before the index of the first " +
+                f"non-whitespace character ({underline_start}) on this line. " +
+                f"It's unclear how this should be rendered. This may be a " +
+                f"bug in the caller, or it's possible that the rendering " +
+                f"logic should be changed to handle this case."
             )
-            if has_underline_start:
-                underline = glyphs.underline_start_character + underline
+            if underline_width == 1:
+                if has_underline_start and has_underline_end:
+                    underline = glyphs.underline_point_character
+                elif has_underline_start:
+                    underline = glyphs.underline_start_character
+                elif has_underline_end:
+                    underline = glyphs.underline_end_character
+                else:
+                    assert False, (
+                        "Underline with width 1 " +
+                        "didn't have an endpoint on this line."
+                    )
             else:
-                underline = glyphs.underline_character + underline
-            if has_underline_end:
-                underline = underline + glyphs.underline_end_character
-            else:
-                underline = underline + glyphs.underline_character
-            underline_line += glyphs.make_colored(underline, underline_color)
+                underline = (
+                    glyphs.underline_character
+                    * (underline_end - underline_start - 2)
+                )
+                if has_underline_start:
+                    underline = glyphs.underline_start_character + underline
+                else:
+                    underline = glyphs.underline_character + underline
+                if has_underline_end:
+                    underline = underline + glyphs.underline_end_character
+                else:
+                    underline = underline + glyphs.underline_character
+            underline_line += glyphs.make_colored(
+                underline,
+                underline_color,
+            )
 
             gutter_lines.append("")
             message_lines.append(underline_line)

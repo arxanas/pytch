@@ -22,7 +22,7 @@ def test_print_error():
         code=1234,
         severity=Severity.ERROR,
         message="Look into this",
-        offset_range=OffsetRange(start=9, end=15),
+        offset_range=OffsetRange(start=9, end=17),
         notes=[Note(
             file_info=file_info,
             message="This is an additional point of interest",
