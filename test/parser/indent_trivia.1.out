@@ -1,5 +1,5 @@
 Ast
-    LetStatement
+    LetExpr
         Token 'let'
         VariablePattern
             Leading ' '
@@ -22,3 +22,4 @@ Ast
             Leading '    '
             Token ')'
             Trailing '\n'
+        <missing>

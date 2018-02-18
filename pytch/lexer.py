@@ -50,7 +50,16 @@ strings.
 """
 from enum import Enum
 import re
-from typing import List, Mapping, Optional, Pattern, Sequence
+from typing import (
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Pattern,
+    Sequence,
+    Tuple,
+)
 
 from typing_extensions import Protocol
 
@@ -64,9 +73,6 @@ class TriviumKind(Enum):
 
 
 class TokenKind(Enum):
-    INDENT = "indent"
-    DEDENT = "dedent"
-
     IDENTIFIER = "identifier"
     LET = "'let'"
     COMMA = "','"
@@ -74,6 +80,9 @@ class TokenKind(Enum):
     EQUALS = "'='"
     LPAREN = "'('"
     RPAREN = "')'"
+
+    # Dummy tokens; inserted by the pre-parser.
+    DUMMY_IN = "the end of a 'let' binding"
 
 
 class Item(Protocol):
@@ -172,11 +181,7 @@ class Token:
         )
 
     def __repr__(self) -> str:
-        r = f"<Token"
-        if self.kind not in [TokenKind.INDENT, TokenKind.DEDENT]:
-            r += f" text={self.text!r}"
-        else:
-            r += f" kind={self.kind.value}"
+        r = f"<Token kind={self.kind.value}"
         if self.leading_trivia:
             r += f" leading={self.leading_trivia!r}"
         if self.trailing_trivia:
@@ -366,9 +371,94 @@ class Lexer:
         )
 
 
+def with_indentation_levels(
+    tokens: Iterable[Token],
+) -> Iterator[Tuple[int, Token]]:
+    indentation_level = 0
+    is_first_token_on_line = True
+    for token in tokens:
+        if is_first_token_on_line:
+            indentation_level = token.leading_width
+            is_first_token_on_line = False
+        if token.is_followed_by_newline:
+            is_first_token_on_line = True
+        yield (indentation_level, token)
+
+
+def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
+    """Insert dummy tokens for lightweight constructs into the token stream.
+
+    This technique is based off of the "pre-parsing" step as outlined in the
+    F# 4.0 spec, section 15: Lightweight Syntax:
+    http://fsharp.org/specs/language-spec/4.0/FSharpSpec-4.0-latest.pdf
+
+    The pre-parser inserts dummy tokens into the token stream where we would
+    expect the token to go in the non-lightweight token stream. For example,
+    it might convert this:
+
+        let foo = 1
+        foo
+
+    into this:
+
+        let foo = 1 $in
+        foo
+
+    We do the same thing, although with significantly fewer restrictions on
+    the source code's indentation.
+    """
+    stack: List[Tuple[int, int, Token]] = []
+    current_line = 0
+    for indentation_level, token in with_indentation_levels(tokens):
+        if stack:
+            (top_indentation_level, top_line, top_token) = stack[-1]
+            if (
+                indentation_level <= top_indentation_level
+                and current_line > top_line
+            ):
+                if top_token.kind == TokenKind.LET:
+                    yield Token(
+                        kind=TokenKind.DUMMY_IN,
+                        text="",
+                        leading_trivia=[],
+                        trailing_trivia=[],
+                    )
+                    stack.pop()
+
+        if token.kind == TokenKind.LET:
+            stack.append((indentation_level, current_line, token))
+
+        yield token
+        current_line += sum(
+            len(trivium.text)
+            for trivium in token.trailing_trivia
+            if trivium.kind == TriviumKind.NEWLINE
+        )
+
+    while stack:
+        (_, _, top_token) = stack.pop()
+        if top_token.kind == TokenKind.LET:
+            yield Token(
+                kind=TokenKind.DUMMY_IN,
+                text="",
+                leading_trivia=[],
+                trailing_trivia=[],
+            )
+        else:
+            assert False, \
+                f"Unexpected token kind in pre-parser: {token.kind.value}"
+
+
 def lex(file_info: FileInfo) -> Lexation:
     lexer = Lexer(file_info=file_info)
     lexation = lexer.lex()
+
+    preparsed_tokens = list(preparse(lexation.tokens))
+    lexation = Lexation(
+        tokens=preparsed_tokens,
+        errors=lexation.errors,
+    )
+
     if not lexation.errors:
         source_code_length = len(file_info.source_code)
         tokens_length = lexation.full_width

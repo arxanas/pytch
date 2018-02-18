@@ -12,7 +12,7 @@ used as keys into maps.
 from enum import Enum
 from typing import Iterator, List, Optional, Tuple, Union
 
-from pytch.errors import Error, Severity
+from pytch.errors import Error, Note, Severity
 from . import FileInfo, OffsetRange
 from .ast import (
     Ast,
@@ -20,7 +20,7 @@ from .ast import (
     FunctionCallExpr,
     IdentifierExpr,
     IntLiteralExpr,
-    LetStatement,
+    LetExpr,
     Node,
     Pattern,
     VariablePattern,
@@ -33,18 +33,22 @@ class ErrorCode(Enum):
     EXPECTED_EXPRESSION = 1001
     EXPECTED_LPAREN = 1002
     EXPECTED_RPAREN = 1003
-    EXPECTED_INDENT = 1004
-    EXPECTED_DEDENT = 1005
+    EXPECTED_PATTERN = 1004
+    EXPECTED_EQUALS = 1005
+    EXPECTED_DUMMY_IN = 1006
+    EXPECTED_LET_EXPRESSION = 1007
 
 
 def walk_tokens(node: Node) -> Iterator[Token]:
     for child in node.children:
+        if child is None:
+            return
         if isinstance(child, Token):
             yield child
         elif isinstance(child, Node):
             yield from walk_tokens(child)
         else:
-            assert False
+            assert False, f"Unexpected node child type: {child!r}"
 
 
 class Parsation:
@@ -120,6 +124,17 @@ class State:
         return None
 
     @property
+    def current_token_offset_range(self) -> OffsetRange:
+        current_token = self.current_token
+        if current_token is None:
+            start = len(self.file_info.source_code)
+            end = start
+        else:
+            start = self.offset + current_token.leading_width
+            end = start + current_token.width
+        return OffsetRange(start=start, end=end)
+
+    @property
     def next_token(self) -> Optional[Token]:
         if 0 <= self.token_index + 1 < len(self.tokens):
             return self.tokens[self.token_index + 1]
@@ -169,6 +184,7 @@ class UnhandledParserException(Exception):
         file_contents = ""
         for i, token in enumerate(self._state.tokens):
             if i == self._state.token_index:
+                print(self._state)
                 file_contents += "<HERE>"
             file_contents += token.full_text
 
@@ -208,33 +224,106 @@ class Parser:
             errors=[],
         )
         try:
-            top_level_stmts = []
-            last_index = -1
-            while state.token_index < len(state.tokens):
-                assert state.token_index > last_index, (
-                    f"Didn't make progress in parsing "
-                    f"at token {state.token_index}"
-                )
-                last_index = state.token_index
-                (state, stmt_let) = self.parse_stmt_let(state)
-                top_level_stmts.append(stmt_let)
-            ast = Ast(n_statements=top_level_stmts)
+            (state, n_expr) = self.parse_expr_with_left_recursion(
+                state,
+                allow_naked_lets=True,
+            )
+            ast = Ast(n_expr=n_expr)
             return Parsation(ast=ast, errors=state.errors)
         except UnhandledParserException:
             raise
         except Exception as e:
             raise UnhandledParserException(state) from e
 
-    def parse_stmt_let(self, state: State) -> Tuple[State, LetStatement]:
+    def parse_let_expr(
+        self,
+        state: State,
+        allow_naked_lets=False,
+    ) -> Tuple[State, Optional[LetExpr]]:
+        t_let_offset_range = state.current_token_offset_range
         (state, t_let) = self.expect_token(state, [TokenKind.LET])
-        (state, n_pattern) = self.parse_pattern(state)
-        (state, t_equals) = self.expect_token(state, [TokenKind.EQUALS])
-        (state, n_value) = self.parse_expr_with_left_recursion(state)
-        return (state, LetStatement(
+        if not t_let:
+            return (state, None)
+        let_note = Note(
+            file_info=state.file_info,
+            message="This is the beginning of the let-binding.",
+            offset_range=t_let_offset_range,
+        )
+        notes = [let_note]
+
+        (pattern_state, n_pattern) = self.parse_pattern(state)
+        if not n_pattern:
+            state = state.add_error(Error(
+                file_info=state.file_info,
+                title="Expected pattern",
+                code=ErrorCode.EXPECTED_PATTERN.value,
+                severity=Severity.ERROR,
+                message="I was expecting a pattern after 'let'.",
+                notes=notes,
+                offset_range=state.current_token_offset_range,
+            ))
+            return (state, None)
+        state = pattern_state
+
+        (state, t_equals) = self.expect_token(
+            state,
+            [TokenKind.EQUALS],
+            notes=notes,
+        )
+        if not t_equals:
+            return (state, None)
+
+        (expr_state, n_value) = self.parse_expr_with_left_recursion(
+            state,
+            allow_naked_lets=False,
+        )
+        if not n_value:
+            state = state.add_error(Error(
+                file_info=state.file_info,
+                title="Expected expression",
+                code=ErrorCode.EXPECTED_EXPRESSION.value,
+                severity=Severity.ERROR,
+                message="I was expecting a value after the " +
+                        "'=' in this let-binding.",
+                notes=notes,
+                offset_range=state.current_token_offset_range,
+            ))
+            return (state, None)
+        state = expr_state
+
+        (state, t_dummy_in) = self.expect_token(
+            state,
+            [TokenKind.DUMMY_IN],
+            notes=notes,
+        )
+        if not t_dummy_in:
+            return (state, None)
+
+        (body_state, n_body) = self.parse_expr_with_left_recursion(
+            state,
+            allow_naked_lets=allow_naked_lets,
+        )
+        if not n_body and not allow_naked_lets:
+            state = state.add_error(Error(
+                file_info=state.file_info,
+                title="Expected expression after let-bindng",
+                code=ErrorCode.EXPECTED_LET_EXPRESSION.value,
+                severity=Severity.ERROR,
+                message="I was expecting an expression to follow " +
+                        "the previous let-binding.",
+                notes=notes,
+                offset_range=state.current_token_offset_range,
+            ))
+            return (state, None)
+        elif n_body:
+            state = body_state
+
+        return (state, LetExpr(
             t_let=t_let,
             n_pattern=n_pattern,
             t_equals=t_equals,
             n_value=n_value,
+            n_body=n_body,
         ))
 
     def parse_pattern(self, state: State) -> Tuple[State, Optional[Pattern]]:
@@ -245,9 +334,25 @@ class Parser:
     def parse_expr_with_left_recursion(
         self,
         state: State,
+
+        # Set when we allow let-bindings without associated expressions. For
+        # example, this at the top-level:
+        #
+        #     # Non-naked let; has the expression `let bar = 2`
+        #     let foo =
+        #       # Non-naked let; has the expression `bar`
+        #       let bar = 2
+        #       bar
+        #
+        #     # Naked let: no expression for this let-binding.
+        #     let bar = 2
+        allow_naked_lets: bool = False,
     ) -> Tuple[State, Optional[Expr]]:
         """Parse an expression, even if that parse involves left-recursion."""
-        (state, n_expr) = self.parse_expr(state)
+        (state, n_expr) = self.parse_expr(
+            state,
+            allow_naked_lets=allow_naked_lets,
+        )
         while n_expr is not None:
             token = state.current_token
             if token is None:
@@ -263,16 +368,20 @@ class Parser:
         return (state, n_expr)
 
     def add_error_and_recover(self, state: State, error: Error) -> State:
+        synchronization_token_kinds = [TokenKind.DUMMY_IN]
         state = state.add_error(error)
-        while (
-            state.current_token is not None
-            and state.current_token.kind != TokenKind.DEDENT
-        ):
+        while state.current_token is not None:
+            current_token = state.current_token
             state = state.consume_token(state.current_token)
+            if current_token.kind in synchronization_token_kinds:
+                break
         return state
 
-    def parse_expr(self, state: State) -> Tuple[State, Optional[Expr]]:
-        # TODO: Parse more kinds of expressions.
+    def parse_expr(
+        self,
+        state: State,
+        allow_naked_lets: bool = False,
+    ) -> Tuple[State, Optional[Expr]]:
         token = state.current_token
         if token is None:
             state = self.add_error_and_recover(state, Error(
@@ -288,54 +397,19 @@ class Parser:
                 notes=[],
             ))
             return (state, None)
-        if token.kind == TokenKind.INDENT:
-            return self.parse_indented_expr(state)
-        elif token.kind == TokenKind.DEDENT:
-            # The caller should already be handling an indented block, so just
-            # leave it to them to consume the dedent token as well.
-            return (state, None)
-        elif token.kind == TokenKind.IDENTIFIER:
+
+        if token.kind == TokenKind.IDENTIFIER:
             # TODO: Potentially look ahead to parse a bigger expression.
             return self.parse_identifier(state)
         elif token.kind == TokenKind.INT_LITERAL:
             return self.parse_int_literal(state)
+        elif token.kind == TokenKind.LET:
+            return self.parse_let_expr(state, allow_naked_lets=allow_naked_lets)
         raise UnhandledParserException(
             state,
         ) from ValueError(
             f"tried to parse expression of unsupported token kind {token.kind}"
         )
-
-    def parse_indented_expr(
-        self,
-        state: State,
-    ) -> Tuple[State, Optional[Expr]]:
-        (state, t_indent) = self.expect_token(state, [TokenKind.INDENT])
-        if t_indent is None:
-            state = state.add_error(Error(
-                file_info=state.file_info,
-                title="Expected indent",
-                code=ErrorCode.EXPECTED_INDENT.value,
-                severity=Severity.ERROR,
-                message="I was expecting an indent and then an expression.",
-                notes=[],
-            ))
-            return (state, None)
-        (state, n_expr) = self.parse_expr_with_left_recursion(state)
-        if n_expr is None:
-            return (state, None)
-        (state, t_dedent) = self.expect_token(state, [TokenKind.DEDENT])
-        if t_dedent is None:
-            state = state.add_error(Error(
-                file_info=state.file_info,
-                title="Expected dedent",
-                code=ErrorCode.EXPECTED_DEDENT.value,
-                severity=Severity.ERROR,
-                message="I was expecting a dedent after this indented block.",
-                # TODO: Perhaps show the start of the indented block.
-                notes=[],
-            ))
-            return (state, None)
-        return (state, n_expr)
 
     def parse_function_call(
         self,
@@ -433,6 +507,8 @@ class Parser:
         self,
         state: State,
         possible_tokens: List[TokenKind],
+        *,
+        notes: List[Note] = [],
     ) -> Tuple[State, Optional[Token]]:
         token = state.current_token
         if token is not None and token.kind in possible_tokens:
@@ -484,6 +560,9 @@ class Parser:
         )
 
     def describe_token_kind(self, token_kind: TokenKind) -> str:
+        if token_kind.value.startswith("the "):
+            return token_kind.value
+
         vowels = ["a", "e", "i", "o", "u"]
         if any(token_kind.value.startswith(vowel) for vowel in vowels):
             return f"an {token_kind.value}"

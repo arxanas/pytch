@@ -6,6 +6,7 @@ leading whitespace ' '
 leading whitespace ' '
 integer literal '1'
 trailing newline '\n'
+the end of a 'let' binding
 'let'
 leading whitespace ' '
 identifier 'bar'
@@ -14,3 +15,4 @@ leading whitespace ' '
 leading whitespace ' '
 integer literal '2'
 trailing newline '\n'
+the end of a 'let' binding

@@ -19,23 +19,23 @@ class Node:
         return self._children
 
 
-class TopLevelStatement(Node):
+class Expr(Node):
     pass
 
 
 class Ast(Node):
     def __init__(
         self,
-        n_statements: Sequence[TopLevelStatement],
+        n_expr: Optional[Expr],
     ) -> None:
         super().__init__([
-            *n_statements,
+            n_expr,
         ])
-        self._n_statements = n_statements
+        self._n_expr = n_expr
 
     @property
-    def n_statements(self) -> Sequence[TopLevelStatement]:
-        return self._n_statements
+    def n_expr(self) -> Optional[Expr]:
+        return self._n_expr
 
 
 class Pattern(Node):
@@ -57,28 +57,27 @@ class VariablePattern(Pattern):
         return self._t_identifier
 
 
-class Expr(Node):
-    pass
-
-
-class LetStatement(TopLevelStatement):
+class LetExpr(Expr):
     def __init__(
         self,
         t_let: Optional[Token],
         n_pattern: Optional[Pattern],
         t_equals: Optional[Token],
         n_value: Optional[Expr],
+        n_body: Optional[Expr],
     ) -> None:
         super().__init__([
             t_let,
             n_pattern,
             t_equals,
             n_value,
+            n_body,
         ])
         self._t_let = t_let
         self._n_pattern = n_pattern
         self._t_equals = t_equals
         self._n_value = n_value
+        self._n_body = n_body
 
     @property
     def t_let(self) -> Optional[Token]:
@@ -95,24 +94,6 @@ class LetStatement(TopLevelStatement):
     @property
     def n_value(self) -> Optional[Expr]:
         return self._n_value
-
-
-class LetExpr(Expr):
-    def __init__(
-        self,
-        n_let_stmt: Optional[LetStatement],
-        n_body: Optional[Expr],
-    ) -> None:
-        super().__init__([
-            n_let_stmt,
-            n_body,
-        ])
-        self._n_let_stmt = n_let_stmt
-        self._n_body = n_body
-
-    @property
-    def n_let_stmt(self) -> Optional[LetStatement]:
-        return self._n_let_stmt
 
     @property
     def n_body(self) -> Optional[Expr]:
@@ -192,9 +173,7 @@ __all__ = [
     "IdentifierExpr",
     "IntLiteralExpr",
     "LetExpr",
-    "LetStatement",
     "Node",
     "Pattern",
-    "TopLevelStatement",
     "VariablePattern",
 ]

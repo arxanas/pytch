@@ -1,26 +1,21 @@
 Node
     children: Sequence[Union["Node", Optional[Token]]]
 
-TopLevelStatement(Node)
+Expr(Node)
 
 Ast(Node)
-    n_statements: Sequence[TopLevelStatement]
+    n_expr: Optional[Expr]
 
 Pattern(Node)
 
 VariablePattern(Pattern)
     t_identifier: Optional[Token]
 
-Expr(Node)
-
-LetStatement(TopLevelStatement)
+LetExpr(Expr)
     t_let: Optional[Token]
     n_pattern: Optional[Pattern]
     t_equals: Optional[Token]
     n_value: Optional[Expr]
-
-LetExpr(Expr)
-    n_let_stmt: Optional[LetStatement]
     n_body: Optional[Expr]
 
 IdentifierExpr(Expr)
