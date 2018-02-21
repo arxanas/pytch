@@ -47,7 +47,11 @@ def render_ast(
 
 
 def get_parser_tests() -> Iterator[CaseInfo]:
-    return find_tests("parser", input_extension=".pytch")
+    return find_tests(
+        "parser",
+        input_extension=".pytch",
+        error_extension=".err",
+    )
 
 
 def get_parser_test_ids() -> List[str]:

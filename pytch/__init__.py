@@ -82,7 +82,8 @@ class FileInfo:
         # 0-based index ranges are inclusive on the left and exclusive on the
         # right, which means that the length of the source code is a valid
         # index for constructing a range.
-        assert offset <= len(self._source_code)
+        assert 0 <= offset <= len(self._source_code), \
+            f"offset {offset} is not in range [0, {len(self._source_code)}]"
 
         current_offset = 0
         current_line = 0

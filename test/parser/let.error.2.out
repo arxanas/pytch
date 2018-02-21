@@ -1,0 +1,25 @@
+Ast
+    LetExpr
+        Token 'let'
+        Trailing '\n'
+        <missing>
+        <missing>
+        <missing>
+        LetExpr
+            Token 'let'
+            VariablePattern
+                Leading ' '
+                Token 'foo'
+            Leading ' '
+            Token '='
+            IdentifierExpr
+                Leading ' '
+                Token 'bar'
+                Trailing '\n'
+            LetExpr
+                Token 'let'
+                Trailing '\n'
+                <missing>
+                <missing>
+                <missing>
+                <missing>

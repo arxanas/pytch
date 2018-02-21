@@ -16,3 +16,4 @@ leading whitespace ' '
 integer literal '2'
 trailing newline '\n'
 the end of a 'let' binding
+the end of the file

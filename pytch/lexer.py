@@ -70,6 +70,7 @@ class TriviumKind(Enum):
     WHITESPACE = "whitespace"
     NEWLINE = "newline"
     COMMENT = "comment"
+    ERROR = "error"
 
 
 class TokenKind(Enum):
@@ -80,6 +81,13 @@ class TokenKind(Enum):
     EQUALS = "'='"
     LPAREN = "'('"
     RPAREN = "')'"
+
+    EOF = "the end of the file"
+    """This token is a zero-width token denoting the end of the file.
+
+    It's inserted by the pre-parser, so we can always expect there to be an
+    EOF token in the token stream.
+    """
 
     # Dummy tokens; inserted by the pre-parser.
     DUMMY_IN = "the end of a 'let' binding"
@@ -96,6 +104,16 @@ class Trivium:
         self._kind = kind
         self._text = text
 
+    def __repr__(self) -> str:
+        return f"<Trivium kind={self.kind.name} text={self.text!r}>"
+
+    def __eq__(self, other: object) -> bool:
+        if self is other:
+            return True
+        if not isinstance(other, Trivium):
+            return False
+        return self.kind == other.kind and self.text == other.text
+
     @property
     def kind(self) -> TriviumKind:
         return self._kind
@@ -107,16 +125,6 @@ class Trivium:
     @property
     def width(self) -> int:
         return len(self._text)
-
-    def __repr__(self) -> str:
-        return f"<Trivium kind={self.kind.value} text='{self.text}'>"
-
-    def __eq__(self, other: object) -> bool:
-        if self is other:
-            return True
-        if not isinstance(other, Trivium):
-            return False
-        return self.kind == other.kind and self.text == other.text
 
 
 class Token:
@@ -132,9 +140,56 @@ class Token:
         self._leading_trivia = leading_trivia
         self._trailing_trivia = trailing_trivia
 
+    def __repr__(self) -> str:
+        r = f"<Token kind={self.kind.name}"
+        if self.leading_trivia:
+            r += f" leading={self.leading_trivia!r}"
+        if self.trailing_trivia:
+            r += f" trailing={self.trailing_trivia!r}"
+        r += ">"
+        return r
+
+    def __eq__(self, other: object) -> bool:
+        if self is other:
+            return True
+        if not isinstance(other, Token):
+            return False
+        return (
+            self.text == other.text
+            and self.kind == other.kind
+            and self.leading_trivia == other.leading_trivia
+            and self.trailing_trivia == other.trailing_trivia
+        )
+
+    def update(
+        self,
+        kind: TokenKind = None,
+        text: str = None,
+        leading_trivia: List[Trivium] = None,
+        trailing_trivia: List[Trivium] = None,
+    ) -> "Token":
+        if kind is None:
+            kind = self._kind
+        if text is None:
+            text = self._text
+        if leading_trivia is None:
+            leading_trivia = self._leading_trivia
+        if trailing_trivia is None:
+            trailing_trivia = self._trailing_trivia
+        return Token(
+            kind=kind,
+            text=text,
+            leading_trivia=leading_trivia,
+            trailing_trivia=trailing_trivia,
+        )
+
     @property
     def kind(self) -> TokenKind:
         return self._kind
+
+    @property
+    def is_dummy(self):
+        return self.kind.name.lower().startswith("dummy")
 
     @property
     def text(self) -> str:
@@ -178,26 +233,6 @@ class Token:
         return any(
             trivium.kind == TriviumKind.NEWLINE
             for trivium in self.trailing_trivia
-        )
-
-    def __repr__(self) -> str:
-        r = f"<Token kind={self.kind.value}"
-        if self.leading_trivia:
-            r += f" leading={self.leading_trivia!r}"
-        if self.trailing_trivia:
-            r += f" trailing={self.trailing_trivia!r}"
-        r += ">"
-        return r
-
-    def __eq__(self, other: object) -> bool:
-        if self is other:
-            return True
-        if not isinstance(other, Token):
-            return False
-        return (
-            self.text == other.text
-            and self.leading_trivia == other.leading_trivia
-            and self.trailing_trivia == other.trailing_trivia
         )
 
 
@@ -447,6 +482,13 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
         else:
             assert False, \
                 f"Unexpected token kind in pre-parser: {token.kind.value}"
+
+    yield Token(
+        kind=TokenKind.EOF,
+        text="",
+        leading_trivia=[],
+        trailing_trivia=[],
+    )
 
 
 def lex(file_info: FileInfo) -> Lexation:

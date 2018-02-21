@@ -3,3 +3,4 @@ identifier 'print'
 integer literal '1'
 ')'
 trailing newline '\n'
+the end of the file

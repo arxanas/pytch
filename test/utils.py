@@ -51,8 +51,11 @@ class CaseInfo:
     def error(self) -> Optional[str]:
         if self.error_filename is None:
             return None
-        with open(self.error_filename) as f:
-            return f.read()
+        try:
+            with open(self.error_filename) as f:
+                return f.read()
+        except FileNotFoundError:
+            return None
 
 
 class CaseResult:
@@ -95,8 +98,6 @@ def find_tests(
             test_name + error_extension,
         )
 
-        if not os.path.exists(error_filename):
-            error_filename = None  # type: ignore
         yield CaseInfo(
             input_filename=input_filename,
             output_filename=output_filename,
