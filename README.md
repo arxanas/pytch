@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/arxanas/pytch.svg?branch=master)](https://travis-ci.org/arxanas/pytch)
+
 ## Development
 
 ### Setup
@@ -10,18 +12,8 @@ To install the development packages, run
 $ pip install -r requirements-dev.txt
 ```
 
-### Creating parser tests
-
-The grammar can be found in `pytch/grammar.py`. Most parser changes are changes
-to the grammar, so this is where they would go.
-
-Tests for the parser are in `test/parse/`. A parser test is a `.pytch` file with
-a corresponding `.out` file that contains the AST of the `.pytch` file. When you
-add a `.pytch` file, you can generate a `.out` file by running
+To run:
 
 ```sh
-py.test -G
+$ python -m pytch <file.pytch
 ```
-
-You can also delete any `.out` file and regenerate it from the current grammar
-in this way.
