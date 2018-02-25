@@ -1,0 +1,11 @@
+Ast
+    LetExpr
+        Token 'let'
+        VariablePattern
+            Leading ' '
+            Token 'foo'
+        Leading ' '
+        Token '='
+        Trailing '\n'
+        <missing>
+        <missing>

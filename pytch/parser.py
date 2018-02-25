@@ -156,12 +156,13 @@ class State:
             did_rewind = False
             while token_index > 0 and current_token.is_dummy:
                 did_rewind = True
-                token_index -= 1
                 offset -= current_token.leading_width
+                token_index -= 1
                 current_token = self.tokens[token_index]
-                offset -= current_token.width + current_token.trailing_width
+                offset -= current_token.trailing_width
+                offset -= current_token.width
 
-            start = offset + current_token.leading_width
+            start = offset
             end = start + current_token.width
 
             if did_rewind:
@@ -408,7 +409,13 @@ class Parser:
                 notes=notes,
                 offset_range=state.current_token_offset_range,
             ))
-            return (state, None, sync_token_kind)
+            return (state, LetExpr(
+                t_let=t_let,
+                n_pattern=n_pattern,
+                t_equals=t_equals,
+                n_value=None,
+                n_body=None,  # TODO: Maybe recover next let-expression.
+            ), sync_token_kind)
         state = expr_state
 
         return (state, LetExpr(
@@ -485,6 +492,8 @@ class Parser:
     ) -> Tuple[State, Optional[Expr]]:
         token = state.current_token
         if token.kind == TokenKind.EOF:
+            # TODO: Maybe this shouldn't be here, and the caller should
+            # manually check for EOF.
             (state, _sync) = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 severity=Severity.ERROR,
@@ -499,12 +508,13 @@ class Parser:
             ))
             return (state, None)
         elif token.kind == TokenKind.IDENTIFIER:
-            # TODO: Potentially look ahead to parse a bigger expression.
             return self.parse_identifier(state)
         elif token.kind == TokenKind.INT_LITERAL:
             return self.parse_int_literal(state)
         elif token.kind == TokenKind.LET:
             return self.parse_let_expr(state, allow_naked_lets=allow_naked_lets)
+        elif token.kind == TokenKind.DUMMY_IN:
+            return (state, None)
         raise UnhandledParserException(
             state,
         ) from ValueError(
