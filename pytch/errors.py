@@ -57,6 +57,14 @@ class Note:
         self._message = message
         self._offset_range = offset_range
 
+    def __repr__(self) -> str:
+        return (
+            f"<Note" +
+            f" message={self.message!r}" +
+            f" offset_range={self._offset_range!r}" +
+            f">"
+        )
+
     @property
     def file_info(self) -> FileInfo:
         return self._file_info
@@ -103,6 +111,18 @@ class Error:
         self._message = message
         self._notes = notes
         self._offset_range = offset_range
+
+    def __repr__(self) -> str:
+        return (
+            f"<Error" +
+            f" title={self.title!r}" +
+            f" code={self.code!r}" +
+            f" severity={self.severity!r}" +
+            f" message={self.message!r}" +
+            f" notes={self.notes!r}" +
+            f" offset_range={self._offset_range!r}" +
+            f">"
+        )
 
     @property
     def file_info(self) -> FileInfo:
@@ -379,7 +399,12 @@ def underline_lines(
         if underline_start is not None and underline_end is not None:
             underline_line = " " * underline_start
 
-            underline_width = underline_end - underline_start + 1
+            underline_width = underline_end - underline_start
+            if underline_width == 0:
+                # In the event that we have a zero-length range, we want to
+                # render it as an underline of width one. This could happen if
+                # we're flagging the EOF token, for example.
+                underline_width = 1
             assert underline_width > 0, (
                 f"The index of the end of the underline ({underline_end}) on "
                 f"line #{line_num} was before the index of the first " +

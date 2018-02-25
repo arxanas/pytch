@@ -102,12 +102,11 @@ class State:
     @property
     def end_of_file_offset_range(self) -> OffsetRange:
         last_offset = len(self.file_info.source_code)
-        last_non_empty_token = None
-        for i in range(len(self.tokens) - 1, -1, -1):
-            token = self.tokens[i]
-            if token.full_width > 0:
-                last_non_empty_token = token
-                break
+        last_non_empty_token = next(
+            (token for token in reversed(self.tokens)
+             if token.full_width > 0),
+            None,
+        )
 
         if last_non_empty_token is None:
             start = 0
@@ -156,18 +155,16 @@ class State:
             did_rewind = False
             while token_index > 0 and current_token.is_dummy:
                 did_rewind = True
-                offset -= current_token.leading_width
                 token_index -= 1
                 current_token = self.tokens[token_index]
-                offset -= current_token.trailing_width
-                offset -= current_token.width
+                offset -= current_token.full_width
 
-            start = offset
+            start = offset + current_token.leading_width
             end = start + current_token.width
 
             if did_rewind:
-                # If we rewound, point to just *after* the token we rewound to,
-                # rather than that token itself.
+                # If we rewound, point to the location immediately after the
+                # token we rewound to, rather than that token itself.
                 start = end
                 end = start
         return OffsetRange(start=start, end=end)
