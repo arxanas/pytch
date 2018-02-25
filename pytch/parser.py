@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Iterator, List, Optional, Tuple, Union
 
 from pytch.errors import Error, Note, Severity
-from . import FileInfo, OffsetRange
+from . import FileInfo, OffsetRange, warn_if
 from .ast import (
     Ast,
     Expr,
@@ -669,9 +669,13 @@ def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
 
     source_code_length = len(file_info.source_code)
     tokens_length = parsation.full_width
-    assert source_code_length == tokens_length, (
-        f"Mismatch between source code length ({source_code_length}) "
-        f"and total length of parsed tokens ({tokens_length})"
+    warn_if(
+        source_code_length != tokens_length,
+        f"Mismatch between source code length ({source_code_length}) " +
+        f"and total length of parsed tokens ({tokens_length}) " +
+        f"in file {file_info.file_path}.\n" +
+        f"The parse tree for this file is probably incorrect.\n" +
+        f"This is a bug. Please report it!",
     )
 
     return parsation
