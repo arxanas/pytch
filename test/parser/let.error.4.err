@@ -1,0 +1,15 @@
+In test/parser/let.error.4.pytch, line 1, character 5:
+Expected pattern[1004]: I was expecting a pattern after 'let'.
+   +-------------------------------------------------+
+   | Error: I was expecting a pattern after 'let'.   |
+   +-------------------------------------------------+
+   | test/parser/let.error.4.pytch                   |
+ 1 | let = 1                                         |
+   |     ^                                           |
+   +-------------------------------------------------+
+   | Note: This is the beginning of the let-binding. |
+   +-------------------------------------------------+
+   | test/parser/let.error.4.pytch                   |
+ 1 | let = 1                                         |
+   | ^~~                                             |
+   +-------------------------------------------------+

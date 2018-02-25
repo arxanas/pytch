@@ -357,9 +357,12 @@ class Parser:
     ) -> Tuple[State, Optional[LetExpr], Optional[SyncTokenKind]]:
         sync_token_kind: Optional[SyncTokenKind]
 
-        (pattern_state, n_pattern) = self.parse_pattern(state)
-        if not n_pattern:
-            (state, sync_token_kind) = self.add_error_and_recover(state, Error(
+        if state.current_token.kind == TokenKind.EQUALS:
+            # If the token is an equals sign, assume that the name is missing
+            # (e.g. during editing, the user is renaming the variable), but
+            # that the rest of the let-binding is present.
+            n_pattern = None
+            state = state.add_error(Error(
                 file_info=state.file_info,
                 title="Expected pattern",
                 code=ErrorCode.EXPECTED_PATTERN.value,
@@ -368,14 +371,30 @@ class Parser:
                 notes=notes,
                 offset_range=state.current_token_offset_range,
             ))
-            return (state, LetExpr(
-                t_let=t_let,
-                n_pattern=None,
-                t_equals=None,
-                n_value=None,
-                n_body=None,
-            ), sync_token_kind)
-        state = pattern_state
+        else:
+            (pattern_state, n_pattern) = self.parse_pattern(state)
+            if not n_pattern:
+                (state, sync_token_kind) = self.add_error_and_recover(
+                    state,
+                    Error(
+                        file_info=state.file_info,
+                        title="Expected pattern",
+                        code=ErrorCode.EXPECTED_PATTERN.value,
+                        severity=Severity.ERROR,
+                        message="I was expecting a pattern after 'let'.",
+                        notes=notes,
+                        offset_range=state.current_token_offset_range,
+                    ),
+                )
+                if state.current_token.kind != TokenKind.EQUALS:
+                    return (state, LetExpr(
+                        t_let=t_let,
+                        n_pattern=None,
+                        t_equals=None,
+                        n_value=None,
+                        n_body=None,
+                    ), sync_token_kind)
+            state = pattern_state
 
         (state, t_equals, sync_token_kind) = self.expect_token(
             state,
