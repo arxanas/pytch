@@ -68,6 +68,14 @@ class FileInfo:
         self._source_code = source_code
         self._lines = source_code.splitlines()
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FileInfo):
+            return False
+        return (
+            self._file_path == other._file_path
+            and self._source_code == other._source_code
+        )
+
     @property
     def file_path(self) -> str:
         return self._file_path

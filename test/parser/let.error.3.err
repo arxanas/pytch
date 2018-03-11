@@ -1,15 +1,8 @@
 In test/parser/let.error.3.pytch, line 1, character 10:
 Expected expression[1001]: I was expecting a value after the '=' in this let-binding.
-   +-------------------------------------------------------------------+
-   | Error: I was expecting a value after the '=' in this let-binding. |
-   +-------------------------------------------------------------------+
-   | test/parser/let.error.3.pytch                                     |
- 1 | let foo =                                                         |
-   |          ^                                                        |
-   +-------------------------------------------------------------------+
-   | Note: This is the beginning of the let-binding.                   |
-   +-------------------------------------------------------------------+
-   | test/parser/let.error.3.pytch                                     |
- 1 | let foo =                                                         |
-   | ^~~                                                               |
-   +-------------------------------------------------------------------+
+   +------------------------------------------------------------------------------+
+   | test/parser/let.error.3.pytch                                                |
+ 1 | let foo =                                                                    |
+   |          ^ Error: I was expecting a value after the '=' in this let-binding. |
+   | ^~~ Note: This is the beginning of the let-binding.                          |
+   +------------------------------------------------------------------------------+

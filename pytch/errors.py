@@ -1,11 +1,25 @@
+import collections
 from enum import Enum
+import itertools
 import re
-from typing import Callable, List, Optional, Tuple
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+)
 
 import click
 from typing_extensions import Protocol
 
 from . import FileInfo, OffsetRange, Range
+
+T = TypeVar("T")
 
 
 class Glyphs:
@@ -46,7 +60,50 @@ class Glyphs:
         self.underline_point_character = underline_point_character
 
 
+class Diagnostic(Protocol):
+    @property
+    def file_info(self) -> FileInfo:
+        ...
+
+    @property
+    def color(self) -> str:
+        ...
+
+    @property
+    def preamble_message(self) -> str:
+        ...
+
+    @property
+    def message(self) -> str:
+        ...
+
+    @property
+    def range(self) -> Optional[Range]:
+        ...
+
+
+class _DiagnosticContext:
+    def __init__(
+        self,
+        file_info: FileInfo,
+        line_range: Optional[Tuple[int, int]],
+    ) -> None:
+        self.file_info = file_info
+        self.line_range = line_range
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, _DiagnosticContext):
+            return False
+        return (
+            self.file_info == other.file_info
+            and self.line_range == other.line_range
+        )
+
+
 class Note:
+    color = "green"
+    preamble_message = "Note:"
+
     def __init__(
         self,
         file_info: FileInfo,
@@ -94,6 +151,9 @@ class Severity(Enum):
 
 
 class Error:
+    color = "red"
+    preamble_message = "Error:"
+
     def __init__(
         self,
         file_info: FileInfo,
@@ -161,6 +221,16 @@ class Error:
                 offset_range.end,
             )
         )
+
+
+def get_colored_diagnostic_message(
+    glyphs: Glyphs,
+    diagnostic: Diagnostic,
+) -> str:
+    return glyphs.make_colored(
+        diagnostic.preamble_message + " " + diagnostic.message,
+        diagnostic.color,
+    )
 
 
 def get_glyphs(ascii: bool) -> Glyphs:
@@ -237,7 +307,7 @@ class Segment:
         message_lines: List[str],
     ) -> None:
         if gutter_lines is not None:
-            assert gutter_lines or len(gutter_lines) == len(message_lines)
+            assert len(gutter_lines) == len(message_lines)
         self._glyphs = glyphs
         self._header = header
         self._gutter_lines = gutter_lines
@@ -331,29 +401,247 @@ class Segment:
         return lines
 
 
-class HasContext(Protocol):
-    @property
-    def file_info(self) -> FileInfo:
-        ...
+def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
+    glyphs = get_glyphs(ascii=ascii)
 
-    @property
-    def range(self) -> Optional[Range]:
-        ...
+    segments = get_error_segments(glyphs=glyphs, error=error)
+    gutter_width = max(segment.gutter_width for segment in segments)
+    box_width = max(segment.box_width for segment in segments)
+
+    output_lines = []
+    if error.range is not None:
+        line = str(error.range.start.line + 1)
+        character = str(error.range.start.character + 1)
+        output_lines.append(
+            f"In {glyphs.make_bold(error.file_info.file_path)}, "
+            f"line {glyphs.make_bold(line)}, "
+            f"character {glyphs.make_bold(character)}:"
+        )
+    else:
+        output_lines.append(
+            f"In {glyphs.make_bold(error.file_info.file_path)}:"
+        )
+    output_lines.append(
+        glyphs.make_bold(error.title + f"[{error.code}]")
+        + ": "
+        + error.message
+    )
+    for i, segment in enumerate(segments):
+        is_first = (i == 0)
+        is_last = (i == len(segments) - 1)
+        output_lines.extend(segment.render_lines(
+            is_first=is_first,
+            is_last=is_last,
+            gutter_width=gutter_width,
+            box_width=box_width,
+        ))
+    return output_lines
+
+
+def get_error_segments(glyphs: Glyphs, error: Error):
+    diagnostics: List[Diagnostic] = [error]
+    diagnostics.extend(error.notes)
+    diagnostic_contexts = [
+        get_context(
+            file_info=diagnostic.file_info,
+            range=diagnostic.range,
+        )
+        for diagnostic in diagnostics
+    ]
+    partitioned_diagnostic_contexts = itertools.groupby(
+        diagnostic_contexts,
+        lambda context: context.file_info.file_path,
+    )
+
+    segments: List[Segment] = []
+    for _file_path, contexts in partitioned_diagnostic_contexts:
+        for context in _merge_contexts(contexts):
+            segments.append(get_context_segment(
+                glyphs=glyphs,
+                context=context,
+                diagnostics=diagnostics,
+            ))
+    return segments
 
 
 def get_context(
-    item: HasContext,
-) -> Optional[Tuple[int, Range, List[str]]]:
-    if not item.range:
-        return None
+    file_info: FileInfo,
+    range: Optional[Range],
+) -> _DiagnosticContext:
+    """Get the diagnostic context including the line before and after the
+    given range.
+    """
+    if range is None:
+        return _DiagnosticContext(file_info=file_info, line_range=None)
 
-    # Add a line before and after the requested lines for context. But clamp
-    # the lower end to 0 to avoid slicing with a negative integer.
-    start_line_index = max(0, item.range.start.line - 1)
-    end_line_index = item.range.end.line + 1
-    context_lines = item.file_info.lines[start_line_index:end_line_index + 1]
+    start_line_index = max(0, range.start.line - 1)
 
-    return (start_line_index, item.range, context_lines)
+    # The range is exclusive, but `range.end.line` is inclusive, so add 1. Then
+    # add 1 again because we want to include the line after `range.end.line`,
+    # if there is one.
+    end_line_index = min(len(file_info.lines), range.end.line + 1 + 1)
+
+    return _DiagnosticContext(
+        file_info=file_info,
+        line_range=(start_line_index, end_line_index),
+    )
+
+
+def _merge_contexts(
+    contexts: Iterable[_DiagnosticContext],
+) -> Iterable[_DiagnosticContext]:
+    """Combine adjacent contexts with ranges into a list of contexts sorted by
+    range.
+
+    For example, convert the list of contexts with ranges
+
+        [(2, 4), (1, 3), None, (3, 5)]
+
+    into the result
+
+        [(1, 4), None, (3, 5)]
+    """
+    mergeable_contexts = _group_by_pred(
+        contexts,
+        pred=lambda lhs, rhs: _ranges_overlap(lhs.line_range, rhs.line_range),
+    )
+
+    def merge(contexts: List[_DiagnosticContext]) -> _DiagnosticContext:
+        file_info = contexts[0].file_info
+        assert all(context.file_info == file_info for context in contexts)
+
+        if contexts[0].line_range is None:
+            assert len(contexts) == 1
+            line_range = contexts[0].line_range
+        else:
+            line_ranges = [
+                context.line_range
+                for context in contexts
+                if context.line_range is not None
+            ]
+            assert len(line_ranges) == len(contexts)
+            start = min((line_range[0] for line_range in line_ranges))
+            end = max((line_range[1] for line_range in line_ranges))
+            line_range = (start, end)
+
+        return _DiagnosticContext(
+            file_info=file_info,
+            line_range=line_range,
+        )
+
+    return map(merge, mergeable_contexts)
+
+
+def _ranges_overlap(
+    lhs: Optional[Tuple[int, int]],
+    rhs: Optional[Tuple[int, int]],
+) -> bool:
+    if lhs is None or rhs is None:
+        return False
+
+    assert lhs[0] <= lhs[1]
+    assert rhs[0] <= rhs[1]
+
+    return not (
+        lhs[1] < rhs[0]
+        or rhs[1] < lhs[0]
+    )
+
+
+def _group_by_pred(
+    seq: Iterable[T],
+    pred: Callable[[T, T], bool],
+) -> Iterable[List[T]]:
+    current_group: List[T] = []
+    for i in seq:
+        if current_group and not pred(current_group[-1], i):
+            yield current_group
+            current_group = []
+        current_group.append(i)
+    if current_group:
+        yield current_group
+
+
+def get_context_segment(
+    glyphs: Glyphs,
+    context: _DiagnosticContext,
+    diagnostics: List[Diagnostic],
+) -> Segment:
+    diagnostics = [
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic.file_info == context.file_info
+    ]
+
+    gutter_lines = []
+    message_lines = []
+    diagnostic_lines_to_insert = _get_diagnostic_lines_to_insert(
+        glyphs=glyphs,
+        context=context,
+        diagnostics=diagnostics,
+    )
+    line_range = context.line_range
+    if line_range is None:
+        assert len(diagnostics) == 1
+        diagnostic = diagnostics[0]
+        gutter_lines.append("")
+        message_lines.append(get_colored_diagnostic_message(
+            glyphs=glyphs,
+            diagnostic=diagnostic,
+        ))
+    else:
+        (start_line, end_line) = line_range
+        lines = context.file_info.lines[start_line:end_line]
+        for line_num, line in enumerate(lines, start_line):
+            # 1-index the line number for display.
+            gutter_lines.append(str(line_num + 1))
+            message_lines.append(line)
+
+            diagnostic_lines = diagnostic_lines_to_insert.get(line_num, [])
+            for diagnostic_line in diagnostic_lines:
+                gutter_lines.append("")
+                message_lines.append(diagnostic_line)
+    return Segment(
+        glyphs=glyphs,
+        header=context.file_info.file_path,
+        gutter_lines=gutter_lines,
+        message_lines=message_lines,
+    )
+
+
+def _get_diagnostic_lines_to_insert(
+    glyphs: Glyphs,
+    context: _DiagnosticContext,
+    diagnostics: Sequence[Diagnostic],
+) -> Mapping[int, Sequence[str]]:
+    result: Dict[int, List[str]] = collections.defaultdict(list)
+    if context.line_range is None:
+        return result
+    context_lines = context.file_info.lines[
+        context.line_range[0]:context.line_range[1]
+    ]
+    for diagnostic in diagnostics:
+        diagnostic_range = diagnostic.range
+        assert diagnostic_range is not None
+
+        underlined_lines = underline_lines(
+            glyphs=glyphs,
+            start_line_index=context.line_range[0],
+            context_lines=context_lines,
+            underline_range=diagnostic_range,
+            underline_color=diagnostic.color,
+        )
+        if underlined_lines:
+            underlined_lines[-1] += " " + get_colored_diagnostic_message(
+                glyphs=glyphs,
+                diagnostic=diagnostic,
+            )
+        for line_num, line in enumerate(
+            underlined_lines,
+            diagnostic_range.start.line,
+        ):
+            result[line_num].append(line)
+    return result
 
 
 def underline_lines(
@@ -362,17 +650,12 @@ def underline_lines(
     context_lines: List[str],
     underline_range: Range,
     underline_color: str,
-) -> Tuple[List[str], List[str]]:
+) -> List[str]:
     start_position = underline_range.start
     end_position = underline_range.end
 
-    gutter_lines = []
     message_lines = []
     for line_num, line in enumerate(context_lines, start=start_line_index):
-        # 1-index the line number for display.
-        gutter_lines.append(str(line_num + 1))
-        message_lines.append(line)
-
         underline_start: Optional[int] = None
         has_underline_start = False
         if line_num == start_position.line:
@@ -442,125 +725,19 @@ def underline_lines(
                 underline,
                 underline_color,
             )
-
-            gutter_lines.append("")
             message_lines.append(underline_line)
-
-    return (gutter_lines, message_lines)
-
-
-def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
-    glyphs = get_glyphs(ascii=ascii)
-
-    # TODO: There is a bug here because `click` includes ANSI escape codes in
-    # its calculation of line lengths during text wrapping. A solution would be
-    # to set `initial_indent` for `wrap_text` to a dummy string of the correct
-    # length, and then replacing it with the actual colored text.
-    error_message = click.wrap_text(
-        glyphs.make_colored("Error: ", "red")
-        + error.message
-    )
-    error_context = get_context(error)
-    if not error_context:
-        error_segments = [Segment(
-            glyphs=glyphs,
-            header=error.file_info.file_path,
-            gutter_lines=None,
-            message_lines=error_message.splitlines(),
-        )]
-    else:
-        (start_line_index, underline_range, context_lines) = error_context
-        (gutter_lines, message_lines) = underline_lines(
-            glyphs=glyphs,
-            start_line_index=start_line_index,
-            context_lines=context_lines,
-            underline_range=underline_range,
-            underline_color="red",
-        )
-        error_segments = [
-            Segment(
-                glyphs=glyphs,
-                header=None,
-                gutter_lines=None,
-                message_lines=error_message.splitlines(),
-            ), Segment(
-                glyphs=glyphs,
-                header=error.file_info.file_path,
-                gutter_lines=gutter_lines,
-                message_lines=message_lines,
-            ),
-        ]
-
-    note_segments = []
-    for note in error.notes:
-        note_message = click.wrap_text(
-            glyphs.make_colored("Note: ", "green") + note.message
-        )
-        note_context = get_context(note)
-
-        # Unlike the error segments, never include a header.
-        if not note_context:
-            note_segments.append(Segment(
-                glyphs=glyphs,
-                header=None,
-                gutter_lines=None,
-                message_lines=note_message.splitlines(),
-            ))
-        else:
-            (start_line_index, underline_range, context_lines) = note_context
-            (gutter_lines, message_lines) = underline_lines(
-                glyphs=glyphs,
-                start_line_index=start_line_index,
-                context_lines=context_lines,
-                underline_range=underline_range,
-                underline_color="green",
-            )
-            note_segments.extend([
-                Segment(
-                    glyphs=glyphs,
-                    header=None,
-                    gutter_lines=None,
-                    message_lines=note_message.splitlines(),
-                ), Segment(
-                    glyphs=glyphs,
-                    header=error.file_info.file_path,
-                    gutter_lines=gutter_lines,
-                    message_lines=message_lines,
-                ),
-            ])
-
-    segments = error_segments + note_segments
-    gutter_width = max(segment.gutter_width for segment in segments)
-    box_width = max(segment.box_width for segment in segments)
-
-    output_lines = []
-    if error.range is not None:
-        line = str(error.range.start.line + 1)
-        character = str(error.range.start.character + 1)
-        output_lines.append(
-            f"In {glyphs.make_bold(error.file_info.file_path)}, "
-            f"line {glyphs.make_bold(line)}, "
-            f"character {glyphs.make_bold(character)}:"
-        )
-    else:
-        output_lines.append(
-            f"In {glyphs.make_bold(error.file_info.file_path)}:"
-        )
-    output_lines.append(
-        glyphs.make_bold(error.title + f"[{error.code}]")
-        + ": "
-        + error.message
-    )
-    for i, segment in enumerate(segments):
-        is_first = (i == 0)
-        is_last = (i == len(segments) - 1)
-        output_lines.extend(segment.render_lines(
-            is_first=is_first,
-            is_last=is_last,
-            gutter_width=gutter_width,
-            box_width=box_width,
-        ))
-    return output_lines
+    return message_lines
 
 
-__all__ = ["Error", "get_error_lines", "Note", "Severity"]
+__all__ = [
+    "_DiagnosticContext",
+    "_get_diagnostic_lines_to_insert",
+    "_group_by_pred",
+    "_merge_contexts",
+    "_ranges_overlap",
+
+    "Error",
+    "get_error_lines",
+    "Note",
+    "Severity",
+]
