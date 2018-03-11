@@ -1,1 +1,2 @@
-pytch/ast.py linguist-generated=true
+pytch/greenast.py linguist-generated=true
+pytch/redast.py linguist-generated=true

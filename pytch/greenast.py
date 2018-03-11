@@ -10,12 +10,12 @@ from .lexer import Token
 class Node:
     def __init__(
         self,
-        children: Sequence[Union["Node", Optional[Token]]],
+        children: Sequence[Union["Node", Optional["Token"]]],
     ) -> None:
         self._children = children
 
     @property
-    def children(self) -> Sequence[Union["Node", Optional[Token]]]:
+    def children(self) -> Sequence[Union["Node", Optional["Token"]]]:
         return self._children
 
 
@@ -23,7 +23,7 @@ class Expr(Node):
     pass
 
 
-class GreenAst(Node):
+class Ast(Node):
     def __init__(
         self,
         n_expr: Optional[Expr],
@@ -167,9 +167,9 @@ class FunctionCallExpr(Expr):
 
 
 __all__ = [
+    "Ast",
     "Expr",
     "FunctionCallExpr",
-    "GreenAst",
     "IdentifierExpr",
     "IntLiteralExpr",
     "LetExpr",

@@ -4,8 +4,8 @@ import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
 from pytch import FileInfo
-from pytch.ast import Node
 from pytch.errors import Error, get_error_lines
+from pytch.greenast import Node
 from pytch.lexer import lex, Token
 from pytch.parser import parse
 

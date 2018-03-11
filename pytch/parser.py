@@ -14,10 +14,10 @@ from typing import Iterator, List, Optional, Tuple, Union
 
 from pytch.errors import Error, Note, Severity
 from . import FileInfo, OffsetRange, warn_if
-from .ast import (
+from .greenast import (
+    Ast,
     Expr,
     FunctionCallExpr,
-    GreenAst,
     IdentifierExpr,
     IntLiteralExpr,
     LetExpr,
@@ -62,7 +62,7 @@ def walk_tokens(node: Node) -> Iterator[Token]:
 
 
 class Parsation:
-    def __init__(self, ast: GreenAst, errors: List[Error]) -> None:
+    def __init__(self, ast: Ast, errors: List[Error]) -> None:
         self.ast = ast
         self.errors = errors
 
@@ -279,7 +279,7 @@ class Parser:
                 state,
                 allow_naked_lets=True,
             )
-            ast = GreenAst(n_expr=n_expr)
+            ast = Ast(n_expr=n_expr)
             return Parsation(ast=ast, errors=state.errors)
         except UnhandledParserException:
             raise

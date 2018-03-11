@@ -1,9 +1,6 @@
-Node
-    children: Sequence[Union["Node", Optional[Token]]]
-
 Expr(Node)
 
-GreenAst(Node)
+Ast(Node)
     n_expr: Optional[Expr]
 
 Pattern(Node)
