@@ -3,7 +3,7 @@ Node
 
 Expr(Node)
 
-Ast(Node)
+GreenAst(Node)
     n_expr: Optional[Expr]
 
 Pattern(Node)

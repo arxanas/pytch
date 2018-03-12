@@ -23,7 +23,7 @@ class Expr(Node):
     pass
 
 
-class Ast(Node):
+class GreenAst(Node):
     def __init__(
         self,
         n_expr: Optional[Expr],
@@ -167,9 +167,9 @@ class FunctionCallExpr(Expr):
 
 
 __all__ = [
-    "Ast",
     "Expr",
     "FunctionCallExpr",
+    "GreenAst",
     "IdentifierExpr",
     "IntLiteralExpr",
     "LetExpr",
