@@ -8,6 +8,7 @@ from pytch.errors import (
     _merge_contexts,
     _ranges_overlap,
     Error,
+    ErrorCode,
     get_error_lines,
     get_glyphs,
     Note,
@@ -29,8 +30,8 @@ def test_print_error():
 """)
     error = Error(
         file_info=file_info,
-        title="LOOK_INTO_THIS",
-        code=1234,
+        title="NOT_A_REAL_ERROR",
+        code=ErrorCode.NOT_A_REAL_ERROR,  # type: ignore
         severity=Severity.ERROR,
         message="Look into this",
         offset_range=OffsetRange(start=9, end=17),
@@ -43,7 +44,7 @@ def test_print_error():
     lines = lines_to_string(get_error_lines(error, ascii=True))
     assert lines == """\
 In dummy.pytch, line 2, character 4:
-LOOK_INTO_THIS[1234]: Look into this
+NOT_A_REAL_ERROR[1234]: Look into this
    +-----------------------------------------------------+
    | dummy.pytch                                         |
  1 | line1                                               |
@@ -67,8 +68,8 @@ def test_error_at_single_point():
 """)
     error = Error(
         file_info=file_info,
-        title="LOOK_INTO_THIS",
-        code=1234,
+        title="NOT_A_REAL_ERROR",
+        code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="Look into this",
         offset_range=OffsetRange(start=9, end=9),
@@ -81,7 +82,7 @@ def test_error_at_single_point():
     lines = lines_to_string(get_error_lines(error, ascii=True))
     assert lines == """\
 In dummy.pytch, line 2, character 4:
-LOOK_INTO_THIS[1234]: Look into this
+NOT_A_REAL_ERROR[1234]: Look into this
    +----------------------------------------------------+
    | dummy.pytch                                        |
  1 | line1                                              |
@@ -107,8 +108,8 @@ dummy2 line2
 """)
     error = Error(
         file_info=file_info_1,
-        title="LOOK_INTO_THIS",
-        code=1234,
+        title="NOT_A_REAL_ERROR",
+        code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="Look into this",
         offset_range=OffsetRange(start=7, end=12),
@@ -122,7 +123,7 @@ dummy2 line2
     print(lines)
     assert lines == """\
 In dummy1.pytch, line 1, character 8:
-LOOK_INTO_THIS[1234]: Look into this
+NOT_A_REAL_ERROR[1234]: Look into this
    +-----------------------------------------------------+
    | dummy1.pytch                                        |
  1 | dummy1 line1                                        |
@@ -145,7 +146,7 @@ def test_get_diagnostic_lines_to_insert() -> None:
     diagnostics = [Error(
         file_info=file_info,
         title="An error",
-        code=1234,
+        code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="An error message",
         notes=[],

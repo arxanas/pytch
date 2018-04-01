@@ -22,6 +22,20 @@ from . import FileInfo, OffsetRange, Range
 T = TypeVar("T")
 
 
+class ErrorCode(Enum):
+    UNEXPECTED_TOKEN = 1000
+    EXPECTED_EXPRESSION = 1001
+    EXPECTED_LPAREN = 1002
+    EXPECTED_RPAREN = 1003
+    EXPECTED_PATTERN = 1004
+    EXPECTED_EQUALS = 1005
+    EXPECTED_DUMMY_IN = 1006
+    EXPECTED_LET_EXPRESSION = 1007
+
+    NOT_A_REAL_ERROR = 1234
+    """Not a real error code, just for testing purposes."""
+
+
 class Glyphs:
     """The set of glyphs to be used when printing out error messages."""
 
@@ -158,7 +172,7 @@ class Error:
         self,
         file_info: FileInfo,
         title: str,
-        code: int,
+        code: ErrorCode,
         severity: Severity,
         message: str,
         notes: List[Note],
@@ -193,7 +207,7 @@ class Error:
         return self._title
 
     @property
-    def code(self) -> int:
+    def code(self) -> ErrorCode:
         return self._code
 
     @property
@@ -422,7 +436,7 @@ def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
             f"In {glyphs.make_bold(error.file_info.file_path)}:"
         )
     output_lines.append(
-        glyphs.make_bold(error.title + f"[{error.code}]")
+        glyphs.make_bold(error.title + f"[{error.code.value}]")
         + ": "
         + error.message
     )

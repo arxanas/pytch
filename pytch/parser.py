@@ -15,11 +15,10 @@ therefore reference cycles). The object identity of its nodes and tokens must
 *not* be relied on, although their corresponding nodes in
 the green CST (their "origins") can be.
 """
-from enum import Enum
 from typing import Iterator, List, Optional, Tuple, Union
 
-from pytch.errors import Error, Note, Severity
 from . import FileInfo, OffsetRange, warn_if
+from .errors import Error, ErrorCode, Note, Severity
 from .greencst import (
     Expr,
     FunctionCallExpr,
@@ -42,17 +41,6 @@ Sometimes, we want to know what kind of token that was, to know how to
 proceed with error-recovery. This could be a dummy token kind like `DUMMY_IN`
 or just `EOF`.
 """
-
-
-class ErrorCode(Enum):
-    UNEXPECTED_TOKEN = 1000
-    EXPECTED_EXPRESSION = 1001
-    EXPECTED_LPAREN = 1002
-    EXPECTED_RPAREN = 1003
-    EXPECTED_PATTERN = 1004
-    EXPECTED_EQUALS = 1005
-    EXPECTED_DUMMY_IN = 1006
-    EXPECTED_LET_EXPRESSION = 1007
 
 
 def walk_tokens(node: Node) -> Iterator[Token]:
@@ -335,7 +323,7 @@ class Parser:
             state = state.add_error(Error(
                 file_info=state.file_info,
                 title="Expected expression after let-bindng",
-                code=ErrorCode.EXPECTED_LET_EXPRESSION.value,
+                code=ErrorCode.EXPECTED_LET_EXPRESSION,
                 severity=Severity.ERROR,
                 message="I was expecting an expression to follow " +
                         "the previous let-binding.",
@@ -371,7 +359,7 @@ class Parser:
             state = state.add_error(Error(
                 file_info=state.file_info,
                 title="Expected pattern",
-                code=ErrorCode.EXPECTED_PATTERN.value,
+                code=ErrorCode.EXPECTED_PATTERN,
                 severity=Severity.ERROR,
                 message="I was expecting a pattern after 'let'.",
                 notes=notes,
@@ -385,7 +373,7 @@ class Parser:
                     Error(
                         file_info=state.file_info,
                         title="Expected pattern",
-                        code=ErrorCode.EXPECTED_PATTERN.value,
+                        code=ErrorCode.EXPECTED_PATTERN,
                         severity=Severity.ERROR,
                         message="I was expecting a pattern after 'let'.",
                         notes=notes,
@@ -424,7 +412,7 @@ class Parser:
             (state, sync_token_kind) = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 title="Expected expression",
-                code=ErrorCode.EXPECTED_EXPRESSION.value,
+                code=ErrorCode.EXPECTED_EXPRESSION,
                 severity=Severity.ERROR,
                 message="I was expecting a value after the " +
                         "'=' in this let-binding.",
@@ -520,7 +508,7 @@ class Parser:
                 file_info=state.file_info,
                 severity=Severity.ERROR,
                 title="Expected expression",
-                code=ErrorCode.EXPECTED_EXPRESSION.value,
+                code=ErrorCode.EXPECTED_EXPRESSION,
                 message=(
                     "I was expecting an expression " +
                     "but instead reached the end of the file."
@@ -556,7 +544,7 @@ class Parser:
             state = state.add_error(Error(
                 file_info=state.file_info,
                 title="Expected '('",
-                code=ErrorCode.EXPECTED_LPAREN.value,
+                code=ErrorCode.EXPECTED_LPAREN,
                 severity=Severity.ERROR,
                 message=(
                     "I was expecting a '(' to indicate the start of a " +
@@ -666,7 +654,7 @@ class Parser:
         (state, sync_token_kind) = self.add_error_and_recover(state, Error(
             file_info=state.file_info,
             title="Unexpected token",
-            code=ErrorCode.UNEXPECTED_TOKEN.value,
+            code=ErrorCode.UNEXPECTED_TOKEN,
             severity=Severity.ERROR,
             message=message,
             notes=[],
