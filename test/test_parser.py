@@ -5,12 +5,12 @@ from utils import CaseInfo, CaseResult, find_tests, generate
 
 from pytch import FileInfo
 from pytch.errors import Error, get_error_lines
-from pytch.greenast import Node
+from pytch.greencst import Node
 from pytch.lexer import lex, Token
 from pytch.parser import parse
 
 
-def render_ast(
+def render_syntax_tree(
     source_code: str,
     ast_node: Union[Node, Token, None],
     offset: int = 0,
@@ -38,7 +38,8 @@ def render_ast(
     else:
         lines = [f"{ast_node.__class__.__name__}"]
         for child in ast_node.children:
-            (offset, rendered_child) = render_ast(source_code, child, offset)
+            (offset, rendered_child) = \
+                render_syntax_tree(source_code, child, offset)
             lines.extend(
                 f"    {subline}"
                 for subline in rendered_child
@@ -65,8 +66,11 @@ def make_result(input_filename: str, source_code: str) -> CaseResult:
     )
     lexation = lex(file_info=file_info)
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
-    offset, rendered_ast_lines = render_ast(source_code, parsation.ast)
-    output = "".join(line + "\n" for line in rendered_ast_lines)
+    offset, rendered_st_lines = render_syntax_tree(
+        source_code,
+        parsation.green_cst,
+    )
+    output = "".join(line + "\n" for line in rendered_st_lines)
 
     error_lines = []
     errors: List[Error] = lexation.errors + parsation.errors  # type: ignore

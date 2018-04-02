@@ -1,6 +1,6 @@
 """NOTE: This file auto-generated from ast.txt.
 
-Run `bin/generate_ast.sh` to re-generate. Do not edit!
+Run `bin/generate_syntax_trees.sh` to re-generate. Do not edit!
 """
 from typing import List, Optional, Sequence, Union
 
@@ -23,7 +23,7 @@ class Expr(Node):
     pass
 
 
-class Ast(Node):
+class SyntaxTree(Node):
     def __init__(
         self,
         n_expr: Optional[Expr],
@@ -167,7 +167,6 @@ class FunctionCallExpr(Expr):
 
 
 __all__ = [
-    "Ast",
     "Expr",
     "FunctionCallExpr",
     "IdentifierExpr",
@@ -175,5 +174,6 @@ __all__ = [
     "LetExpr",
     "Node",
     "Pattern",
+    "SyntaxTree",
     "VariablePattern",
 ]

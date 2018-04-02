@@ -1,4 +1,4 @@
-Ast
+SyntaxTree
     LetExpr
         Token 'let'
         Trailing '\n'

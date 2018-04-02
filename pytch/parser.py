@@ -1,21 +1,26 @@
-"""Parses a series of tokens into a syntax tree.
+"""Parses a series of tokens into a concrete syntax tree (CST).
 
-The syntax tree is not quite an abstract syntax tree: the tokens contained
-therein are enough to reconstitute the source code. The non-meaningful parts
-of the program are contained within "trivia" nodes. See the lexer for more
-information.
+The concrete syntax tree is not quite an abstract syntax tree: the tokens
+contained therein are enough to reconstitute the source code. The
+non-meaningful parts of the program are contained within "trivia" nodes. See
+the lexer for more information.
 
-The syntax tree is considered to be immutable and must not be modified.
+The *green* CST is considered to be immutable and must not be modified.
 Therefore, its nodes and tokens can be checked for referential equality and
 used as keys into maps.
+
+The *red* CST is based off of the green syntax tree. It is also immutable,
+but its nodes are generated lazily (since they contain `parent` pointers and
+therefore reference cycles). The object identity of its nodes and tokens must
+*not* be relied on, although their corresponding nodes in
+the green CST (their "origins") can be.
 """
 from enum import Enum
 from typing import Iterator, List, Optional, Tuple, Union
 
 from pytch.errors import Error, Note, Severity
 from . import FileInfo, OffsetRange, warn_if
-from .greenast import (
-    Ast,
+from .greencst import (
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
@@ -23,6 +28,7 @@ from .greenast import (
     LetExpr,
     Node,
     Pattern,
+    SyntaxTree,
     VariablePattern,
 )
 from .lexer import Token, TokenKind, Trivium, TriviumKind
@@ -62,13 +68,13 @@ def walk_tokens(node: Node) -> Iterator[Token]:
 
 
 class Parsation:
-    def __init__(self, ast: Ast, errors: List[Error]) -> None:
-        self.ast = ast
+    def __init__(self, green_cst: SyntaxTree, errors: List[Error]) -> None:
+        self.green_cst = green_cst
         self.errors = errors
 
     @property
     def full_width(self) -> int:
-        return sum(token.full_width for token in walk_tokens(self.ast))
+        return sum(token.full_width for token in walk_tokens(self.green_cst))
 
 
 class ParseException(Exception):
@@ -279,8 +285,8 @@ class Parser:
                 state,
                 allow_naked_lets=True,
             )
-            ast = Ast(n_expr=n_expr)
-            return Parsation(ast=ast, errors=state.errors)
+            ast = SyntaxTree(n_expr=n_expr)
+            return Parsation(green_cst=ast, errors=state.errors)
         except UnhandledParserException:
             raise
         except Exception as e:

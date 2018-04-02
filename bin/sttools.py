@@ -1,3 +1,4 @@
+"""Tools for generating syntax trees."""
 import textwrap
 from typing import Dict, Iterable, List, Mapping, Optional
 

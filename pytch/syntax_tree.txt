@@ -1,6 +1,6 @@
 Expr(Node)
 
-Ast(Node)
+SyntaxTree(Node)
     n_expr: Optional[Expr]
 
 Pattern(Node)

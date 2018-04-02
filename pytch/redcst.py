@@ -1,10 +1,10 @@
 """NOTE: This file auto-generated from ast.txt.
 
-Run `bin/generate_ast.sh` to re-generate. Do not edit!
+Run `bin/generate_syntax_trees.sh` to re-generate. Do not edit!
 """
 from typing import List, Optional, Sequence, Union
 
-import pytch.greenast as greenast
+import pytch.greencst as greencst
 from .lexer import Token
 
 
@@ -28,11 +28,11 @@ class Expr(Node):
     pass
 
 
-class Ast(Node):
+class SyntaxTree(Node):
     def __init__(
         self,
         parent: Optional[Node],
-        origin: greenast.Ast,
+        origin: greencst.SyntaxTree,
     ) -> None:
         super().__init__(parent)
         self.origin = origin
@@ -59,7 +59,7 @@ class VariablePattern(Pattern):
     def __init__(
         self,
         parent: Optional[Node],
-        origin: greenast.VariablePattern,
+        origin: greencst.VariablePattern,
     ) -> None:
         super().__init__(parent)
         self.origin = origin
@@ -82,7 +82,7 @@ class LetExpr(Expr):
     def __init__(
         self,
         parent: Optional[Node],
-        origin: greenast.LetExpr,
+        origin: greencst.LetExpr,
     ) -> None:
         super().__init__(parent)
         self.origin = origin
@@ -137,7 +137,7 @@ class IdentifierExpr(Expr):
     def __init__(
         self,
         parent: Optional[Node],
-        origin: greenast.IdentifierExpr,
+        origin: greencst.IdentifierExpr,
     ) -> None:
         super().__init__(parent)
         self.origin = origin
@@ -160,7 +160,7 @@ class IntLiteralExpr(Expr):
     def __init__(
         self,
         parent: Optional[Node],
-        origin: greenast.IntLiteralExpr,
+        origin: greencst.IntLiteralExpr,
     ) -> None:
         super().__init__(parent)
         self.origin = origin
@@ -183,7 +183,7 @@ class FunctionCallExpr(Expr):
     def __init__(
         self,
         parent: Optional[Node],
-        origin: greenast.FunctionCallExpr,
+        origin: greencst.FunctionCallExpr,
     ) -> None:
         super().__init__(parent)
         self.origin = origin
@@ -227,7 +227,6 @@ class FunctionCallExpr(Expr):
 
 
 __all__ = [
-    "Ast",
     "Expr",
     "FunctionCallExpr",
     "IdentifierExpr",
@@ -235,5 +234,6 @@ __all__ = [
     "LetExpr",
     "Node",
     "Pattern",
+    "SyntaxTree",
     "VariablePattern",
 ]

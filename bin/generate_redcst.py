@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Generate the AST data structures from the description in pytch/ast.txt.
+"""Generate the syntax tree data structures from their spec.
 
-Run `generate_ast.sh` rather than this script directly.
+Run `generate_syntax_trees.sh` rather than this script directly.
 """
 import sys
 import textwrap
 from typing import List
 
-from generate_ast_tools import Child, get_exports, get_node_types, NodeType
+from sttools import Child, get_exports, get_node_types, NodeType
 
 
 PREAMBLE = """\
 \"\"\"NOTE: This file auto-generated from ast.txt.
 
-Run `bin/generate_ast.sh` to re-generate. Do not edit!
+Run `bin/generate_syntax_trees.sh` to re-generate. Do not edit!
 \"\"\"
 from typing import List, Optional, Sequence, Union
 
-import pytch.greenast as greenast
+import pytch.greencst as greencst
 from .lexer import Token
 
 
@@ -69,7 +69,7 @@ def get_class_def(node_type: NodeType, children: List[Child]) -> str:
     init_header = "def __init__(\n"
     init_header += f"    self,\n"
     init_header += f"    parent: Optional[Node],\n"
-    init_header += f"    origin: greenast.{node_type.name},\n"
+    init_header += f"    origin: greencst.{node_type.name},\n"
     init_header += f") -> None:\n"
     init_header = textwrap.indent(init_header, prefix="    ")
     class_header += init_header
