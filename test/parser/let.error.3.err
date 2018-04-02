@@ -1,5 +1,5 @@
 In test/parser/let.error.3.pytch, line 1, character 10:
-Expected expression[1001]: I was expecting a value after the '=' in this let-binding.
+EXPECTED_EXPRESSION[1001]: I was expecting a value after the '=' in this let-binding.
    +------------------------------------------------------------------------------+
    | test/parser/let.error.3.pytch                                                |
  1 | let foo =                                                                    |

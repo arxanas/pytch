@@ -1,5 +1,5 @@
 In test/parser/let.error.2.pytch, line 1, character 4:
-Expected pattern[1004]: I was expecting a pattern after 'let'.
+EXPECTED_PATTERN[1004]: I was expecting a pattern after 'let'.
    +-----------------------------------------------------+
    | test/parser/let.error.2.pytch                       |
  1 | let                                                 |
@@ -8,7 +8,7 @@ Expected pattern[1004]: I was expecting a pattern after 'let'.
  2 | let foo = bar                                       |
    +-----------------------------------------------------+
 In test/parser/let.error.2.pytch, line 3, character 4:
-Expected pattern[1004]: I was expecting a pattern after 'let'.
+EXPECTED_PATTERN[1004]: I was expecting a pattern after 'let'.
    +-----------------------------------------------------+
    | test/parser/let.error.2.pytch                       |
  2 | let foo = bar                                       |

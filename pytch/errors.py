@@ -171,7 +171,6 @@ class Error:
     def __init__(
         self,
         file_info: FileInfo,
-        title: str,
         code: ErrorCode,
         severity: Severity,
         message: str,
@@ -179,7 +178,6 @@ class Error:
         offset_range: Optional[OffsetRange] = None,
     ) -> None:
         self._file_info = file_info
-        self._title = title
         self._code = code
         self._severity = severity
         self._message = message
@@ -189,7 +187,6 @@ class Error:
     def __repr__(self) -> str:
         return (
             f"<Error" +
-            f" title={self.title!r}" +
             f" code={self.code!r}" +
             f" severity={self.severity!r}" +
             f" message={self.message!r}" +
@@ -201,10 +198,6 @@ class Error:
     @property
     def file_info(self) -> FileInfo:
         return self._file_info
-
-    @property
-    def title(self) -> str:
-        return self._title
 
     @property
     def code(self) -> ErrorCode:
@@ -436,7 +429,7 @@ def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
             f"In {glyphs.make_bold(error.file_info.file_path)}:"
         )
     output_lines.append(
-        glyphs.make_bold(error.title + f"[{error.code.value}]")
+        glyphs.make_bold(f"{error.code.name}[{error.code.value}]")
         + ": "
         + error.message
     )

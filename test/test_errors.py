@@ -30,7 +30,6 @@ def test_print_error():
 """)
     error = Error(
         file_info=file_info,
-        title="NOT_A_REAL_ERROR",
         code=ErrorCode.NOT_A_REAL_ERROR,  # type: ignore
         severity=Severity.ERROR,
         message="Look into this",
@@ -68,7 +67,6 @@ def test_error_at_single_point():
 """)
     error = Error(
         file_info=file_info,
-        title="NOT_A_REAL_ERROR",
         code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="Look into this",
@@ -108,7 +106,6 @@ dummy2 line2
 """)
     error = Error(
         file_info=file_info_1,
-        title="NOT_A_REAL_ERROR",
         code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="Look into this",
@@ -145,7 +142,6 @@ def test_get_diagnostic_lines_to_insert() -> None:
     )
     diagnostics = [Error(
         file_info=file_info,
-        title="An error",
         code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="An error message",

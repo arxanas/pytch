@@ -233,7 +233,7 @@ class UnhandledParserException(Exception):
             file_contents += token.full_text
 
         error_messages = "\n".join(
-            f"[{error.code}] {error.title}: {error.message}"
+            f"{error.code.name}[{error.code.value}]: {error.message}"
             for error in self._state.errors
         )
         return f"""All tokens:
@@ -322,7 +322,6 @@ class Parser:
         if not n_body and not allow_naked_lets:
             state = state.add_error(Error(
                 file_info=state.file_info,
-                title="Expected expression after let-bindng",
                 code=ErrorCode.EXPECTED_LET_EXPRESSION,
                 severity=Severity.ERROR,
                 message="I was expecting an expression to follow " +
@@ -358,7 +357,6 @@ class Parser:
             n_pattern = None
             state = state.add_error(Error(
                 file_info=state.file_info,
-                title="Expected pattern",
                 code=ErrorCode.EXPECTED_PATTERN,
                 severity=Severity.ERROR,
                 message="I was expecting a pattern after 'let'.",
@@ -372,7 +370,6 @@ class Parser:
                     state,
                     Error(
                         file_info=state.file_info,
-                        title="Expected pattern",
                         code=ErrorCode.EXPECTED_PATTERN,
                         severity=Severity.ERROR,
                         message="I was expecting a pattern after 'let'.",
@@ -411,7 +408,6 @@ class Parser:
         if not n_value:
             (state, sync_token_kind) = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
-                title="Expected expression",
                 code=ErrorCode.EXPECTED_EXPRESSION,
                 severity=Severity.ERROR,
                 message="I was expecting a value after the " +
@@ -507,7 +503,6 @@ class Parser:
             (state, _sync) = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 severity=Severity.ERROR,
-                title="Expected expression",
                 code=ErrorCode.EXPECTED_EXPRESSION,
                 message=(
                     "I was expecting an expression " +
@@ -543,7 +538,6 @@ class Parser:
         else:
             state = state.add_error(Error(
                 file_info=state.file_info,
-                title="Expected '('",
                 code=ErrorCode.EXPECTED_LPAREN,
                 severity=Severity.ERROR,
                 message=(
@@ -653,7 +647,6 @@ class Parser:
         )
         (state, sync_token_kind) = self.add_error_and_recover(state, Error(
             file_info=state.file_info,
-            title="Unexpected token",
             code=ErrorCode.UNEXPECTED_TOKEN,
             severity=Severity.ERROR,
             message=message,
