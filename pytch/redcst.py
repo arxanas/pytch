@@ -5,6 +5,7 @@ Run `bin/generate_syntax_trees.sh` to re-generate. Do not edit!
 from typing import List, Optional, Sequence, Union
 
 import pytch.greencst as greencst
+from . import OffsetRange
 from .lexer import Token
 
 
@@ -74,6 +75,14 @@ class SyntaxTree(Node):
         return self.origin.full_width
 
     @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
+
+    @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
             self.n_expr,
@@ -103,6 +112,14 @@ class VariablePattern(Pattern):
     @property
     def full_width(self) -> int:
         return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -238,6 +255,14 @@ class LetExpr(Expr):
         return self.origin.full_width
 
     @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
+
+    @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
             self.t_let,
@@ -269,6 +294,14 @@ class IdentifierExpr(Expr):
         return self.origin.full_width
 
     @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
+
+    @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
             self.t_identifier,
@@ -293,6 +326,14 @@ class IntLiteralExpr(Expr):
     @property
     def full_width(self) -> int:
         return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -337,6 +378,14 @@ class Argument(Node):
     @property
     def full_width(self) -> int:
         return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -391,6 +440,14 @@ class ArgumentList(Node):
     @property
     def full_width(self) -> int:
         return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -456,6 +513,14 @@ class FunctionCallExpr(Expr):
     @property
     def full_width(self) -> int:
         return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:

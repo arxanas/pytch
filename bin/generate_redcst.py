@@ -18,6 +18,7 @@ Run `bin/generate_syntax_trees.sh` to re-generate. Do not edit!
 from typing import List, Optional, Sequence, Union
 
 import pytch.greencst as greencst
+from . import OffsetRange
 from .lexer import Token
 
 
@@ -177,6 +178,16 @@ def get_class_def(
     children_prop_body += "@property\n"
     children_prop_body += "def full_width(self) -> int:\n"
     children_prop_body += "    return self.origin.full_width\n"
+
+    children_prop_body += "\n"
+    children_prop_body += "@property\n"
+    children_prop_body += "def offset_range(self) -> OffsetRange:\n"
+    children_prop_body += \
+        "    start = self.offset + self.origin.leading_width\n"
+    children_prop_body += "    return OffsetRange(\n"
+    children_prop_body += "        start=start,\n"
+    children_prop_body += "        end=start + self.origin.width,\n"
+    children_prop_body += "    )\n"
 
     children_prop_body += "\n"
     children_prop_body += f"@property\n"

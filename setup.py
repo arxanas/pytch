@@ -16,5 +16,6 @@ setup(
     """,
     install_requires=[
         "click==6.7",
+        "distance==0.1.3",
     ],
 )

@@ -156,6 +156,16 @@ class Note:
             f">"
         )
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Note):
+            return False
+        return True
+        return (
+            self._file_info == other._file_info
+            and self._message == other._message
+            and self._range == other._range
+        )
+
     @property
     def file_info(self) -> FileInfo:
         return self._file_info
@@ -200,6 +210,18 @@ class Error:
             f" notes={self.notes!r}" +
             f" range={self.range!r}" +
             f">"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Error):
+            return False
+        return (
+            self._file_info == other._file_info
+            and self._code == other._code
+            and self._severity == other._severity
+            and self._message == other._message
+            and self._notes == other._notes
+            and self._range == other._range
         )
 
     @property

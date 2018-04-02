@@ -34,6 +34,14 @@ class Position:
     def __repr__(self) -> str:
         return f"<Position line={self.line!r} character={self.character!r}>"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Position):
+            return False
+        return (
+            self._line == other._line
+            and self._character == other._character
+        )
+
     @property
     def line(self) -> int:
         return self._line
@@ -50,6 +58,14 @@ class Range:
 
     def __repr__(self) -> str:
         return f"<Range start={self.start!r} end={self.end!r}>"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Range):
+            return False
+        return (
+            self._start == other._start
+            and self._end == other._end
+        )
 
     @property
     def start(self) -> Position:
