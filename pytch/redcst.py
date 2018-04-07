@@ -39,9 +39,11 @@ class SyntaxTree(Node):
 
     @property
     def n_expr(self) -> Optional[Expr]:
-        return Optional[Expr](
+        if self.origin.n_expr is None:
+            return None
+        return globals()[self.origin.n_expr.__class__.__name__](
             parent=self,
-            origin=self.origin.n_expr
+            origin=self.origin.n_expr,
         )
 
     @property
@@ -66,10 +68,7 @@ class VariablePattern(Pattern):
 
     @property
     def t_identifier(self) -> Optional[Token]:
-        return Optional[Token](
-            parent=self,
-            origin=self.origin.t_identifier
-        )
+        return self.origin.t_identifier
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -89,37 +88,37 @@ class LetExpr(Expr):
 
     @property
     def t_let(self) -> Optional[Token]:
-        return Optional[Token](
-            parent=self,
-            origin=self.origin.t_let
-        )
+        return self.origin.t_let
 
     @property
     def n_pattern(self) -> Optional[Pattern]:
-        return Optional[Pattern](
+        if self.origin.n_pattern is None:
+            return None
+        return globals()[self.origin.n_pattern.__class__.__name__](
             parent=self,
-            origin=self.origin.n_pattern
+            origin=self.origin.n_pattern,
         )
 
     @property
     def t_equals(self) -> Optional[Token]:
-        return Optional[Token](
-            parent=self,
-            origin=self.origin.t_equals
-        )
+        return self.origin.t_equals
 
     @property
     def n_value(self) -> Optional[Expr]:
-        return Optional[Expr](
+        if self.origin.n_value is None:
+            return None
+        return globals()[self.origin.n_value.__class__.__name__](
             parent=self,
-            origin=self.origin.n_value
+            origin=self.origin.n_value,
         )
 
     @property
     def n_body(self) -> Optional[Expr]:
-        return Optional[Expr](
+        if self.origin.n_body is None:
+            return None
+        return globals()[self.origin.n_body.__class__.__name__](
             parent=self,
-            origin=self.origin.n_body
+            origin=self.origin.n_body,
         )
 
     @property
@@ -144,10 +143,7 @@ class IdentifierExpr(Expr):
 
     @property
     def t_identifier(self) -> Optional[Token]:
-        return Optional[Token](
-            parent=self,
-            origin=self.origin.t_identifier
-        )
+        return self.origin.t_identifier
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -167,10 +163,7 @@ class IntLiteralExpr(Expr):
 
     @property
     def t_int_literal(self) -> Optional[Token]:
-        return Optional[Token](
-            parent=self,
-            origin=self.origin.t_int_literal
-        )
+        return self.origin.t_int_literal
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -190,31 +183,29 @@ class FunctionCallExpr(Expr):
 
     @property
     def n_receiver(self) -> Optional[Expr]:
-        return Optional[Expr](
+        if self.origin.n_receiver is None:
+            return None
+        return globals()[self.origin.n_receiver.__class__.__name__](
             parent=self,
-            origin=self.origin.n_receiver
+            origin=self.origin.n_receiver,
         )
 
     @property
     def t_lparen(self) -> Optional[Token]:
-        return Optional[Token](
-            parent=self,
-            origin=self.origin.t_lparen
-        )
+        return self.origin.t_lparen
 
     @property
     def arguments(self) -> Optional[List[Union[Expr, Token]]]:
-        return Optional[List[Union[Expr, Token]]](
+        if self.origin.arguments is None:
+            return None
+        return globals()[self.origin.arguments.__class__.__name__](
             parent=self,
-            origin=self.origin.arguments
+            origin=self.origin.arguments,
         )
 
     @property
     def t_rparen(self) -> Optional[Token]:
-        return Optional[Token](
-            parent=self,
-            origin=self.origin.t_rparen
-        )
+        return self.origin.t_rparen
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:

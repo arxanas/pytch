@@ -5,9 +5,9 @@ Run `generate_syntax_trees.sh` rather than this script directly.
 """
 import sys
 import textwrap
-from typing import List
+from typing import List, Mapping, Optional
 
-from sttools import Child, get_exports, get_node_types, NodeType
+from sttools import Child, get_exports, get_node_types, NodeType, TOKEN_TYPE
 
 
 PREAMBLE = """\
@@ -44,7 +44,7 @@ def main() -> None:
     lines = sys.stdin.read().splitlines()
     sections = get_node_types(lines)
     class_defs = [
-        get_class_def(name, children)
+        get_class_def(name, sections, children)
         for name, children
         in sections.items()
     ]
@@ -54,7 +54,22 @@ def main() -> None:
     sys.stdout.write("\n\n" + exports + "\n")
 
 
-def get_class_def(node_type: NodeType, children: List[Child]) -> str:
+def get_class_def(
+    node_type: NodeType,
+    node_types: Mapping[NodeType, List[Child]],
+    children: List[Child],
+) -> str:
+    node_types = {
+        NodeType(name=k.name, supertype=None): v
+        for k, v in node_types.items()
+    }
+
+    def get_leaf_children(base_type: NodeType) -> Optional[List[Child]]:
+        children = node_types.get(base_type, [])
+        if len(children) > 0:
+            return children
+        return None
+
     # class name
     class_header = f"class {node_type.name}"
     if node_type.supertype:
@@ -85,11 +100,27 @@ def get_class_def(node_type: NodeType, children: List[Child]) -> str:
     for child in children:
         property_body = "\n"
         property_body += "@property\n"
-        property_body += f"def {child.name}(self) -> {child.type}:\n"
-        property_body += f"    return {child.type}(\n"
-        property_body += f"        parent=self,\n"
-        property_body += f"        origin=self.origin.{child.name}\n"
-        property_body += f"    )\n"
+        property_body += f"def {child.name}(self) -> {child.type.name}:\n"
+
+        leaf_children = get_leaf_children(child.base_type)
+        if child.base_type == TOKEN_TYPE:
+            # Tokens don't need to construct a new red node.
+            property_body += f"    return self.origin.{child.name}\n"
+        elif leaf_children is not None:
+            # A specific class to construct, like `FunctionCallExpr`.
+            property_body += f"    return {child.base_type}(\n"
+            property_body += f"        parent=self,\n"
+            property_body += f"        origin=self.origin.{child.name},\n"
+            property_body += f"    )\n"
+        else:
+            property_body += f"    if self.origin.{child.name} is None:\n"
+            property_body += f"        return None\n"
+            property_body += f"    return globals()[" + \
+                f"self.origin.{child.name}.__class__.__name__](\n"
+            property_body += f"        parent=self,\n"
+            property_body += f"        origin=self.origin.{child.name},\n"
+            property_body += f"    )\n"
+
         class_body += textwrap.indent(property_body, prefix="    ")
 
     children_prop_body = "\n"

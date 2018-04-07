@@ -8,10 +8,16 @@ class NodeType:
         self.name = name
         self.supertype = supertype
 
+    def __repr__(self) -> str:
+        return f"<NodeType name={self.name} supertype={self.supertype}>"
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, NodeType):
             return False
-        return self.name == other.name
+        return (
+            self.name == other.name and
+            self.supertype == other.supertype
+        )
 
     def __lt__(self, other: object) -> bool:
         assert isinstance(other, NodeType)
@@ -21,23 +27,36 @@ class NodeType:
         return hash(self.name)
 
 
+TOKEN_TYPE = NodeType(name="Token", supertype=None)
+
+
 class Child:
-    def __init__(self, name: str, type: str) -> None:
+    def __init__(self, name: str, type: NodeType) -> None:
         self.name = name
         self.type = type
 
     @property
+    def base_type(self) -> NodeType:
+        assert self.type.name.startswith("Optional[")
+        assert self.type.name.endswith("]")
+        name = self.type.name[len("Optional["):-len("]")]
+        return NodeType(
+            name=name,
+            supertype=None,
+        )
+
+    @property
     def is_sequence_type(self) -> bool:
         return (
-            self.type.startswith("List[")
-            or self.type.startswith("Sequence[")
+            self.type.name.startswith("List[")
+            or self.type.name.startswith("Sequence[")
         )
 
     @property
     def is_optional_sequence_type(self) -> bool:
         return (
-            self.type.startswith("Optional[List[")
-            or self.type.startswith("Optional[Sequence[")
+            self.type.name.startswith("Optional[List[")
+            or self.type.name.startswith("Optional[Sequence[")
         )
 
 
@@ -62,7 +81,11 @@ def get_node_type_from_header(header: str) -> NodeType:
 
 
 def get_child(line: str) -> Child:
-    name, type = line.split(": ", 1)
+    name, child_type = line.split(": ", 1)
+    type = NodeType(
+        name=child_type,
+        supertype=None,
+    )
     return Child(name=name, type=type)
 
 

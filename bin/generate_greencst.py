@@ -82,7 +82,7 @@ def get_class_def(node_type: NodeType, children: List[Child]) -> str:
     init_header = "def __init__(\n"
     init_header += "    self,\n"
     for child in children:
-        init_header += f"    {child.name}: {child.type},\n"
+        init_header += f"    {child.name}: {child.type.name},\n"
     init_header += ") -> None:\n"
     init_header = textwrap.indent(init_header, prefix="    ")
     class_header += init_header
@@ -99,7 +99,7 @@ def get_class_def(node_type: NodeType, children: List[Child]) -> str:
     for child in children:
         property_body = "\n"
         property_body += "@property\n"
-        property_body += f"def {child.name}(self) -> {child.type}:\n"
+        property_body += f"def {child.name}(self) -> {child.type.name}:\n"
         property_body += f"    return self._{child.name}\n"
         class_body += textwrap.indent(property_body, prefix="    ")
 
