@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from pytch import FileInfo, OffsetRange
+from pytch import FileInfo, Position, Range
 from pytch.errors import (
     _DiagnosticContext,
     _get_diagnostic_lines_to_insert,
@@ -30,14 +30,20 @@ def test_print_error():
 """)
     error = Error(
         file_info=file_info,
-        code=ErrorCode.NOT_A_REAL_ERROR,  # type: ignore
+        code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="Look into this",
-        offset_range=OffsetRange(start=9, end=17),
+        range=Range(
+            start=Position(line=1, character=3),
+            end=Position(line=2, character=2),
+        ),
         notes=[Note(
             file_info=file_info,
             message="This is an additional point of interest",
-            offset_range=OffsetRange(start=0, end=5),
+            range=Range(
+                start=Position(line=0, character=0),
+                end=Position(line=0, character=5),
+            ),
         )],
     )
     lines = lines_to_string(get_error_lines(error, ascii=True))
@@ -70,11 +76,17 @@ def test_error_at_single_point():
         code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="Look into this",
-        offset_range=OffsetRange(start=9, end=9),
+        range=Range(
+            start=Position(line=1, character=3),
+            end=Position(line=1, character=3),
+        ),
         notes=[Note(
             file_info=file_info,
             message="This is an additional point of interest",
-            offset_range=OffsetRange(start=17, end=18),
+            range=Range(
+                start=Position(line=2, character=3),
+                end=Position(line=2, character=4),
+            ),
         )],
     )
     lines = lines_to_string(get_error_lines(error, ascii=True))
@@ -109,11 +121,17 @@ dummy2 line2
         code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
         message="Look into this",
-        offset_range=OffsetRange(start=7, end=12),
+        range=Range(
+            start=Position(line=0, character=7),
+            end=Position(line=0, character=12),
+        ),
         notes=[Note(
             file_info=file_info_2,
             message="This is an additional point of interest",
-            offset_range=OffsetRange(start=0, end=5),
+            range=Range(
+                start=Position(line=0, character=0),
+                end=Position(line=0, character=5),
+            ),
         )],
     )
     lines = lines_to_string(get_error_lines(error, ascii=True))
@@ -146,7 +164,10 @@ def test_get_diagnostic_lines_to_insert() -> None:
         severity=Severity.ERROR,
         message="An error message",
         notes=[],
-        offset_range=OffsetRange(start=5, end=9),
+        range=Range(
+            start=Position(line=1, character=1),
+            end=Position(line=2, character=0),
+        )
     )]
     context = _DiagnosticContext(file_info=file_info, line_range=(0, 3))
     assert _get_diagnostic_lines_to_insert(

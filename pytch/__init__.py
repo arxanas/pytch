@@ -109,6 +109,16 @@ class FileInfo:
         character = offset - current_offset
         return Position(line=current_line, character=character)
 
+    def get_range_from_offset_range(self, offset_range: OffsetRange) -> Range:
+        return Range(
+            start=self.get_position_for_offset(
+                offset_range.start,
+            ),
+            end=self.get_position_for_offset(
+                offset_range.end,
+            )
+        )
+
 
 def warn_if(condition: bool, message: str) -> None:
     if condition:

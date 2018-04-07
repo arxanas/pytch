@@ -17,7 +17,7 @@ from typing import (
 import click
 from typing_extensions import Protocol
 
-from . import FileInfo, OffsetRange, Range
+from . import FileInfo, Range
 
 T = TypeVar("T")
 
@@ -122,17 +122,17 @@ class Note:
         self,
         file_info: FileInfo,
         message: str,
-        offset_range: Optional[OffsetRange] = None,
+        range: Range = None,
     ) -> None:
         self._file_info = file_info
         self._message = message
-        self._offset_range = offset_range
+        self._range = range
 
     def __repr__(self) -> str:
         return (
             f"<Note" +
             f" message={self.message!r}" +
-            f" offset_range={self._offset_range!r}" +
+            f" range={self.range!r}" +
             f">"
         )
 
@@ -146,17 +146,7 @@ class Note:
 
     @property
     def range(self) -> Optional[Range]:
-        offset_range = self._offset_range
-        if offset_range is None:
-            return None
-        return Range(
-            start=self._file_info.get_position_for_offset(
-                offset_range.start,
-            ),
-            end=self._file_info.get_position_for_offset(
-                offset_range.end,
-            )
-        )
+        return self._range
 
 
 class Severity(Enum):
@@ -175,14 +165,14 @@ class Error:
         severity: Severity,
         message: str,
         notes: List[Note],
-        offset_range: Optional[OffsetRange] = None,
+        range: Range = None,
     ) -> None:
         self._file_info = file_info
         self._code = code
         self._severity = severity
         self._message = message
         self._notes = notes
-        self._offset_range = offset_range
+        self._range = range
 
     def __repr__(self) -> str:
         return (
@@ -191,7 +181,7 @@ class Error:
             f" severity={self.severity!r}" +
             f" message={self.message!r}" +
             f" notes={self.notes!r}" +
-            f" offset_range={self._offset_range!r}" +
+            f" range={self.range!r}" +
             f">"
         )
 
@@ -217,17 +207,7 @@ class Error:
 
     @property
     def range(self) -> Optional[Range]:
-        offset_range = self._offset_range
-        if offset_range is None:
-            return None
-        return Range(
-            start=self._file_info.get_position_for_offset(
-                offset_range.start,
-            ),
-            end=self._file_info.get_position_for_offset(
-                offset_range.end,
-            )
-        )
+        return self._range
 
 
 def get_colored_diagnostic_message(

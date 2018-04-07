@@ -17,7 +17,7 @@ the green CST (their "origins") can be.
 """
 from typing import Iterator, List, Optional, Tuple, Union
 
-from . import FileInfo, OffsetRange, warn_if
+from . import FileInfo, OffsetRange, Range, warn_if
 from .errors import Error, ErrorCode, Note, Severity
 from .greencst import (
     Expr,
@@ -164,6 +164,12 @@ class State:
         return OffsetRange(start=start, end=end)
 
     @property
+    def current_token_range(self) -> Range:
+        return self.file_info.get_range_from_offset_range(
+            self.current_token_offset_range,
+        )
+
+    @property
     def next_token(self) -> Optional[Token]:
         if 0 <= self.token_index + 1 < len(self.tokens):
             return self.tokens[self.token_index + 1]
@@ -285,14 +291,14 @@ class Parser:
         state: State,
         allow_naked_lets=False,
     ) -> Tuple[State, Optional[LetExpr]]:
-        t_let_offset_range = state.current_token_offset_range
+        t_let_range = state.current_token_range
         (state, t_let, _sync) = self.expect_token(state, [TokenKind.LET])
         if not t_let:
             return (state, None)
         let_note = Note(
             file_info=state.file_info,
             message="This is the beginning of the let-binding.",
-            offset_range=t_let_offset_range,
+            range=t_let_range,
         )
         notes = [let_note]
 
@@ -327,7 +333,7 @@ class Parser:
                 message="I was expecting an expression to follow " +
                         "the previous let-binding.",
                 notes=notes,
-                offset_range=state.current_token_offset_range,
+                range=state.current_token_range,
             ))
             return (state, None)
         elif n_body:
@@ -361,7 +367,7 @@ class Parser:
                 severity=Severity.ERROR,
                 message="I was expecting a pattern after 'let'.",
                 notes=notes,
-                offset_range=state.current_token_offset_range,
+                range=state.current_token_range,
             ))
         else:
             (pattern_state, n_pattern) = self.parse_pattern(state)
@@ -374,7 +380,7 @@ class Parser:
                         severity=Severity.ERROR,
                         message="I was expecting a pattern after 'let'.",
                         notes=notes,
-                        offset_range=state.current_token_offset_range,
+                        range=state.current_token_range,
                     ),
                 )
                 if state.current_token.kind != TokenKind.EQUALS:
@@ -413,7 +419,7 @@ class Parser:
                 message="I was expecting a value after the " +
                         "'=' in this let-binding.",
                 notes=notes,
-                offset_range=state.current_token_offset_range,
+                range=state.current_token_range,
             ))
             return (state, LetExpr(
                 t_let=t_let,
@@ -508,7 +514,7 @@ class Parser:
                     "I was expecting an expression " +
                     "but instead reached the end of the file."
                 ),
-                offset_range=state.end_of_file_offset_range,
+                range=state.current_token_range,
                 notes=[],
             ))
             return (state, None)
@@ -547,10 +553,7 @@ class Parser:
                     "."
                 ),
                 notes=[],
-                offset_range=self.get_offset_range_from_token(
-                    state,
-                    current_token,
-                ),
+                range=self.get_range_from_token(state, current_token),
             ))
             arguments = []
         if arguments is not None:
@@ -651,19 +654,19 @@ class Parser:
             severity=Severity.ERROR,
             message=message,
             notes=[],
-            offset_range=self.get_offset_range_from_token(state, token),
+            range=self.get_range_from_token(state, token),
         ))
         return (state, None, sync_token_kind)
 
-    def get_offset_range_from_token(
+    def get_range_from_token(
         self,
         state: State,
         token: Token,
-    ) -> OffsetRange:
-        return OffsetRange(
+    ) -> Range:
+        return state.file_info.get_range_from_offset_range(OffsetRange(
             start=state.offset,
             end=state.offset + token.width,
-        )
+        ))
 
     def describe_token_kind(self, token_kind: TokenKind) -> str:
         if token_kind.value.startswith("the "):
