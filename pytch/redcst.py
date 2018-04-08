@@ -172,6 +172,71 @@ class IntLiteralExpr(Expr):
         ]
 
 
+class Argument(Node):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        origin: greencst.Argument,
+    ) -> None:
+        super().__init__(parent)
+        self.origin = origin
+
+    @property
+    def n_expr(self) -> Optional[Expr]:
+        if self.origin.n_expr is None:
+            return None
+        return GREEN_TO_RED_NODE_MAP[self.origin.n_expr.__class__](
+            parent=self,
+            origin=self.origin.n_expr,
+        )
+
+    @property
+    def t_comma(self) -> Optional[Token]:
+        return self.origin.t_comma
+
+    @property
+    def children(self) -> List[Optional[Union[Token, Node]]]:
+        return [
+            self.n_expr,
+            self.t_comma,
+        ]
+
+
+class ArgumentList(Node):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        origin: greencst.ArgumentList,
+    ) -> None:
+        super().__init__(parent)
+        self.origin = origin
+
+    @property
+    def t_lparen(self) -> Optional[Token]:
+        return self.origin.t_lparen
+
+    @property
+    def arguments(self) -> Optional[List[Argument]]:
+        if self.origin.arguments is None:
+            return None
+        return GREEN_TO_RED_NODE_MAP[self.origin.arguments.__class__](
+            parent=self,
+            origin=self.origin.arguments,
+        )
+
+    @property
+    def t_rparen(self) -> Optional[Token]:
+        return self.origin.t_rparen
+
+    @property
+    def children(self) -> List[Optional[Union[Token, Node]]]:
+        return [
+            self.t_lparen,
+            *(self.arguments if self.arguments is not None else []),
+            self.t_rparen,
+        ]
+
+
 class FunctionCallExpr(Expr):
     def __init__(
         self,
@@ -191,29 +256,19 @@ class FunctionCallExpr(Expr):
         )
 
     @property
-    def t_lparen(self) -> Optional[Token]:
-        return self.origin.t_lparen
-
-    @property
-    def arguments(self) -> Optional[List[Union[Expr, Token]]]:
-        if self.origin.arguments is None:
+    def n_argument_list(self) -> Optional[ArgumentList]:
+        if self.origin.n_argument_list is None:
             return None
-        return GREEN_TO_RED_NODE_MAP[self.origin.arguments.__class__](
+        return ArgumentList(
             parent=self,
-            origin=self.origin.arguments,
+            origin=self.origin.n_argument_list,
         )
-
-    @property
-    def t_rparen(self) -> Optional[Token]:
-        return self.origin.t_rparen
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
             self.n_receiver,
-            self.t_lparen,
-            *(self.arguments if self.arguments is not None else []),
-            self.t_rparen,
+            self.n_argument_list,
         ]
 
 
@@ -225,11 +280,15 @@ GREEN_TO_RED_NODE_MAP = {
     LetExpr: greencst.LetExpr,
     IdentifierExpr: greencst.IdentifierExpr,
     IntLiteralExpr: greencst.IntLiteralExpr,
+    Argument: greencst.Argument,
+    ArgumentList: greencst.ArgumentList,
     FunctionCallExpr: greencst.FunctionCallExpr,
 }
 
 
 __all__ = [
+    "Argument",
+    "ArgumentList",
     "Expr",
     "FunctionCallExpr",
     "IdentifierExpr",

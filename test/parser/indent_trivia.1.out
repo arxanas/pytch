@@ -11,15 +11,18 @@ SyntaxTree
             IdentifierExpr
                 Leading '    '
                 Token 'bar'
-            Token '('
-            Trailing '\n'
-            Trailing '\n'
-            IdentifierExpr
-                Leading '        '
-                Token 'baz'
+            ArgumentList
+                Token '('
                 Trailing '\n'
                 Trailing '\n'
-            Leading '    '
-            Token ')'
-            Trailing '\n'
+                Argument
+                    IdentifierExpr
+                        Leading '        '
+                        Token 'baz'
+                        Trailing '\n'
+                        Trailing '\n'
+                    <missing>
+                Leading '    '
+                Token ')'
+                Trailing '\n'
         <missing>

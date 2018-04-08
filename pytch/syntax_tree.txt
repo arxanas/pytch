@@ -21,11 +21,15 @@ IdentifierExpr(Expr)
 IntLiteralExpr(Expr)
     t_int_literal: Optional[Token]
 
+Argument(Node)
+    n_expr: Optional[Expr]
+    t_comma: Optional[Token]
+
+ArgumentList(Node)
+    t_lparen: Optional[Token]
+    arguments: Optional[List[Argument]]
+    t_rparen: Optional[Token]
+
 FunctionCallExpr(Expr)
     n_receiver: Optional[Expr]
-    t_lparen: Optional[Token]
-
-    # This contains both the actual arguments and their interspersed commas.
-    arguments: Optional[List[Union[Expr, Token]]]
-
-    t_rparen: Optional[Token]
+    n_argument_list: Optional[ArgumentList]

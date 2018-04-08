@@ -15,11 +15,13 @@ therefore reference cycles). The object identity of its nodes and tokens must
 *not* be relied on, although their corresponding nodes in
 the green CST (their "origins") can be.
 """
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple
 
 from . import FileInfo, OffsetRange, Range, warn_if
 from .errors import Error, ErrorCode, Note, Severity
 from .greencst import (
+    Argument,
+    ArgumentList,
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
@@ -538,10 +540,18 @@ class Parser:
         current_token: Token,
         n_receiver: Expr,
     ) -> Tuple[State, Optional[FunctionCallExpr]]:
+        (state, n_argument_list) = self.parse_argument_list(state)
+        return (state, FunctionCallExpr(
+            n_receiver=n_receiver,
+            n_argument_list=n_argument_list,
+        ))
+
+    def parse_argument_list(
+        self,
+        state: State,
+    ) -> Tuple[State, Optional[ArgumentList]]:
         (state, t_lparen, _sync) = self.expect_token(state, [TokenKind.LPAREN])
-        if t_lparen is not None:
-            (state, arguments) = self.parse_function_call_arguments(state)
-        else:
+        if t_lparen is None:
             state = state.add_error(Error(
                 file_info=state.file_info,
                 code=ErrorCode.EXPECTED_LPAREN,
@@ -549,59 +559,65 @@ class Parser:
                 message=(
                     "I was expecting a '(' to indicate the start of a " +
                     "function argument list, but instead got " +
-                    self.describe_token_kind(current_token.kind) +
+                    self.describe_token_kind(state.current_token.kind) +
                     "."
                 ),
                 notes=[],
-                range=self.get_range_from_token(state, current_token),
+                range=self.get_range_from_token(state, state.current_token),
             ))
-            arguments = []
-        if arguments is not None:
-            (state, t_rparen, _sync) = \
-                self.expect_token(state, [TokenKind.RPAREN])
-        else:
-            t_rparen = None
-        n_function_call_expr = FunctionCallExpr(
-            n_receiver=n_receiver,
+            return (state, None)
+
+        arguments = []
+        while state.current_token.kind not in [TokenKind.RPAREN, TokenKind.EOF]:
+            (state, n_argument) = self.parse_argument(state)
+            if n_argument is None:
+                break
+            arguments.append(n_argument)
+
+        (rparen_state, t_rparen, _sync) = \
+            self.expect_token(state, [TokenKind.RPAREN])
+        if t_rparen is None:
+            state = state.add_error(Error(
+                file_info=state.file_info,
+                code=ErrorCode.EXPECTED_RPAREN,
+                severity=Severity.ERROR,
+                message=(
+                    "I was expecting a ')' to indicate the end of this " +
+                    "function argument list, but instead got " +
+                    self.describe_token_kind(state.current_token.kind) +
+                    "."
+                ),
+                # TODO: Link to the start of the function argument list.
+                notes=[],
+                range=self.get_range_from_token(state, state.current_token),
+            ))
+            return (state, ArgumentList(
+                t_lparen=t_lparen,
+                arguments=arguments,
+                t_rparen=None,
+            ))
+        state = rparen_state
+
+        return (state, ArgumentList(
             t_lparen=t_lparen,
             arguments=arguments,
             t_rparen=t_rparen,
-        )
-        return (state, n_function_call_expr)
+        ))
 
-    def parse_function_call_arguments(
-        self,
-        state: State,
-    ) -> Tuple[State, Optional[List[Union[Expr, Token]]]]:
-        is_first = True
-        arguments: Optional[List[Union[Expr, Token]]] = []
-        while arguments is not None:
-            # Consume a mandatory comma separating arguments.
-            if not is_first:
-                token = state.current_token
-                if token.kind in [TokenKind.EOF, TokenKind.RPAREN]:
-                    break
+    def parse_argument(self, state: State) -> Tuple[State, Optional[Argument]]:
+        (state, n_expr) = self.parse_expr_with_left_recursion(state)
+        if n_expr is None:
+            return (state, None)
 
-                (state, t_comma, _sync) = \
-                    self.expect_token(state, [TokenKind.COMMA])
-                if t_comma is None:
-                    arguments = None
-                    break
+        (comma_state, t_comma, _sync) = \
+            self.expect_token(state, [TokenKind.COMMA])
+        if t_comma is not None:
+            state = comma_state
 
-            # If we see an rparen here (or end-of-file), that means that we're
-            # done parsing arguments and must return.
-            token = state.current_token
-            if token.kind in [TokenKind.EOF, TokenKind.RPAREN]:
-                break
-
-            # Consume the argument.
-            (state, expr) = self.parse_expr_with_left_recursion(state)
-            if expr is None:
-                arguments = None
-                break
-            else:
-                arguments.append(expr)
-        return (state, arguments)
+        return (state, Argument(
+            n_expr=n_expr,
+            t_comma=t_comma,
+        ))
 
     def parse_identifier(
         self,

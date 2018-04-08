@@ -120,7 +120,9 @@ def get_class_def(
             property_body += f"    return self.origin.{child.name}\n"
         elif leaf_children is not None:
             # A specific class to construct, like `FunctionCallExpr`.
-            property_body += f"    return {child.base_type}(\n"
+            property_body += f"    if self.origin.{child.name} is None:\n"
+            property_body += f"        return None\n"
+            property_body += f"    return {child.base_type.name}(\n"
             property_body += f"        parent=self,\n"
             property_body += f"        origin=self.origin.{child.name},\n"
             property_body += f"    )\n"

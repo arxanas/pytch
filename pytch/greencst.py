@@ -130,35 +130,50 @@ class IntLiteralExpr(Expr):
         return self._t_int_literal
 
 
-class FunctionCallExpr(Expr):
+class Argument(Node):
     def __init__(
         self,
-        n_receiver: Optional[Expr],
+        n_expr: Optional[Expr],
+        t_comma: Optional[Token],
+    ) -> None:
+        super().__init__([
+            n_expr,
+            t_comma,
+        ])
+        self._n_expr = n_expr
+        self._t_comma = t_comma
+
+    @property
+    def n_expr(self) -> Optional[Expr]:
+        return self._n_expr
+
+    @property
+    def t_comma(self) -> Optional[Token]:
+        return self._t_comma
+
+
+class ArgumentList(Node):
+    def __init__(
+        self,
         t_lparen: Optional[Token],
-        arguments: Optional[List[Union[Expr, Token]]],
+        arguments: Optional[List[Argument]],
         t_rparen: Optional[Token],
     ) -> None:
         super().__init__([
-            n_receiver,
             t_lparen,
             *(arguments if arguments is not None else []),
             t_rparen,
         ])
-        self._n_receiver = n_receiver
         self._t_lparen = t_lparen
         self._arguments = arguments
         self._t_rparen = t_rparen
-
-    @property
-    def n_receiver(self) -> Optional[Expr]:
-        return self._n_receiver
 
     @property
     def t_lparen(self) -> Optional[Token]:
         return self._t_lparen
 
     @property
-    def arguments(self) -> Optional[List[Union[Expr, Token]]]:
+    def arguments(self) -> Optional[List[Argument]]:
         return self._arguments
 
     @property
@@ -166,7 +181,31 @@ class FunctionCallExpr(Expr):
         return self._t_rparen
 
 
+class FunctionCallExpr(Expr):
+    def __init__(
+        self,
+        n_receiver: Optional[Expr],
+        n_argument_list: Optional[ArgumentList],
+    ) -> None:
+        super().__init__([
+            n_receiver,
+            n_argument_list,
+        ])
+        self._n_receiver = n_receiver
+        self._n_argument_list = n_argument_list
+
+    @property
+    def n_receiver(self) -> Optional[Expr]:
+        return self._n_receiver
+
+    @property
+    def n_argument_list(self) -> Optional[ArgumentList]:
+        return self._n_argument_list
+
+
 __all__ = [
+    "Argument",
+    "ArgumentList",
     "Expr",
     "FunctionCallExpr",
     "IdentifierExpr",

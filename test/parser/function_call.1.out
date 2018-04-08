@@ -10,9 +10,12 @@ SyntaxTree
             IdentifierExpr
                 Leading ' '
                 Token 'print'
-            Token '('
-            IntLiteralExpr
-                Token '1'
-            Token ')'
-            Trailing '\n'
+            ArgumentList
+                Token '('
+                Argument
+                    IntLiteralExpr
+                        Token '1'
+                    <missing>
+                Token ')'
+                Trailing '\n'
         <missing>

@@ -1,0 +1,8 @@
+SyntaxTree
+    FunctionCallExpr
+        IdentifierExpr
+            Token 'print'
+        ArgumentList
+            Token '('
+            Trailing '\n'
+            <missing>
