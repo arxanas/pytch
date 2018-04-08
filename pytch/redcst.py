@@ -41,7 +41,7 @@ class SyntaxTree(Node):
     def n_expr(self) -> Optional[Expr]:
         if self.origin.n_expr is None:
             return None
-        return globals()[self.origin.n_expr.__class__.__name__](
+        return GREEN_TO_RED_NODE_MAP[self.origin.n_expr.__class__](
             parent=self,
             origin=self.origin.n_expr,
         )
@@ -94,7 +94,7 @@ class LetExpr(Expr):
     def n_pattern(self) -> Optional[Pattern]:
         if self.origin.n_pattern is None:
             return None
-        return globals()[self.origin.n_pattern.__class__.__name__](
+        return GREEN_TO_RED_NODE_MAP[self.origin.n_pattern.__class__](
             parent=self,
             origin=self.origin.n_pattern,
         )
@@ -107,7 +107,7 @@ class LetExpr(Expr):
     def n_value(self) -> Optional[Expr]:
         if self.origin.n_value is None:
             return None
-        return globals()[self.origin.n_value.__class__.__name__](
+        return GREEN_TO_RED_NODE_MAP[self.origin.n_value.__class__](
             parent=self,
             origin=self.origin.n_value,
         )
@@ -116,7 +116,7 @@ class LetExpr(Expr):
     def n_body(self) -> Optional[Expr]:
         if self.origin.n_body is None:
             return None
-        return globals()[self.origin.n_body.__class__.__name__](
+        return GREEN_TO_RED_NODE_MAP[self.origin.n_body.__class__](
             parent=self,
             origin=self.origin.n_body,
         )
@@ -185,7 +185,7 @@ class FunctionCallExpr(Expr):
     def n_receiver(self) -> Optional[Expr]:
         if self.origin.n_receiver is None:
             return None
-        return globals()[self.origin.n_receiver.__class__.__name__](
+        return GREEN_TO_RED_NODE_MAP[self.origin.n_receiver.__class__](
             parent=self,
             origin=self.origin.n_receiver,
         )
@@ -198,7 +198,7 @@ class FunctionCallExpr(Expr):
     def arguments(self) -> Optional[List[Union[Expr, Token]]]:
         if self.origin.arguments is None:
             return None
-        return globals()[self.origin.arguments.__class__.__name__](
+        return GREEN_TO_RED_NODE_MAP[self.origin.arguments.__class__](
             parent=self,
             origin=self.origin.arguments,
         )
@@ -215,6 +215,18 @@ class FunctionCallExpr(Expr):
             *(self.arguments if self.arguments is not None else []),
             self.t_rparen,
         ]
+
+
+GREEN_TO_RED_NODE_MAP = {
+    Expr: greencst.Expr,
+    SyntaxTree: greencst.SyntaxTree,
+    Pattern: greencst.Pattern,
+    VariablePattern: greencst.VariablePattern,
+    LetExpr: greencst.LetExpr,
+    IdentifierExpr: greencst.IdentifierExpr,
+    IntLiteralExpr: greencst.IntLiteralExpr,
+    FunctionCallExpr: greencst.FunctionCallExpr,
+}
 
 
 __all__ = [

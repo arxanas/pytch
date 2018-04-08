@@ -45,8 +45,8 @@ def main() -> None:
     ]
     exports = get_exports(sections.keys())
     sys.stdout.write(PREAMBLE)
-    sys.stdout.write("\n\n".join(class_defs))
-    sys.stdout.write("\n\n" + exports + "\n")
+    sys.stdout.write("\n\n".join(class_defs) + "\n\n")
+    sys.stdout.write(exports)
 
 
 def get_children_parameter_list(children: Sequence[Child]) -> str:

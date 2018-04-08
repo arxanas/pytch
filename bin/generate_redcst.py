@@ -50,8 +50,20 @@ def main() -> None:
     ]
     exports = get_exports(sections.keys())
     sys.stdout.write(PREAMBLE)
-    sys.stdout.write("\n\n".join(class_defs))
-    sys.stdout.write("\n\n" + exports + "\n")
+    sys.stdout.write("\n\n".join(class_defs) + "\n\n")
+    sys.stdout.write(get_green_to_red_node_map(sections) + "\n\n")
+    sys.stdout.write(exports)
+
+
+def get_green_to_red_node_map(
+    node_types: Mapping[NodeType, List[Child]],
+) -> str:
+    map = "GREEN_TO_RED_NODE_MAP = {\n"
+    for node_type in node_types:
+        node_class = node_type.name
+        map += f"    {node_class}: greencst.{node_class},\n"
+    map += "}\n"
+    return map
 
 
 def get_class_def(
@@ -115,8 +127,8 @@ def get_class_def(
         else:
             property_body += f"    if self.origin.{child.name} is None:\n"
             property_body += f"        return None\n"
-            property_body += f"    return globals()[" + \
-                f"self.origin.{child.name}.__class__.__name__](\n"
+            property_body += f"    return GREEN_TO_RED_NODE_MAP[" + \
+                f"self.origin.{child.name}.__class__](\n"
             property_body += f"        parent=self,\n"
             property_body += f"        origin=self.origin.{child.name},\n"
             property_body += f"    )\n"

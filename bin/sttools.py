@@ -67,7 +67,7 @@ def get_exports(node_types: Iterable[NodeType]) -> str:
     exports = "[\n" + "".join(
         textwrap.indent(f'"{export}",\n', prefix="    ")
         for export in sorted_exports
-    ) + "]"
+    ) + "]\n"
     return "__all__ = " + exports
 
 
