@@ -315,6 +315,11 @@ class Segment:
         max_message_line_length = max(
             self._line_length(line) for line in self._message_lines
         )
+        if self._header is not None:
+            max_message_line_length = max(
+                max_message_line_length,
+                len(self._header),
+            )
         return (
             num_box_characters
             + num_padding_characters
