@@ -48,8 +48,8 @@ def test_print_error():
     )
     lines = lines_to_string(get_error_lines(error, ascii=True))
     assert lines == """\
-In dummy.pytch, line 2, character 4:
-NOT_A_REAL_ERROR[1234]: Look into this
+NOT_A_REAL_ERROR[9001] in dummy.pytch, line 2, character 4:
+Error: Look into this
    +-----------------------------------------------------+
    | dummy.pytch                                         |
  1 | line1                                               |
@@ -91,8 +91,8 @@ def test_error_at_single_point():
     )
     lines = lines_to_string(get_error_lines(error, ascii=True))
     assert lines == """\
-In dummy.pytch, line 2, character 4:
-NOT_A_REAL_ERROR[1234]: Look into this
+NOT_A_REAL_ERROR[9001] in dummy.pytch, line 2, character 4:
+Error: Look into this
    +----------------------------------------------------+
    | dummy.pytch                                        |
  1 | line1                                              |
@@ -137,8 +137,8 @@ dummy2 line2
     lines = lines_to_string(get_error_lines(error, ascii=True))
     print(lines)
     assert lines == """\
-In dummy1.pytch, line 1, character 8:
-NOT_A_REAL_ERROR[1234]: Look into this
+NOT_A_REAL_ERROR[9001] in dummy1.pytch, line 1, character 8:
+Error: Look into this
    +-----------------------------------------------------+
    | dummy1.pytch                                        |
  1 | dummy1 line1                                        |

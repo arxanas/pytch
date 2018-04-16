@@ -1,5 +1,5 @@
-In test/parser/function_call.2.pytch, line 2, character 1:
-EXPECTED_RPAREN[1003]: I was expecting a ')' to indicate the end of this function argument list, but instead got the end of the file.
+EXPECTED_RPAREN[1003] in test/parser/function_call.2.pytch, line 2, character 1:
+Error: I was expecting a ')' to indicate the end of this function argument list, but instead got the end of the file.
    +-----------------------------------+
    | test/parser/function_call.2.pytch |
  1 | print(                            |

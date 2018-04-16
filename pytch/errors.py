@@ -32,10 +32,9 @@ class ErrorCode(Enum):
     EXPECTED_DUMMY_IN = 1006
     EXPECTED_LET_EXPRESSION = 1007
 
-    NOT_A_REAL_ERROR = 1234
-    """Not a real error code, just for testing purposes."""
-
     PARSED_LENGTH_MISMATCH = 9000
+    NOT_A_REAL_ERROR = 9001
+    """Not a real error code, just for testing purposes."""
 
 
 class Glyphs:
@@ -118,7 +117,7 @@ class _DiagnosticContext:
 
 class Note:
     color = "green"
-    preamble_message = "Note:"
+    preamble_message = "Note"
 
     def __init__(
         self,
@@ -157,9 +156,6 @@ class Severity(Enum):
 
 
 class Error:
-    color = "red"
-    preamble_message = "Error:"
-
     def __init__(
         self,
         file_info: FileInfo,
@@ -200,6 +196,19 @@ class Error:
         return self._severity
 
     @property
+    def color(self) -> str:
+        if self.severity == Severity.ERROR:
+            return "red"
+        elif self.severity == Severity.WARNING:
+            return "yellow"
+        else:
+            assert False, f"Unhandled severity: {self.severity}"
+
+    @property
+    def preamble_message(self) -> str:
+        return self.severity.value.title()
+
+    @property
     def message(self) -> str:
         return self._message
 
@@ -217,7 +226,7 @@ def get_colored_diagnostic_message(
     diagnostic: Diagnostic,
 ) -> str:
     return glyphs.make_colored(
-        diagnostic.preamble_message + " " + diagnostic.message,
+        diagnostic.preamble_message + ": " + diagnostic.message,
         diagnostic.color,
     )
 
@@ -402,19 +411,20 @@ def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
         line = str(error.range.start.line + 1)
         character = str(error.range.start.character + 1)
         output_lines.append(
-            f"In {glyphs.make_bold(error.file_info.file_path)}, "
-            f"line {glyphs.make_bold(line)}, "
-            f"character {glyphs.make_bold(character)}:"
+            glyphs.make_bold(f"{error.code.name}[{error.code.value}]")
+            + f" in {glyphs.make_bold(error.file_info.file_path)}, "
+            + f"line {glyphs.make_bold(line)}, "
+            + f"character {glyphs.make_bold(character)}:"
         )
     else:
         output_lines.append(
-            f"In {glyphs.make_bold(error.file_info.file_path)}:"
+            glyphs.make_bold(f"{error.code.name}[{error.code.value}] ")
+            + f"in {glyphs.make_bold(error.file_info.file_path)}:"
         )
-    output_lines.append(
-        glyphs.make_bold(f"{error.code.name}[{error.code.value}]")
-        + ": "
-        + error.message
-    )
+    output_lines.append(glyphs.make_colored(
+        f"{error.preamble_message}: {error.message}",
+        error.color,
+    ))
 
     segments = get_error_segments(glyphs=glyphs, error=error)
     if segments:

@@ -709,8 +709,7 @@ def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
             severity=Severity.WARNING,
             message=(
                 f"Mismatch between source code length ({source_code_length}) " +
-                f"and total length of parsed tokens ({tokens_length}) " +
-                f"in file {file_info.file_path}. " +
+                f"and total length of parsed tokens ({tokens_length}). " +
                 f"The parse tree for this file is probably incorrect. " +
                 f"This is a bug. Please report it!"
             ),
