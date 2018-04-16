@@ -397,10 +397,6 @@ class Segment:
 def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
     glyphs = get_glyphs(ascii=ascii)
 
-    segments = get_error_segments(glyphs=glyphs, error=error)
-    gutter_width = max(segment.gutter_width for segment in segments)
-    box_width = max(segment.box_width for segment in segments)
-
     output_lines = []
     if error.range is not None:
         line = str(error.range.start.line + 1)
@@ -419,15 +415,20 @@ def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
         + ": "
         + error.message
     )
-    for i, segment in enumerate(segments):
-        is_first = (i == 0)
-        is_last = (i == len(segments) - 1)
-        output_lines.extend(segment.render_lines(
-            is_first=is_first,
-            is_last=is_last,
-            gutter_width=gutter_width,
-            box_width=box_width,
-        ))
+
+    segments = get_error_segments(glyphs=glyphs, error=error)
+    if segments:
+        gutter_width = max(segment.gutter_width for segment in segments)
+        box_width = max(segment.box_width for segment in segments)
+        for i, segment in enumerate(segments):
+            is_first = (i == 0)
+            is_last = (i == len(segments) - 1)
+            output_lines.extend(segment.render_lines(
+                is_first=is_first,
+                is_last=is_last,
+                gutter_width=gutter_width,
+                box_width=box_width,
+            ))
     return output_lines
 
 
@@ -449,11 +450,13 @@ def get_error_segments(glyphs: Glyphs, error: Error):
     segments: List[Segment] = []
     for _file_path, contexts in partitioned_diagnostic_contexts:
         for context in _merge_contexts(contexts):
-            segments.append(get_context_segment(
+            segment = get_context_segment(
                 glyphs=glyphs,
                 context=context,
                 diagnostics=diagnostics,
-            ))
+            )
+            if segment is not None:
+                segments.append(segment)
     return segments
 
 
@@ -559,7 +562,7 @@ def get_context_segment(
     glyphs: Glyphs,
     context: _DiagnosticContext,
     diagnostics: List[Diagnostic],
-) -> Segment:
+) -> Optional[Segment]:
     diagnostics = [
         diagnostic
         for diagnostic in diagnostics
@@ -575,25 +578,19 @@ def get_context_segment(
     )
     line_range = context.line_range
     if line_range is None:
-        assert len(diagnostics) == 1
-        diagnostic = diagnostics[0]
-        gutter_lines.append("")
-        message_lines.append(get_colored_diagnostic_message(
-            glyphs=glyphs,
-            diagnostic=diagnostic,
-        ))
-    else:
-        (start_line, end_line) = line_range
-        lines = context.file_info.lines[start_line:end_line]
-        for line_num, line in enumerate(lines, start_line):
-            # 1-index the line number for display.
-            gutter_lines.append(str(line_num + 1))
-            message_lines.append(line)
+        return None
 
-            diagnostic_lines = diagnostic_lines_to_insert.get(line_num, [])
-            for diagnostic_line in diagnostic_lines:
-                gutter_lines.append("")
-                message_lines.append(diagnostic_line)
+    (start_line, end_line) = line_range
+    lines = context.file_info.lines[start_line:end_line]
+    for line_num, line in enumerate(lines, start_line):
+        # 1-index the line number for display.
+        gutter_lines.append(str(line_num + 1))
+        message_lines.append(line)
+
+        diagnostic_lines = diagnostic_lines_to_insert.get(line_num, [])
+        for diagnostic_line in diagnostic_lines:
+            gutter_lines.append("")
+            message_lines.append(diagnostic_line)
     return Segment(
         glyphs=glyphs,
         header=context.file_info.file_path,
