@@ -35,6 +35,8 @@ class ErrorCode(Enum):
     NOT_A_REAL_ERROR = 1234
     """Not a real error code, just for testing purposes."""
 
+    PARSED_LENGTH_MISMATCH = 9000
+
 
 class Glyphs:
     """The set of glyphs to be used when printing out error messages."""

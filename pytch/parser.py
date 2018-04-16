@@ -17,7 +17,7 @@ the green CST (their "origins") can be.
 """
 from typing import Iterator, List, Optional, Tuple
 
-from . import FileInfo, OffsetRange, Range, warn_if
+from . import FileInfo, OffsetRange, Range
 from .errors import Error, ErrorCode, Note, Severity
 from .greencst import (
     Argument,
@@ -701,16 +701,26 @@ def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
 
     source_code_length = len(file_info.source_code)
     tokens_length = parsation.full_width
-    warn_if(
-        source_code_length != tokens_length,
-        f"Mismatch between source code length ({source_code_length}) " +
-        f"and total length of parsed tokens ({tokens_length}) " +
-        f"in file {file_info.file_path}.\n" +
-        f"The parse tree for this file is probably incorrect.\n" +
-        f"This is a bug. Please report it!",
-    )
+    errors = parsation.errors
+    if source_code_length != tokens_length:
+        errors.append(Error(
+            file_info=file_info,
+            code=ErrorCode.PARSED_LENGTH_MISMATCH,
+            severity=Severity.WARNING,
+            message=(
+                f"Mismatch between source code length ({source_code_length}) " +
+                f"and total length of parsed tokens ({tokens_length}) " +
+                f"in file {file_info.file_path}. " +
+                f"The parse tree for this file is probably incorrect. " +
+                f"This is a bug. Please report it!"
+            ),
+            notes=[],
+        ))
 
-    return parsation
+    return Parsation(
+        green_cst=parsation.green_cst,
+        errors=errors,
+    )
 
 
 __all__ = ["parse"]

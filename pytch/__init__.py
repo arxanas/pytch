@@ -1,7 +1,5 @@
 from typing import List
 
-import click
-
 
 Offset = int
 """A zero-indexed offset into a file."""
@@ -120,12 +118,4 @@ class FileInfo:
         )
 
 
-def warn_if(condition: bool, message: str) -> None:
-    if condition:
-        click.echo(
-            click.style("Warning: ", fg="red") + message + "\n",
-            err=True,
-        )
-
-
-__all__ = ["FileInfo", "Position", "Range", "warn_if"]
+__all__ = ["FileInfo", "Position", "Range"]
