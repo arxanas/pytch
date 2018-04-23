@@ -1,0 +1,10 @@
+SyntaxTree
+    FunctionCallExpr
+        IdentifierExpr
+            Token 'print'
+        ArgumentList
+            Token '('
+            <missing>
+    Leading ','
+    Leading ')\n'
+    Token ''

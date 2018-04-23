@@ -533,6 +533,20 @@ class Parser:
             return self.parse_let_expr(state, allow_naked_lets=allow_naked_lets)
         elif token.kind == TokenKind.DUMMY_IN:
             return (state, None)
+        else:
+            (state, _sync) = self.add_error_and_recover(state, Error(
+                file_info=state.file_info,
+                severity=Severity.ERROR,
+                code=ErrorCode.EXPECTED_EXPRESSION,
+                message=(
+                    "I was expecting an expression, but instead got " +
+                    self.describe_token_kind(state.current_token.kind) +
+                    "."
+                ),
+                range=state.current_token_range,
+                notes=[],
+            ))
+            return (state, None)
         raise UnhandledParserException(
             state,
         ) from ValueError(
@@ -572,11 +586,15 @@ class Parser:
             ))
             return (state, None)
 
-        arguments = []
+        arguments: List[Argument] = []
         while state.current_token.kind not in [TokenKind.RPAREN, TokenKind.EOF]:
             (state, n_argument) = self.parse_argument(state)
             if n_argument is None:
-                break
+                return (state, ArgumentList(
+                    t_lparen=t_lparen,
+                    arguments=arguments,
+                    t_rparen=None,
+                ))
             arguments.append(n_argument)
 
         (rparen_state, t_rparen, _sync) = \

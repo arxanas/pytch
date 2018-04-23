@@ -1,0 +1,7 @@
+EXPECTED_EXPRESSION[1001] in test/parser/function_call.error.1.pytch, line 1, character 7:
+Error: I was expecting an expression, but instead got a ','.
+   +----------------------------------------------------------------------+
+   | test/parser/function_call.error.1.pytch                              |
+ 1 | print(,)                                                             |
+   |       ^ Error: I was expecting an expression, but instead got a ','. |
+   +----------------------------------------------------------------------+

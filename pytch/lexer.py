@@ -258,6 +258,7 @@ IDENTIFIER_RE = re.compile("[a-zA-Z_][a-zA-Z0-9_]*")
 INT_LITERAL_RE = re.compile("[0-9]+")
 EQUALS_RE = re.compile("=")
 LET_RE = re.compile("let")
+COMMA_RE = re.compile(",")
 LPAREN_RE = re.compile("\(")
 RPAREN_RE = re.compile("\)")
 
@@ -356,6 +357,7 @@ class Lexer:
                 TokenKind.INT_LITERAL: INT_LITERAL_RE,
                 TokenKind.EQUALS: EQUALS_RE,
                 TokenKind.LET: LET_RE,
+                TokenKind.COMMA: COMMA_RE,
                 TokenKind.LPAREN: LPAREN_RE,
                 TokenKind.RPAREN: RPAREN_RE,
             })
