@@ -92,8 +92,7 @@ class State:
         self.token_index = token_index
         self.offset = offset
         self.errors = errors
-
-        self.error_tokens: List[Token] = []
+        self.error_tokens = error_tokens
 
     @property
     def end_of_file_offset_range(self) -> OffsetRange:
@@ -130,7 +129,7 @@ class State:
         assert 0 <= self.token_index < len(self.tokens)
         token = self.tokens[self.token_index]
         error_trivia = [
-            Trivium(kind=TriviumKind.ERROR, text=error_token.text)
+            Trivium(kind=TriviumKind.ERROR, text=error_token.full_text)
             for error_token in self.error_tokens
         ]
         return token.update(
@@ -216,10 +215,15 @@ class State:
         return self.update(
             token_index=self.token_index + 1,
             offset=self.offset + token.full_width,
+            error_tokens=[],
         )
 
     def consume_error_token(self, token: Token) -> "State":
-        assert self.current_token.kind != TokenKind.EOF, \
+        # Make sure not to use `self.current_token`, since that would duplicate
+        # the error tokens.
+        assert 0 <= self.token_index < len(self.tokens)
+        token = self.tokens[self.token_index]
+        assert token.kind != TokenKind.EOF, \
             "Tried to consume the EOF token as an error token."
         return self.update(
             token_index=self.token_index + 1,

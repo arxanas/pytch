@@ -6,6 +6,7 @@ SyntaxTree
         <missing>
         <missing>
         LetExpr
+            Leading ''
             Token 'let'
             VariablePattern
                 Leading ' '
@@ -23,4 +24,5 @@ SyntaxTree
                 <missing>
                 <missing>
                 <missing>
+    Leading ''
     Token ''
