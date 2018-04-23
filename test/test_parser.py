@@ -93,8 +93,8 @@ def make_result(input_filename: str, source_code: str) -> CaseResult:
 )
 def test_parser(test_case_info: CaseInfo) -> None:
     result = make_result(test_case_info.input_filename, test_case_info.input)
-    assert result.output == test_case_info.output
-    assert result.error == test_case_info.error
+    assert test_case_info.output == result.output
+    assert test_case_info.error == result.error
 
 
 @pytest.mark.generate
