@@ -281,7 +281,8 @@ class Parser:
                 state,
                 allow_naked_lets=True,
             )
-            ast = SyntaxTree(n_expr=n_expr)
+            t_eof = state.current_token
+            ast = SyntaxTree(n_expr=n_expr, t_eof=t_eof)
             return Parsation(green_cst=ast, errors=state.errors)
         except UnhandledParserException:
             raise

@@ -9,3 +9,4 @@ SyntaxTree
             Token '1'
             Trailing '\n'
         <missing>
+    Token ''

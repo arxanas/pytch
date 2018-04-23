@@ -37,3 +37,4 @@ SyntaxTree
                 Token '3'
                 Trailing '\n'
             <missing>
+    Token ''

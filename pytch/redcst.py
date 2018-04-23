@@ -47,9 +47,14 @@ class SyntaxTree(Node):
         )
 
     @property
+    def t_eof(self) -> Optional[Token]:
+        return self.origin.t_eof
+
+    @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
             self.n_expr,
+            self.t_eof,
         ]
 
 

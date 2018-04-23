@@ -27,15 +27,22 @@ class SyntaxTree(Node):
     def __init__(
         self,
         n_expr: Optional[Expr],
+        t_eof: Optional[Token],
     ) -> None:
         super().__init__([
             n_expr,
+            t_eof,
         ])
         self._n_expr = n_expr
+        self._t_eof = t_eof
 
     @property
     def n_expr(self) -> Optional[Expr]:
         return self._n_expr
+
+    @property
+    def t_eof(self) -> Optional[Token]:
+        return self._t_eof
 
 
 class Pattern(Node):
