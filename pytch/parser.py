@@ -587,7 +587,9 @@ class Parser:
             return (state, None)
 
         arguments: List[Argument] = []
+        previous_argument_range = None
         while state.current_token.kind not in [TokenKind.RPAREN, TokenKind.EOF]:
+            argument_range = state.current_token_range
             (state, n_argument) = self.parse_argument(state)
             if n_argument is None:
                 return (state, ArgumentList(
@@ -595,7 +597,27 @@ class Parser:
                     arguments=arguments,
                     t_rparen=None,
                 ))
+
+            if arguments and arguments[-1].t_comma is None:
+                assert previous_argument_range is not None
+                state = state.add_error(Error(
+                    file_info=state.file_info,
+                    code=ErrorCode.EXPECTED_COMMA,
+                    severity=Severity.ERROR,
+                    message=(
+                        "I was expecting a ',' before this argument."
+                    ),
+                    notes=[
+                        Note(
+                            file_info=state.file_info,
+                            message="This is the previous argument.",
+                            range=previous_argument_range,
+                        )
+                    ],
+                    range=argument_range,
+                ))
             arguments.append(n_argument)
+            previous_argument_range = argument_range
 
         (rparen_state, t_rparen, _sync) = \
             self.expect_token(state, [TokenKind.RPAREN])

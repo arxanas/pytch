@@ -1,0 +1,22 @@
+SyntaxTree
+    FunctionCallExpr
+        IdentifierExpr
+            Token 'print'
+        ArgumentList
+            Token '('
+            Trailing '\n'
+            Argument
+                IdentifierExpr
+                    Leading '  '
+                    Token 'foo'
+                    Trailing '\n'
+                <missing>
+            Argument
+                IdentifierExpr
+                    Leading '  '
+                    Token 'bar'
+                    Trailing '\n'
+                <missing>
+            Token ')'
+            Trailing '\n'
+    Token ''
