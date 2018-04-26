@@ -582,7 +582,7 @@ class Parser:
                     "."
                 ),
                 notes=[],
-                range=self.get_range_from_token(state, state.current_token),
+                range=state.current_token_range,
             ))
             return (state, None)
 
@@ -612,7 +612,7 @@ class Parser:
                 ),
                 # TODO: Link to the start of the function argument list.
                 notes=[],
-                range=self.get_range_from_token(state, state.current_token),
+                range=state.current_token_range,
             ))
             return (state, ArgumentList(
                 t_lparen=t_lparen,
@@ -693,19 +693,9 @@ class Parser:
             severity=Severity.ERROR,
             message=message,
             notes=[],
-            range=self.get_range_from_token(state, token),
+            range=state.current_token_range,
         ))
         return (state, None, sync_token_kind)
-
-    def get_range_from_token(
-        self,
-        state: State,
-        token: Token,
-    ) -> Range:
-        return state.file_info.get_range_from_offset_range(OffsetRange(
-            start=state.offset,
-            end=state.offset + token.width,
-        ))
 
     def describe_token_kind(self, token_kind: TokenKind) -> str:
         if token_kind.value.startswith("the "):
