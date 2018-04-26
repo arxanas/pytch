@@ -6,14 +6,10 @@ non-meaningful parts of the program are contained within "trivia" nodes. See
 the lexer for more information.
 
 The *green* CST is considered to be immutable and must not be modified.
-Therefore, its nodes and tokens can be checked for referential equality and
-used as keys into maps.
 
 The *red* CST is based off of the green syntax tree. It is also immutable,
 but its nodes are generated lazily (since they contain `parent` pointers and
-therefore reference cycles). The object identity of its nodes and tokens must
-*not* be relied on, although their corresponding nodes in
-the green CST (their "origins") can be.
+therefore reference cycles).
 """
 from typing import Iterator, List, Optional, Tuple
 
