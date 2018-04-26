@@ -1,4 +1,4 @@
-EXPECTED_COMMA[1008] in test/parser/function_call.error.2.pytch, line 3, character 3:
+EXPECTED_COMMA[1017] in test/parser/function_call.error.2.pytch, line 3, character 3:
 Error: I was expecting a ',' before this argument.
    +----------------------------------------------------------+
    | test/parser/function_call.error.2.pytch                  |
