@@ -117,7 +117,7 @@ class _DiagnosticContext:
 
 
 class Note:
-    color = "green"
+    color = "blue"
     preamble_message = "Note"
 
     def __init__(
