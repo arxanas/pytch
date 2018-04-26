@@ -18,6 +18,13 @@ class Node:
     def children(self) -> Sequence[Union["Node", Optional["Token"]]]:
         return self._children
 
+    @property
+    def full_width(self) -> int:
+        return sum(
+            child.full_width if child is not None else 0
+            for child in self.children
+        )
+
 
 class Expr(Node):
     pass

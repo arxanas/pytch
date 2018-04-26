@@ -23,6 +23,10 @@ class Node:
     def children(self) -> Sequence[Union["Node", Optional["Token"]]]:
         raise NotImplementedError("should be implemented by children")
 
+    @property
+    def full_width(self) -> int:
+        raise NotImplementedError("should be implemented by children")
+
 
 class Expr(Node):
     pass

@@ -31,6 +31,13 @@ class Node:
     def children(self) -> Sequence[Union["Node", Optional["Token"]]]:
         return self._children
 
+    @property
+    def full_width(self) -> int:
+        return sum(
+            child.full_width if child is not None else 0
+            for child in self.children
+        )
+
 
 """
 
@@ -96,6 +103,8 @@ def get_class_def(node_type: NodeType, children: List[Child]) -> str:
 
     # class body
     class_body = ""
+
+    # children
     for child in children:
         property_body = "\n"
         property_body += "@property\n"

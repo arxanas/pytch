@@ -36,6 +36,10 @@ class Node:
     def children(self) -> Sequence[Union["Node", Optional["Token"]]]:
         raise NotImplementedError("should be implemented by children")
 
+    @property
+    def full_width(self) -> int:
+        raise NotImplementedError("should be implemented by children")
+
 
 """
 
@@ -136,6 +140,11 @@ def get_class_def(
             property_body += f"    )\n"
 
         class_body += textwrap.indent(property_body, prefix="    ")
+
+    children_prop_body = "\n"
+    children_prop_body += "@property\n"
+    children_prop_body += "def full_width(self) -> int:\n"
+    children_prop_body += "    return self.origin.full_width\n"
 
     children_prop_body = "\n"
     children_prop_body += f"@property\n"
