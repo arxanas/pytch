@@ -101,6 +101,7 @@ def get_class_def(
     init_header += f"    self,\n"
     init_header += f"    parent: Optional[Node],\n"
     init_header += f"    origin: greencst.{node_type.name},\n"
+    init_header += f"    offset: int,\n"
     init_header += f") -> None:\n"
     init_header = textwrap.indent(init_header, prefix="    ")
     class_header += init_header
@@ -108,12 +109,13 @@ def get_class_def(
     # __init__ body
     init_body = "super().__init__(parent)\n"
     init_body += "self.origin = origin\n"
+    init_body += "self.offset = offset\n"
     init_body = textwrap.indent(init_body, prefix="    " * 2)
     class_header += init_body
 
     # class body
     class_body = ""
-    for child in children:
+    for i, child in enumerate(children):
         property_body = "\n"
         property_body += "@property\n"
         property_body += f"def {child.name}(self) -> {child.type.name}:\n"
@@ -122,22 +124,39 @@ def get_class_def(
         if child.base_type == TOKEN_TYPE:
             # Tokens don't need to construct a new red node.
             property_body += f"    return self.origin.{child.name}\n"
-        elif leaf_children is not None:
-            # A specific class to construct, like `FunctionCallExpr`.
-            property_body += f"    if self.origin.{child.name} is None:\n"
-            property_body += f"        return None\n"
-            property_body += f"    return {child.base_type.name}(\n"
-            property_body += f"        parent=self,\n"
-            property_body += f"        origin=self.origin.{child.name},\n"
-            property_body += f"    )\n"
         else:
             property_body += f"    if self.origin.{child.name} is None:\n"
             property_body += f"        return None\n"
-            property_body += f"    return GREEN_TO_RED_NODE_MAP[" + \
-                f"self.origin.{child.name}.__class__](\n"
-            property_body += f"        parent=self,\n"
-            property_body += f"        origin=self.origin.{child.name},\n"
+
+            property_body += f"    offset = (\n"
+            property_body += f"        self.offset\n"
+            for previous_child in children[:i]:
+                child_width = (
+                    "+ (\n"
+                    + f"    self.{previous_child.name}.full_width\n"
+                    + f"    if self.{previous_child.name} is not None else\n"
+                    + f"    0\n"
+                    + ")\n"
+                )
+                property_body += textwrap.indent(child_width, "    " * 2)
             property_body += f"    )\n"
+
+            if leaf_children is not None:
+                # A specific class to construct, like `FunctionCallExpr`.
+                property_body += f"    return {child.base_type.name}(\n"
+                property_body += f"        parent=self,\n"
+                property_body += f"        origin=self.origin.{child.name},\n"
+                property_body += f"        offset=offset,\n"
+                property_body += f"    )\n"
+            else:
+                # An abstract class to construct, like `Expr`, whose concrete
+                # implementation could be one of many subclasses.
+                property_body += f"    return GREEN_TO_RED_NODE_MAP[" + \
+                    f"self.origin.{child.name}.__class__](\n"
+                property_body += f"        parent=self,\n"
+                property_body += f"        origin=self.origin.{child.name},\n"
+                property_body += f"        offset=offset,\n"
+                property_body += f"    )\n"
 
         class_body += textwrap.indent(property_body, prefix="    ")
 
