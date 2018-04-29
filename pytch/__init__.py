@@ -1,5 +1,7 @@
 from typing import List
 
+from .utils import splitlines
+
 
 Offset = int
 """A zero-indexed offset into a file."""
@@ -64,7 +66,7 @@ class FileInfo:
     def __init__(self, file_path: str, source_code: str) -> None:
         self._file_path = file_path
         self._source_code = source_code
-        self._lines = source_code.splitlines()
+        self._lines = splitlines(source_code)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FileInfo):

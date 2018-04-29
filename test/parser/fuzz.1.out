@@ -1,0 +1,15 @@
+SyntaxTree
+    LetExpr
+        Token 'let'
+        VariablePattern
+            Leading ' '
+            Token 'foo'
+        <missing>
+        <missing>
+        <missing>
+    Leading ' \x1d print'
+    Leading '('
+    Leading '1'
+    Leading ')\n'
+    Leading ''
+    Token ''

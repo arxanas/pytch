@@ -1,0 +1,14 @@
+UNKNOWN_TOKEN[1000] in test/parser/fuzz.1.pytch, line 1, character 9:
+Error: Unknown token ''.
+   +-------------------------------------+
+   | test/parser/fuzz.1.pytch            |
+ 1 | let foo  print(1)                  |
+   |         ^ Error: Unknown token ''. |
+   +-------------------------------------+
+UNEXPECTED_TOKEN[1001] in test/parser/fuzz.1.pytch, line 1, character 11:
+Error: I was expecting a '=', but instead got an identifier.
+   +------------------------------------------------------------------------------+
+   | test/parser/fuzz.1.pytch                                                     |
+ 1 | let foo  print(1)                                                           |
+   |           ^~~~~ Error: I was expecting a '=', but instead got an identifier. |
+   +------------------------------------------------------------------------------+
