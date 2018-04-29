@@ -263,14 +263,10 @@ Original exception:
 
 
 class Parser:
-    def __init__(self, file_info: FileInfo, tokens: List[Token]) -> None:
-        self.file_info_UPDATE_ME = file_info
-        self.tokens_UPDATE_ME = tokens
-
-    def parse(self) -> Parsation:
+    def parse(self, file_info: FileInfo, tokens: List[Token]) -> Parsation:
         state = State(
-            file_info=self.file_info_UPDATE_ME,
-            tokens=self.tokens_UPDATE_ME,
+            file_info=file_info,
+            tokens=tokens,
             token_index=0,
             offset=0,
             errors=[],
@@ -727,8 +723,8 @@ class Parser:
 
 
 def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
-    parser = Parser(file_info=file_info, tokens=tokens)
-    parsation = parser.parse()
+    parser = Parser()
+    parsation = parser.parse(file_info=file_info, tokens=tokens)
 
     source_code_length = len(file_info.source_code)
     tokens_length = parsation.full_width
