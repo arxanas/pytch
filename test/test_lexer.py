@@ -1,9 +1,10 @@
-from typing import Iterator, List
+from typing import Iterator, List, Optional
 
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
 from pytch import FileInfo
+from pytch.errors import Error, get_error_lines
 from pytch.lexer import lex, Token
 
 
@@ -28,7 +29,11 @@ def render_token_stream(tokens: List[Token]) -> str:
 
 
 def get_lexer_tests() -> Iterator[CaseInfo]:
-    return find_tests("lexer", input_extension=".pytch")
+    return find_tests(
+        "lexer",
+        input_extension=".pytch",
+        error_extension=".err",
+    )
 
 
 def get_lexer_test_ids() -> List[str]:
@@ -41,8 +46,20 @@ def make_result(input_filename: str, source_code: str) -> CaseResult:
         source_code=source_code,
     )
     lexation = lex(file_info=file_info)
-    actual_result = render_token_stream(lexation.tokens)
-    return CaseResult(output=actual_result, error=None)
+    output = render_token_stream(lexation.tokens)
+
+    error_lines = []
+    errors: List[Error] = lexation.errors
+    for i in errors:
+        error_lines.extend(get_error_lines(i, ascii=True))
+
+    error: Optional[str]
+    if error_lines:
+        error = "".join(line + "\n" for line in error_lines)
+    else:
+        error = None
+
+    return CaseResult(output=output, error=error)
 
 
 @pytest.mark.parametrize(
@@ -53,6 +70,7 @@ def make_result(input_filename: str, source_code: str) -> CaseResult:
 def test_lexer(test_case_info: CaseInfo) -> None:
     result = make_result(test_case_info.input_filename, test_case_info.input)
     assert test_case_info.output == result.output
+    assert test_case_info.error == result.error
 
 
 @pytest.mark.generate

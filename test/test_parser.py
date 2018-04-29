@@ -73,7 +73,7 @@ def make_result(input_filename: str, source_code: str) -> CaseResult:
     output = "".join(line + "\n" for line in rendered_st_lines)
 
     error_lines = []
-    errors: List[Error] = lexation.errors + parsation.errors  # type: ignore
+    errors: List[Error] = lexation.errors + parsation.errors
     for i in errors:
         error_lines.extend(get_error_lines(i, ascii=True))
 
