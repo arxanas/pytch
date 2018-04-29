@@ -1,7 +1,7 @@
 import sys
 
 from . import FileInfo
-from .errors import get_error_lines
+from .errors import ErrorCode, get_error_lines
 from .lexer import lex
 from .parser import parse
 
@@ -18,6 +18,12 @@ def process_source_code(source_code: str) -> None:
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
     for error in parsation.errors:
         sys.stdout.write("\n".join(get_error_lines(error)) + "\n")
+
+    if any(
+        error.code == ErrorCode.PARSED_LENGTH_MISMATCH
+        for error in lexation.errors + parsation.errors
+    ):
+        sys.exit(1)
 
 
 if __name__ == "__main__":
