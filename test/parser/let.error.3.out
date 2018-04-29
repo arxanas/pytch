@@ -8,6 +8,6 @@ SyntaxTree
         Token '='
         Trailing '\n'
         <missing>
+        Token ''
         <missing>
-    Leading ''
     Token ''

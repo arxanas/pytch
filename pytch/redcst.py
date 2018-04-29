@@ -160,6 +160,10 @@ class LetExpr(Expr):
         )
 
     @property
+    def t_in(self) -> Optional[Token]:
+        return self.origin.t_in
+
+    @property
     def n_body(self) -> Optional[Expr]:
         if self.origin.n_body is None:
             return None
@@ -185,6 +189,11 @@ class LetExpr(Expr):
                 if self.n_value is not None else
                 0
             )
+            + (
+                self.t_in.full_width
+                if self.t_in is not None else
+                0
+            )
         )
         return GREEN_TO_RED_NODE_MAP[self.origin.n_body.__class__](
             parent=self,
@@ -199,6 +208,7 @@ class LetExpr(Expr):
             self.n_pattern,
             self.t_equals,
             self.n_value,
+            self.t_in,
             self.n_body,
         ]
 

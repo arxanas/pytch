@@ -82,12 +82,7 @@ class TokenKind(Enum):
     RPAREN = "')'"
 
     ERROR = "error"
-    """This token is only used to simplify the implementation of the lexer.
-
-    When we don't find a token match, we use this token kind to attach
-    leading and trailing trivia. Then we immediately remove it from the token
-    stream and attach error trivia to the next valid token we find.
-    """
+    """Any invalid token."""
 
     EOF = "the end of the file"
     """This token is a zero-width token denoting the end of the file.
@@ -294,38 +289,20 @@ class Lexer:
         while True:
             last_offset = state.offset
             (state, token) = self.lex_token(state)
+            tokens.append(token)
             if token.kind == TokenKind.ERROR:
                 error_tokens.append(token)
                 errors.append(Error(
                     file_info=file_info,
-                    code=ErrorCode.UNKNOWN_TOKEN,
+                    code=ErrorCode.INVALID_TOKEN,
                     severity=Severity.ERROR,
-                    message=f"Unknown token '{token.text}'.",
+                    message=f"Invalid token '{token.text}'.",
                     notes=[],
                     range=file_info.get_range_from_offset_range(OffsetRange(
                         start=state.offset - token.trailing_width - token.width,
                         end=state.offset - token.trailing_width,
                     )),
                 ))
-            else:
-                leading_trivia: List[Trivium] = []
-                for error_token in error_tokens:
-                    leading_trivia.extend(error_token.leading_trivia)
-                    leading_trivia.append(Trivium(
-                        kind=TriviumKind.ERROR,
-                        text=error_token.text,
-                    ))
-                    leading_trivia.extend(error_token.trailing_trivia)
-                error_tokens = []
-
-                leading_trivia.extend(token.leading_trivia)
-                token = Token(
-                    kind=token.kind,
-                    text=token.text,
-                    leading_trivia=leading_trivia,
-                    trailing_trivia=list(token.trailing_trivia),
-                )
-                tokens.append(token)
 
             if token.kind == TokenKind.EOF:
                 break

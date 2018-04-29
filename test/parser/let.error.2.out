@@ -5,8 +5,8 @@ SyntaxTree
         <missing>
         <missing>
         <missing>
+        Token ''
         LetExpr
-            Leading ''
             Token 'let'
             VariablePattern
                 Leading ' '
@@ -17,12 +17,13 @@ SyntaxTree
                 Leading ' '
                 Token 'bar'
                 Trailing '\n'
+            Token ''
             LetExpr
                 Token 'let'
                 Trailing '\n'
                 <missing>
                 <missing>
                 <missing>
+                Token ''
                 <missing>
-    Leading ''
     Token ''

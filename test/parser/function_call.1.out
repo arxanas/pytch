@@ -18,5 +18,6 @@ SyntaxTree
                     <missing>
                 Token ')'
                 Trailing '\n'
+        Token ''
         <missing>
     Token ''

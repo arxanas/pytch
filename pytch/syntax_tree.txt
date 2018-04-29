@@ -14,6 +14,7 @@ LetExpr(Expr)
     n_pattern: Optional[Pattern]
     t_equals: Optional[Token]
     n_value: Optional[Expr]
+    t_in: Optional[Token]
     n_body: Optional[Expr]
 
 IdentifierExpr(Expr)

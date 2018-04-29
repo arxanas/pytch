@@ -17,7 +17,7 @@ SyntaxTree
                         Token '1'
                     <missing>
                 <missing>
+        Leading '!\n'
+        Token ''
         <missing>
-    Leading '!'
-    Leading '\n'
     Token ''

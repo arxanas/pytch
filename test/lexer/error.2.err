@@ -1,7 +1,7 @@
-UNKNOWN_TOKEN[1000] in test/lexer/error.2.pytch, line 1, character 11:
-Error: Unknown token '`'.
+INVALID_TOKEN[1000] in test/lexer/error.2.pytch, line 1, character 11:
+Error: Invalid token '`'.
    +---------------------------------------+
    | test/lexer/error.2.pytch              |
  1 | let foo = `print(1)                   |
-   |           ^ Error: Unknown token '`'. |
+   |           ^ Error: Invalid token '`'. |
    +---------------------------------------+

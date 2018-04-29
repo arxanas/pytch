@@ -31,16 +31,6 @@ from .greencst import (
 from .lexer import Token, TokenKind, Trivium, TriviumKind
 
 
-SyncTokenKind = TokenKind
-"""The kind of token that we synchronized to during error-recovery.
-
-During error-recovery, we skip ahead to the next synchronizing token.
-Sometimes, we want to know what kind of token that was, to know how to
-proceed with error-recovery. This could be a dummy token kind like `DUMMY_IN`
-or just `EOF`.
-"""
-
-
 def walk_tokens(node: Node) -> Iterator[Token]:
     for child in node.children:
         if child is None:
@@ -300,7 +290,7 @@ class Parser:
         allow_naked_lets=False,
     ) -> Tuple[State, Optional[LetExpr]]:
         t_let_range = state.current_token_range
-        (state, t_let, _sync) = self.expect_token(state, [TokenKind.LET])
+        (state, t_let) = self.expect_token(state, [TokenKind.LET])
         if not t_let:
             return (state, None)
         let_note = Note(
@@ -310,7 +300,7 @@ class Parser:
         )
         notes = [let_note]
 
-        (state, n_let_expr, sync_token_kind) = self.parse_let_expr_binding(
+        (state, n_let_expr) = self.parse_let_expr_binding(
             state=state,
             allow_naked_lets=allow_naked_lets,
             t_let=t_let,
@@ -320,14 +310,20 @@ class Parser:
         if n_let_expr is None:
             return (state, None)
 
-        if sync_token_kind is None:
-            (state, t_dummy_in, _sync) = self.expect_token(
-                state,
-                [TokenKind.DUMMY_IN],
-                notes=notes,
-            )
-            if not t_dummy_in:
-                return (state, None)
+        (state, t_in) = self.expect_token(
+            state,
+            [TokenKind.DUMMY_IN],
+            notes=notes,
+        )
+        if not t_in:
+            return (state, LetExpr(
+                t_let=t_let,
+                n_pattern=n_let_expr.n_pattern,
+                t_equals=n_let_expr.t_equals,
+                n_value=n_let_expr.n_value,
+                t_in=None,
+                n_body=None,
+            ))
 
         (body_state, n_body) = self.parse_expr_with_left_recursion(
             state,
@@ -352,6 +348,7 @@ class Parser:
             n_pattern=n_let_expr.n_pattern,
             t_equals=n_let_expr.t_equals,
             n_value=n_let_expr.n_value,
+            t_in=t_in,
             n_body=n_body,
         ))
 
@@ -361,9 +358,7 @@ class Parser:
         allow_naked_lets: bool,
         t_let: Token,
         notes: List[Note],
-    ) -> Tuple[State, Optional[LetExpr], Optional[SyncTokenKind]]:
-        sync_token_kind: Optional[SyncTokenKind]
-
+    ) -> Tuple[State, Optional[LetExpr]]:
         if state.current_token.kind == TokenKind.EQUALS:
             # If the token is an equals sign, assume that the name is missing
             # (e.g. during editing, the user is renaming the variable), but
@@ -380,7 +375,7 @@ class Parser:
         else:
             (pattern_state, n_pattern) = self.parse_pattern(state)
             if not n_pattern:
-                (state, sync_token_kind) = self.add_error_and_recover(
+                state = self.add_error_and_recover(
                     state,
                     Error(
                         file_info=state.file_info,
@@ -391,17 +386,18 @@ class Parser:
                         range=state.current_token_range,
                     ),
                 )
-                if state.current_token.kind != TokenKind.EQUALS:
-                    return (state, LetExpr(
-                        t_let=t_let,
-                        n_pattern=None,
-                        t_equals=None,
-                        n_value=None,
-                        n_body=None,
-                    ), sync_token_kind)
+
+                return (state, LetExpr(
+                    t_let=t_let,
+                    n_pattern=None,
+                    t_equals=None,
+                    n_value=None,
+                    t_in=None,
+                    n_body=None,
+                ))
             state = pattern_state
 
-        (state, t_equals, sync_token_kind) = self.expect_token(
+        (state, t_equals) = self.expect_token(
             state,
             [TokenKind.EQUALS],
             notes=notes,
@@ -412,15 +408,16 @@ class Parser:
                 n_pattern=n_pattern,
                 t_equals=None,
                 n_value=None,
+                t_in=None,
                 n_body=None,
-            ), sync_token_kind)
+            ))
 
         (expr_state, n_value) = self.parse_expr_with_left_recursion(
             state,
             allow_naked_lets=False,
         )
         if not n_value:
-            (state, sync_token_kind) = self.add_error_and_recover(state, Error(
+            state = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 code=ErrorCode.EXPECTED_EXPRESSION,
                 severity=Severity.ERROR,
@@ -434,8 +431,9 @@ class Parser:
                 n_pattern=n_pattern,
                 t_equals=t_equals,
                 n_value=None,
-                n_body=None,  # TODO: Maybe recover next let-expression.
-            ), sync_token_kind)
+                t_in=None,
+                n_body=None,
+            ))
         state = expr_state
 
         return (state, LetExpr(
@@ -443,12 +441,13 @@ class Parser:
             n_pattern=n_pattern,
             t_equals=t_equals,
             n_value=n_value,
+            t_in=None,  # Parsed by caller.
             n_body=None,  # Parsed by caller.
-        ), None)
+        ))
 
     def parse_pattern(self, state: State) -> Tuple[State, Optional[Pattern]]:
         # TODO: Parse more kinds of patterns.
-        (identifier_state, t_identifier, _sync) = \
+        (identifier_state, t_identifier) = \
             self.expect_token(state, [TokenKind.IDENTIFIER])
         if not t_identifier:
             return (state, None)
@@ -495,15 +494,15 @@ class Parser:
         self,
         state: State,
         error: Error,
-    ) -> Tuple[State, SyncTokenKind]:
+    ) -> State:
         synchronization_token_kinds = [TokenKind.DUMMY_IN]
         state = state.add_error(error)
         while state.current_token.kind != TokenKind.EOF:
             current_token = state.current_token
-            state = state.consume_error_token(state.current_token)
             if current_token.kind in synchronization_token_kinds:
-                return (state, current_token.kind)
-        return (state, TokenKind.EOF)
+                return state
+            state = state.consume_error_token(state.current_token)
+        return state
 
     def parse_expr(
         self,
@@ -514,7 +513,7 @@ class Parser:
         if token.kind == TokenKind.EOF:
             # TODO: Maybe this shouldn't be here, and the caller should
             # manually check for EOF.
-            (state, _sync) = self.add_error_and_recover(state, Error(
+            state = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 severity=Severity.ERROR,
                 code=ErrorCode.EXPECTED_EXPRESSION,
@@ -532,16 +531,14 @@ class Parser:
             return self.parse_int_literal(state)
         elif token.kind == TokenKind.LET:
             return self.parse_let_expr(state, allow_naked_lets=allow_naked_lets)
-        elif token.kind == TokenKind.DUMMY_IN:
-            return (state, None)
         else:
-            (state, _sync) = self.add_error_and_recover(state, Error(
+            state = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 severity=Severity.ERROR,
                 code=ErrorCode.EXPECTED_EXPRESSION,
                 message=(
                     "I was expecting an expression, but instead got " +
-                    self.describe_token_kind(state.current_token.kind) +
+                    self.describe_token(state.current_token) +
                     "."
                 ),
                 range=state.current_token_range,
@@ -570,7 +567,7 @@ class Parser:
         self,
         state: State,
     ) -> Tuple[State, Optional[ArgumentList]]:
-        (state, t_lparen, _sync) = self.expect_token(state, [TokenKind.LPAREN])
+        (state, t_lparen) = self.expect_token(state, [TokenKind.LPAREN])
         if t_lparen is None:
             state = state.add_error(Error(
                 file_info=state.file_info,
@@ -579,7 +576,7 @@ class Parser:
                 message=(
                     "I was expecting a '(' to indicate the start of a " +
                     "function argument list, but instead got " +
-                    self.describe_token_kind(state.current_token.kind) +
+                    self.describe_token(state.current_token) +
                     "."
                 ),
                 notes=[],
@@ -620,8 +617,7 @@ class Parser:
             arguments.append(n_argument)
             previous_argument_range = argument_range
 
-        (rparen_state, t_rparen, _sync) = \
-            self.expect_token(state, [TokenKind.RPAREN])
+        (rparen_state, t_rparen) = self.expect_token(state, [TokenKind.RPAREN])
         if t_rparen is None:
             state = state.add_error(Error(
                 file_info=state.file_info,
@@ -630,7 +626,7 @@ class Parser:
                 message=(
                     "I was expecting a ')' to indicate the end of this " +
                     "function argument list, but instead got " +
-                    self.describe_token_kind(state.current_token.kind) +
+                    self.describe_token(state.current_token) +
                     "."
                 ),
                 # TODO: Link to the start of the function argument list.
@@ -655,8 +651,7 @@ class Parser:
         if n_expr is None:
             return (state, None)
 
-        (comma_state, t_comma, _sync) = \
-            self.expect_token(state, [TokenKind.COMMA])
+        (comma_state, t_comma) = self.expect_token(state, [TokenKind.COMMA])
         if t_comma is not None:
             state = comma_state
 
@@ -669,7 +664,7 @@ class Parser:
         self,
         state: State,
     ) -> Tuple[State, Optional[IdentifierExpr]]:
-        (state, t_identifier, _sync) = self.expect_token(
+        (state, t_identifier) = self.expect_token(
             state,
             [TokenKind.IDENTIFIER],
         )
@@ -681,7 +676,7 @@ class Parser:
         self,
         state: State,
     ) -> Tuple[State, Optional[IntLiteralExpr]]:
-        (state, t_int_literal, _sync) = \
+        (state, t_int_literal) = \
             self.expect_token(state, [TokenKind.INT_LITERAL])
         if t_int_literal is None:
             return (state, None)
@@ -693,10 +688,10 @@ class Parser:
         possible_tokens: List[TokenKind],
         *,
         notes: List[Note] = [],
-    ) -> Tuple[State, Optional[Token], Optional[SyncTokenKind]]:
+    ) -> Tuple[State, Optional[Token]]:
         token = state.current_token
         if token.kind in possible_tokens:
-            return (state.consume_token(token), token, None)
+            return (state.consume_token(token), token)
 
         assert possible_tokens
         possible_tokens_str = self.describe_token_kind(possible_tokens[0])
@@ -708,9 +703,9 @@ class Parser:
 
         message = (
             f"I was expecting {possible_tokens_str}, " +
-            f"but instead got {self.describe_token_kind(token.kind)}."
+            f"but instead got {self.describe_token(token)}."
         )
-        (state, sync_token_kind) = self.add_error_and_recover(state, Error(
+        state = self.add_error_and_recover(state, Error(
             file_info=state.file_info,
             code=ErrorCode.UNEXPECTED_TOKEN,
             severity=Severity.ERROR,
@@ -718,7 +713,12 @@ class Parser:
             notes=[],
             range=state.current_token_range,
         ))
-        return (state, None, sync_token_kind)
+        return (state, None)
+
+    def describe_token(self, token: Token) -> str:
+        if token.kind == TokenKind.ERROR:
+            return f"the invalid token '{token.text}'"
+        return self.describe_token_kind(token.kind)
 
     def describe_token_kind(self, token_kind: TokenKind) -> str:
         if token_kind.value.startswith("the "):

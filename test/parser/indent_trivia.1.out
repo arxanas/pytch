@@ -25,5 +25,6 @@ SyntaxTree
                 Leading '    '
                 Token ')'
                 Trailing '\n'
+        Token ''
         <missing>
     Token ''

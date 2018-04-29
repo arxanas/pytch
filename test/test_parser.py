@@ -21,18 +21,15 @@ def render_syntax_tree(
         token = ast_node
         lines = []
         for trivium in token.leading_trivia:
-            content = source_code[offset:offset + trivium.width]
             offset += trivium.width
-            lines.append(f"Leading {content!r}")
+            lines.append(f"Leading {trivium.text!r}")
 
-        content = source_code[offset:offset + token.width]
         offset += token.width
-        lines.append(f"Token {content!r}")
+        lines.append(f"Token {token.text!r}")
 
         for trivium in token.trailing_trivia:
-            content = source_code[offset:offset + trivium.width]
             offset += trivium.width
-            lines.append(f"Trailing {content!r}")
+            lines.append(f"Trailing {trivium.text!r}")
 
         return (offset, lines)
     else:

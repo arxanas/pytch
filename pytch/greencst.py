@@ -78,6 +78,7 @@ class LetExpr(Expr):
         n_pattern: Optional[Pattern],
         t_equals: Optional[Token],
         n_value: Optional[Expr],
+        t_in: Optional[Token],
         n_body: Optional[Expr],
     ) -> None:
         super().__init__([
@@ -85,12 +86,14 @@ class LetExpr(Expr):
             n_pattern,
             t_equals,
             n_value,
+            t_in,
             n_body,
         ])
         self._t_let = t_let
         self._n_pattern = n_pattern
         self._t_equals = t_equals
         self._n_value = n_value
+        self._t_in = t_in
         self._n_body = n_body
 
     @property
@@ -108,6 +111,10 @@ class LetExpr(Expr):
     @property
     def n_value(self) -> Optional[Expr]:
         return self._n_value
+
+    @property
+    def t_in(self) -> Optional[Token]:
+        return self._t_in
 
     @property
     def n_body(self) -> Optional[Expr]:

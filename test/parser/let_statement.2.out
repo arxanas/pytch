@@ -20,11 +20,13 @@ SyntaxTree
                 Leading '        '
                 Token '1'
                 Trailing '\n'
+            Token ''
             IdentifierExpr
                 Leading '    '
                 Token 'bar'
                 Trailing '\n'
                 Trailing '\n'
+        Token ''
         LetExpr
             Token 'let'
             VariablePattern
@@ -36,5 +38,6 @@ SyntaxTree
                 Leading ' '
                 Token '3'
                 Trailing '\n'
+            Token ''
             <missing>
     Token ''
