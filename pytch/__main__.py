@@ -7,7 +7,10 @@ from .parser import parse
 
 
 def main():
-    source_code = sys.stdin.read()
+    process_source_code(source_code=sys.stdin.read())
+
+
+def process_source_code(source_code: str) -> None:
     file_info = FileInfo(file_path="<stdin>", source_code=source_code)
     lexation = lex(file_info=file_info)
     for error in lexation.errors:
