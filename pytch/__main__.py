@@ -11,7 +11,7 @@ def main():
     file_info = FileInfo(file_path="<stdin>", source_code=source_code)
     lexation = lex(file_info=file_info)
     for error in lexation.errors:
-        sys.stdout.write("\n".join(get_error_lines(error)))
+        sys.stdout.write("\n".join(get_error_lines(error)) + "\n")
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
     for error in parsation.errors:
         sys.stdout.write("\n".join(get_error_lines(error)) + "\n")

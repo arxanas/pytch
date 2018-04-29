@@ -55,7 +55,6 @@ from typing import (
     Iterator,
     List,
     Mapping,
-    Optional,
     Pattern,
     Sequence,
     Tuple,
@@ -63,7 +62,8 @@ from typing import (
 
 from typing_extensions import Protocol
 
-from . import FileInfo
+from . import FileInfo, OffsetRange
+from .errors import Error, ErrorCode, Severity
 
 
 class TriviumKind(Enum):
@@ -236,12 +236,6 @@ class Token:
         )
 
 
-class Error:
-    def __init__(self, offset: int, message: str) -> None:
-        self.offset = offset
-        self.message = message
-
-
 class Lexation:
     def __init__(self, tokens: List[Token], errors: List[Error]) -> None:
         self.tokens = tokens
@@ -262,11 +256,14 @@ COMMA_RE = re.compile(",")
 LPAREN_RE = re.compile("\(")
 RPAREN_RE = re.compile("\)")
 
+UNKNOWN_TOKEN_RE = re.compile("\S+")
+
 
 class Lexer:
     def __init__(self, file_info: FileInfo) -> None:
         self.file_info = file_info
         self.offset = 0
+        self.errors: List[Error] = []
 
     @property
     def source_code(self) -> str:
@@ -274,47 +271,53 @@ class Lexer:
 
     def lex(self) -> Lexation:
         tokens: List[Token] = []
-        errors: List[Error] = []
         while self.offset < len(self.source_code):
-            leading_trivia = self.lex_leading_trivia()
-            for trivium in leading_trivia:
-                self.consume_item(trivium)
+            leading_trivia = self.consume_leading_trivia()
+            token = self.consume_token()
+            trailing_trivia = self.consume_trailing_trivia()
 
-            token = self.lex_next_token()
-            self.consume_item(token)
-
-            trailing_trivia = self.lex_trailing_trivia()
-            newline_indices = [
-                i
-                for (i, trivium) in enumerate(trailing_trivia)
-                if trivium.kind == TriviumKind.NEWLINE
-            ]
-            if newline_indices:
-                last_newline_index = newline_indices[-1] + 1
-            else:
-                last_newline_index = 0
-            # Avoid consuming whitespace or other trivia, after the last
-            # newline. We'll consume that as the leading trivia of the next
-            # token.
-            trailing_trivia = trailing_trivia[:last_newline_index]
-            for trivium in trailing_trivia:
-                self.consume_item(trivium)
-
+            leading_trivia = leading_trivia + list(token.leading_trivia)
+            trailing_trivia = list(token.trailing_trivia) + trailing_trivia
             tokens.append(Token(
                 kind=token.kind,
                 text=token.text,
                 leading_trivia=leading_trivia,
                 trailing_trivia=trailing_trivia,
             ))
-        return Lexation(tokens=tokens, errors=errors)
+        return Lexation(tokens=tokens, errors=self.errors)
 
     def consume_item(self, item: Item) -> None:
         self.offset += item.width
+
+    def consume_leading_trivia(self) -> List[Trivium]:
+        leading_trivia = self.lex_leading_trivia()
+        for trivium in leading_trivia:
+            self.consume_item(trivium)
+        return leading_trivia
 
     def lex_leading_trivia(self) -> List[Trivium]:
         return self.lex_next_trivia_by_patterns({
             TriviumKind.WHITESPACE: WHITESPACE_RE,
         })
+
+    def consume_trailing_trivia(self) -> List[Trivium]:
+        trailing_trivia = self.lex_trailing_trivia()
+        newline_indices = [
+            i
+            for (i, trivium) in enumerate(trailing_trivia)
+            if trivium.kind == TriviumKind.NEWLINE
+        ]
+        if newline_indices:
+            last_newline_index = newline_indices[-1] + 1
+        else:
+            last_newline_index = 0
+        # Avoid consuming whitespace or other trivia, after the last
+        # newline. We'll consume that as the leading trivia of the next
+        # token.
+        trailing_trivia = trailing_trivia[:last_newline_index]
+        for trivium in trailing_trivia:
+            self.consume_item(trivium)
+        return trailing_trivia
 
     def lex_trailing_trivia(self) -> List[Trivium]:
         return self.lex_next_trivia_by_patterns({
@@ -351,59 +354,78 @@ class Lexer:
             trivia.append(trivium)
             offset += trivium.width
 
-    def lex_next_token(self) -> Token:
-        try:
-            token = self.lex_next_token_by_patterns({
-                TokenKind.INT_LITERAL: INT_LITERAL_RE,
-                TokenKind.EQUALS: EQUALS_RE,
-                TokenKind.LET: LET_RE,
-                TokenKind.COMMA: COMMA_RE,
-                TokenKind.LPAREN: LPAREN_RE,
-                TokenKind.RPAREN: RPAREN_RE,
-            })
-        except ValueError:
-            token = self.lex_next_token_by_patterns({
-                TokenKind.IDENTIFIER: IDENTIFIER_RE,
-            })
+    def consume_token(self) -> Token:
+        token = self.lex_next_token()
+        self.consume_item(token)
         return token
+
+    def lex_next_token(self) -> Token:
+        return self.lex_next_token_by_patterns({
+            TokenKind.INT_LITERAL: INT_LITERAL_RE,
+            TokenKind.EQUALS: EQUALS_RE,
+            TokenKind.LET: LET_RE,
+            TokenKind.COMMA: COMMA_RE,
+            TokenKind.LPAREN: LPAREN_RE,
+            TokenKind.RPAREN: RPAREN_RE,
+            TokenKind.IDENTIFIER: IDENTIFIER_RE,
+        })
 
     def lex_next_token_by_patterns(
         self,
         token_patterns: Mapping[TokenKind, Pattern],
     ) -> Token:
-        matches = [
-            (token_kind, regex.match(self.source_code, pos=self.offset))
-            for token_kind, regex in token_patterns.items()
-        ]
-        matches = [
-            (token_kind, match)
-            for token_kind, match in matches
-            if match is not None
-        ]
-        if not matches:
-            # TODO: This should be a formal lexing error.
-            raise ValueError(
-                "no match: '" +
-                self.source_code[self.offset:self.offset + 5] +
-                "'",
+        error_trivia = []
+        leading_trivia = self.consume_leading_trivia()
+        while self.offset < len(self.source_code):
+            matches = [
+                (token_kind, regex.match(self.source_code, pos=self.offset))
+                for token_kind, regex in token_patterns.items()
+            ]
+            matches = [
+                (token_kind, match)
+                for token_kind, match in matches
+                if match is not None
+            ]
+            if matches:
+                break
+
+            start_offset = self.offset
+            unknown_token_match = UNKNOWN_TOKEN_RE.match(
+                self.source_code,
+                pos=self.offset,
             )
-        longest_match = max(matches, key=lambda x: len(x[1].group()))
-        kind, match = longest_match
+            assert unknown_token_match
+            unknown_token = unknown_token_match.group()
+            self.offset += len(unknown_token)
+            end_offset = self.offset
+
+            trailing_trivia = self.consume_trailing_trivia()
+
+            error_trivia.extend(leading_trivia)
+            error_trivia.append(Trivium(
+                kind=TriviumKind.ERROR,
+                text=unknown_token,
+            ))
+            error_trivia.extend(trailing_trivia)
+            self.errors.append(Error(
+                file_info=self.file_info,
+                code=ErrorCode.UNKNOWN_TOKEN,
+                severity=Severity.ERROR,
+                message=f"Unknown token '{unknown_token}'.",
+                notes=[],
+                range=self.file_info.get_range_from_offset_range(OffsetRange(
+                    start=start_offset,
+                    end=end_offset,
+                )),
+            ))
+
+            leading_trivia = self.consume_leading_trivia()
+
+        (kind, match) = max(matches, key=lambda x: len(x[1].group()))
         return Token(
             kind=kind,
             text=match.group(),
-            leading_trivia=[],
-            trailing_trivia=[],
-        )
-
-    def lex_next_identifier(self) -> Optional[Token]:
-        match = IDENTIFIER_RE.match(self.source_code, pos=self.offset)
-        if match is None:
-            return None
-        return Token(
-            kind=TokenKind.IDENTIFIER,
-            text=match.group(),
-            leading_trivia=[],
+            leading_trivia=error_trivia + leading_trivia,
             trailing_trivia=[],
         )
 
