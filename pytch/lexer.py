@@ -504,6 +504,7 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
     the source code's indentation.
     """
     stack: List[Tuple[int, int, Token]] = []
+    eof_token = None
     current_line = 0
     for indentation_level, token in with_indentation_levels(tokens):
         if stack:
@@ -524,7 +525,11 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
         if token.kind == TokenKind.LET:
             stack.append((indentation_level, current_line, token))
 
-        yield token
+        if token.kind != TokenKind.EOF:
+            yield token
+        else:
+            eof_token = token
+
         current_line += sum(
             len(trivium.text)
             for trivium in token.trailing_trivia
@@ -543,6 +548,9 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
         else:
             assert False, \
                 f"Unexpected token kind in pre-parser: {token.kind.value}"
+
+    assert eof_token is not None
+    yield eof_token
 
 
 def lex(file_info: FileInfo) -> Lexation:

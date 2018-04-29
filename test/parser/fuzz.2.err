@@ -1,0 +1,7 @@
+UNKNOWN_TOKEN[1000] in test/parser/fuzz.2.pytch, line 1, character 18:
+Error: Unknown token '!'.
+   +----------------------------------------------+
+   | test/parser/fuzz.2.pytch                     |
+ 1 | let foo = print(1!                           |
+   |                  ^ Error: Unknown token '!'. |
+   +----------------------------------------------+
