@@ -1,0 +1,7 @@
+UNKNOWN_TOKEN[1000] in test/parser/unknown_token.1.pytch, line 1, character 1:
+Error: Unknown token '&&&&'.
+   +-----------------------------------+
+   | test/parser/unknown_token.1.pytch |
+ 1 | &&&&                              |
+   | ^~~~ Error: Unknown token '&&&&'. |
+   +-----------------------------------+

@@ -272,14 +272,23 @@ class Parser:
             errors=[],
             error_tokens=[],
         )
+
+        # File with only whitespace.
+        if state.current_token.kind == TokenKind.EOF:
+            syntax_tree = SyntaxTree(
+                n_expr=None,
+                t_eof=state.current_token,
+            )
+            return Parsation(green_cst=syntax_tree, errors=state.errors)
+
         try:
             (state, n_expr) = self.parse_expr_with_left_recursion(
                 state,
                 allow_naked_lets=True,
             )
             t_eof = state.current_token
-            ast = SyntaxTree(n_expr=n_expr, t_eof=t_eof)
-            return Parsation(green_cst=ast, errors=state.errors)
+            syntax_tree = SyntaxTree(n_expr=n_expr, t_eof=t_eof)
+            return Parsation(green_cst=syntax_tree, errors=state.errors)
         except UnhandledParserException:
             raise
         except Exception as e:
