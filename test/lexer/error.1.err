@@ -1,0 +1,7 @@
+UNKNOWN_TOKEN[1000] in test/lexer/error.1.pytch, line 1, character 11:
+Error: Unknown token '&&&&'.
+   +---------------------------------------------+
+   | test/lexer/error.1.pytch                    |
+ 1 | let foo = &&&& 1                            |
+   |           ^~~~ Error: Unknown token '&&&&'. |
+   +---------------------------------------------+

@@ -282,7 +282,7 @@ COMMA_RE = re.compile(",")
 LPAREN_RE = re.compile("\(")
 RPAREN_RE = re.compile("\)")
 
-UNKNOWN_TOKEN_RE = re.compile("\S+")
+UNKNOWN_TOKEN_RE = re.compile("[^ \n\t\ra-zA-Z0-9]+")
 
 
 class Lexer:
@@ -303,8 +303,8 @@ class Lexer:
                     message=f"Unknown token '{token.text}'.",
                     notes=[],
                     range=file_info.get_range_from_offset_range(OffsetRange(
-                        start=state.offset - token.full_width,
-                        end=state.offset - 1,
+                        start=state.offset - token.trailing_width - token.width,
+                        end=state.offset - token.trailing_width,
                     )),
                 ))
             else:

@@ -1,0 +1,14 @@
+'let'
+leading whitespace ' '
+identifier 'foo'
+leading whitespace ' '
+'='
+leading whitespace ' '
+leading error '`'
+identifier 'print'
+'('
+integer literal '1'
+')'
+trailing newline '\n'
+the end of a 'let' binding
+the end of the file
