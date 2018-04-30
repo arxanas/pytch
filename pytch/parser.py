@@ -52,6 +52,14 @@ class Parsation:
     def full_width(self) -> int:
         return sum(token.full_width for token in walk_tokens(self.green_cst))
 
+    @property
+    def is_buggy(self) -> bool:
+        """Return whether the parse tree violates any known invariants."""
+        return any(
+            error.code == ErrorCode.PARSED_LENGTH_MISMATCH
+            for error in self.errors
+        )
+
 
 class ParseException(Exception):
     def __init__(self, error: Error) -> None:
