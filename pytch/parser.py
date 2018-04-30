@@ -132,7 +132,7 @@ class State:
 
     @property
     def current_token_offset_range(self) -> OffsetRange:
-        current_token = self.current_token
+        current_token = self.tokens[self.token_index]
         if current_token.kind == TokenKind.EOF:
             start = len(self.file_info.source_code)
             end = start
@@ -155,7 +155,6 @@ class State:
                 # If we rewound, point to the location immediately after the
                 # token we rewound to, rather than that token itself.
                 start = end
-                end = start
         return OffsetRange(start=start, end=end)
 
     @property
@@ -206,9 +205,25 @@ class State:
     def consume_token(self, token: Token) -> "State":
         assert self.current_token.kind != TokenKind.EOF, \
             "Tried to consume the EOF token."
+
+        # We may have added leading error tokens as trivia, but we don't want
+        # to double-count their width, since they've already been consumed.
+        full_width_without_errors = (
+            token.width
+            + sum(
+                trivium.width
+                for trivium in token.leading_trivia
+                if trivium.kind != TriviumKind.ERROR
+            )
+            + sum(
+                trivium.width
+                for trivium in token.trailing_trivia
+                if trivium.kind != TriviumKind.ERROR
+            )
+        )
         return self.update(
             token_index=self.token_index + 1,
-            offset=self.offset + token.full_width,
+            offset=self.offset + full_width_without_errors,
             error_tokens=[],
         )
 
@@ -234,7 +249,6 @@ class UnhandledParserException(Exception):
         file_contents = ""
         for i, token in enumerate(self._state.tokens):
             if i == self._state.token_index:
-                print(self._state)
                 file_contents += "<HERE>"
             file_contents += token.full_text
 

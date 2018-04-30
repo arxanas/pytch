@@ -1,0 +1,8 @@
+EXPECTED_PATTERN[1013] in test/parser/fuzz.4.pytch, line 1, character 5:
+Error: I was expecting a pattern after 'let'.
+   +-------------------------------------------------------+
+   | test/parser/fuzz.4.pytch                              |
+ 1 | let let = print(1)                                    |
+   |     ^~~ Error: I was expecting a pattern after 'let'. |
+   | ^~~ Note: This is the beginning of the let-binding.   |
+   +-------------------------------------------------------+

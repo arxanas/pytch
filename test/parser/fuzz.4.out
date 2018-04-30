@@ -1,0 +1,15 @@
+SyntaxTree
+    LetExpr
+        Token 'let'
+        <missing>
+        <missing>
+        <missing>
+        Leading ' let'
+        Leading ' ='
+        Leading ' print'
+        Leading '('
+        Leading '1'
+        Leading ')\n'
+        Token ''
+        <missing>
+    Token ''
