@@ -32,6 +32,44 @@ class Node:
         return self._children
 
     @property
+    def first_present_child(self) -> Optional[Union["Node", "Token"]]:
+        for child in self.children:
+            if child is not None:
+                return child
+        return None
+
+    @property
+    def last_present_child(self) -> Optional[Union["Node", "Token"]]:
+        for child in reversed(self.children):
+            if child is not None:
+                return child
+        return None
+
+    @property
+    def leading_width(self) -> int:
+        child = self.first_present_child
+        if child is None:
+            return 0
+        return child.leading_width
+
+    @property
+    def trailing_width(self) -> int:
+        child = self.last_present_child
+        if child is None:
+            return 0
+        return child.trailing_width
+
+    @property
+    def width(self) -> int:
+        if not self.children:
+            return 0
+        return (
+            self.full_width
+            - self.leading_width
+            - self.trailing_width
+        )
+
+    @property
     def full_width(self) -> int:
         return sum(
             child.full_width if child is not None else 0
