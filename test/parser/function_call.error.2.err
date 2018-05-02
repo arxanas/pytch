@@ -1,11 +1,17 @@
-EXPECTED_COMMA[1017] in test/parser/function_call.error.2.pytch, line 3, character 3:
-Error: I was expecting a ',' before this argument.
-   +----------------------------------------------------------+
-   | test/parser/function_call.error.2.pytch                  |
- 1 | print(                                                   |
- 2 |   foo                                                    |
-   |   ^~~ Note: This is the previous argument.               |
- 3 |   bar                                                    |
-   |   ^~~ Error: I was expecting a ',' before this argument. |
- 4 | )                                                        |
-   +----------------------------------------------------------+
+EXPECTED_COMMA[1017] in test/parser/function_call.error.2.pytch, line 2, character 6:
+Error: I was expecting a ',' after the previous argument.
+   +------------------------------------------------------------------+
+   | test/parser/function_call.error.2.pytch                          |
+ 1 | let foo = foo(                                                   |
+ 2 |   bar                                                            |
+   |      ^ Error: I was expecting a ',' after the previous argument. |
+ 3 |   baz qux)                                                       |
+   +------------------------------------------------------------------+
+EXPECTED_COMMA[1017] in test/parser/function_call.error.2.pytch, line 3, character 6:
+Error: I was expecting a ',' after the previous argument.
+   +------------------------------------------------------------------+
+   | test/parser/function_call.error.2.pytch                          |
+ 2 |   bar                                                            |
+ 3 |   baz qux)                                                       |
+   |      ^ Error: I was expecting a ',' after the previous argument. |
+   +------------------------------------------------------------------+

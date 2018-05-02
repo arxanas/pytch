@@ -1,4 +1,3 @@
-print(
-  foo
+let foo = foo(
   bar
-)
+  baz qux)

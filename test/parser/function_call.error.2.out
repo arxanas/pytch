@@ -1,22 +1,36 @@
 SyntaxTree
-    FunctionCallExpr
-        IdentifierExpr
-            Token 'print'
-        ArgumentList
-            Token '('
-            Trailing '\n'
-            Argument
-                IdentifierExpr
-                    Leading '  '
-                    Token 'foo'
-                    Trailing '\n'
-                <missing>
-            Argument
-                IdentifierExpr
-                    Leading '  '
-                    Token 'bar'
-                    Trailing '\n'
-                <missing>
-            Token ')'
-            Trailing '\n'
+    LetExpr
+        Token 'let'
+        VariablePattern
+            Leading ' '
+            Token 'foo'
+        Leading ' '
+        Token '='
+        FunctionCallExpr
+            IdentifierExpr
+                Leading ' '
+                Token 'foo'
+            ArgumentList
+                Token '('
+                Trailing '\n'
+                Argument
+                    IdentifierExpr
+                        Leading '  '
+                        Token 'bar'
+                        Trailing '\n'
+                    <missing>
+                Argument
+                    IdentifierExpr
+                        Leading '  '
+                        Token 'baz'
+                    <missing>
+                Argument
+                    IdentifierExpr
+                        Leading ' '
+                        Token 'qux'
+                    <missing>
+                Token ')'
+                Trailing '\n'
+        Token ''
+        <missing>
     Token ''
