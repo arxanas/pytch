@@ -21,11 +21,15 @@ class Node:
 
     @property
     def children(self) -> Sequence[Union["Node", Optional["Token"]]]:
-        raise NotImplementedError("should be implemented by children")
+        raise NotImplementedError(
+            f"class {self.__class__.__name__} should implement `children`",
+        )
 
     @property
     def full_width(self) -> int:
-        raise NotImplementedError("should be implemented by children")
+        raise NotImplementedError(
+            f"class {self.__class__.__name__} should implement `full_width`",
+        )
 
 
 class Expr(Node):
@@ -61,6 +65,10 @@ class SyntaxTree(Node):
         return self.origin.t_eof
 
     @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
             self.n_expr,
@@ -86,6 +94,10 @@ class VariablePattern(Pattern):
     @property
     def t_identifier(self) -> Optional[Token]:
         return self.origin.t_identifier
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -202,6 +214,10 @@ class LetExpr(Expr):
         )
 
     @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
             self.t_let,
@@ -229,6 +245,10 @@ class IdentifierExpr(Expr):
         return self.origin.t_identifier
 
     @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
             self.t_identifier,
@@ -249,6 +269,10 @@ class IntLiteralExpr(Expr):
     @property
     def t_int_literal(self) -> Optional[Token]:
         return self.origin.t_int_literal
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -284,6 +308,10 @@ class Argument(Node):
     @property
     def t_comma(self) -> Optional[Token]:
         return self.origin.t_comma
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -329,6 +357,10 @@ class ArgumentList(Node):
     @property
     def t_rparen(self) -> Optional[Token]:
         return self.origin.t_rparen
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
@@ -380,6 +412,10 @@ class FunctionCallExpr(Expr):
             origin=self.origin.n_argument_list,
             offset=offset,
         )
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
 
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
