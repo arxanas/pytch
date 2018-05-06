@@ -7,11 +7,3 @@ Error: I was expecting a ',' after the previous argument.
    |      ^ Error: I was expecting a ',' after the previous argument. |
  3 |   baz qux)                                                       |
    +------------------------------------------------------------------+
-EXPECTED_COMMA[1017] in test/parser/function_call.error.2.pytch, line 3, character 6:
-Error: I was expecting a ',' after the previous argument.
-   +------------------------------------------------------------------+
-   | test/parser/function_call.error.2.pytch                          |
- 2 |   bar                                                            |
- 3 |   baz qux)                                                       |
-   |      ^ Error: I was expecting a ',' after the previous argument. |
-   +------------------------------------------------------------------+

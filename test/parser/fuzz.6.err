@@ -1,0 +1,29 @@
+INVALID_TOKEN[1000] in test/parser/fuzz.6.pytch, line 1, character 4:
+Error: Invalid token '!'.
+   +--------------------------------+
+   | test/parser/fuzz.6.pytch       |
+ 1 | let!f/o = print@let            |
+   |    ^ Error: Invalid token '!'. |
+   +--------------------------------+
+INVALID_TOKEN[1000] in test/parser/fuzz.6.pytch, line 1, character 6:
+Error: Invalid token '/'.
+   +----------------------------------+
+   | test/parser/fuzz.6.pytch         |
+ 1 | let!f/o = print@let              |
+   |      ^ Error: Invalid token '/'. |
+   +----------------------------------+
+INVALID_TOKEN[1000] in test/parser/fuzz.6.pytch, line 1, character 16:
+Error: Invalid token '@'.
+   +--------------------------------------------+
+   | test/parser/fuzz.6.pytch                   |
+ 1 | let!f/o = print@let                        |
+   |                ^ Error: Invalid token '@'. |
+   +--------------------------------------------+
+EXPECTED_PATTERN[1013] in test/parser/fuzz.6.pytch, line 1, character 4:
+Error: I was expecting a pattern after 'let'.
+   +-----------------------------------------------------+
+   | test/parser/fuzz.6.pytch                            |
+ 1 | let!f/o = print@let                                 |
+   |    ^ Error: I was expecting a pattern after 'let'.  |
+   | ^~~ Note: This is the beginning of the let-binding. |
+   +-----------------------------------------------------+

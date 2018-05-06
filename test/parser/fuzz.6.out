@@ -4,12 +4,14 @@ SyntaxTree
         <missing>
         <missing>
         <missing>
-        Leading ' let'
+        Leading '!'
+        Leading 'f'
+        Leading '/'
+        Leading 'o'
         Leading ' ='
         Leading ' print'
-        Leading '('
-        Leading '1'
-        Leading ')\n'
+        Leading '@'
+        Leading 'let'
         Leading ''
         Token DUMMY_IN ''
         <missing>

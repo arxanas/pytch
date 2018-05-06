@@ -49,14 +49,11 @@ class Parsation:
         self.errors = errors
 
     @property
-    def full_width(self) -> int:
-        return sum(token.full_width for token in walk_tokens(self.green_cst))
-
-    @property
     def is_buggy(self) -> bool:
         """Return whether the parse tree violates any known invariants."""
+        assert ErrorCode.PARSED_LENGTH_MISMATCH.value == 9000
         return any(
-            error.code == ErrorCode.PARSED_LENGTH_MISMATCH
+            error.code.value >= ErrorCode.PARSED_LENGTH_MISMATCH.value
             for error in self.errors
         )
 
@@ -74,8 +71,34 @@ class State:
         token_index: int,
         offset: int,
         errors: List[Error],
+        is_recovering: bool,
         error_tokens: List[Token],
+        sync_token_kinds: List[List[TokenKind]],
     ) -> None:
+        """The parser state.
+
+        :param file_info: Metadata about the file that we're parsing.
+        :param tokens: The list of tokens that make up the file.
+        :param token_index: The index into the token list indicating where we
+            currently are in the process of parsing.
+        :param offset: The offset into the source file. Must be kept in sync
+            with `token_index`.
+        :param errors: A list of errors that have occurred during parsing so
+            far.
+        :param is_recovering: Whether or not we are in the process of
+            recovering from a parser error. While recovering, we'll consume
+            tokens blindly until we find a token of a kind that we're
+            expecting (a synchronization token), and resume parsing from
+            there.
+        :param error_tokens: A list of tokens that have been consumed during
+            error recovery.
+        :param sync_token_kinds: A stack of collections of tokens. Some
+            callers will push a set of tokens into this stack. This set
+            indicates tokens that can be synchronized to. If a function
+            deeper in the stack encounters an error, then parsing will
+            synchronize to the next token that appears somewhere in this
+            stack, and unwind to the its caller.
+        """
         assert len(tokens) > 0, "Expected at least one token (the EOF token)."
         assert tokens[-1].kind == TokenKind.EOF, \
             "Token stream must end with an EOF token."
@@ -86,7 +109,9 @@ class State:
         self.token_index = token_index
         self.offset = offset
         self.errors = errors
+        self.is_recovering = is_recovering
         self.error_tokens = error_tokens
+        self.sync_token_kinds = sync_token_kinds
 
     @property
     def end_of_file_offset_range(self) -> OffsetRange:
@@ -176,7 +201,9 @@ class State:
         token_index: int = None,
         offset: int = None,
         errors: List[Error] = None,
-        error_tokens: List[Token] = None
+        is_recovering: bool = None,
+        error_tokens: List[Token] = None,
+        sync_token_kinds: List[List[TokenKind]] = None,
     ) -> "State":
         if file_info is None:
             file_info = self.file_info
@@ -188,19 +215,62 @@ class State:
             offset = self.offset
         if errors is None:
             errors = self.errors
+        if is_recovering is None:
+            is_recovering = self.is_recovering
         if error_tokens is None:
             error_tokens = self.error_tokens
+        if sync_token_kinds is None:
+            sync_token_kinds = self.sync_token_kinds
         return State(
             file_info=file_info,
             tokens=tokens,
             token_index=token_index,
             offset=offset,
             errors=errors,
+            is_recovering=is_recovering,
             error_tokens=error_tokens,
+            sync_token_kinds=sync_token_kinds,
         )
 
     def add_error(self, error: Error) -> "State":
         return self.update(errors=self.errors + [error])
+
+    def assert_(
+        self,
+        condition: bool,
+        code: ErrorCode,
+        message: str,
+    ) -> "State":
+        if not condition:
+            return self.add_error(Error(
+                file_info=self.file_info,
+                code=code,
+                severity=Severity.WARNING,
+                message=f"Assertion failure -- please report this! {message}",
+                notes=[],
+            ))
+        return self
+
+    def start_recovery(self) -> "State":
+        assert not self.is_recovering, \
+            "Tried to start parser error recovery while already recovering"
+        return self.update(is_recovering=True)
+
+    def finish_recovery(self) -> "State":
+        assert self.is_recovering, \
+            "Tried to finish parser error recovery while not recovering"
+        return self.update(is_recovering=False)
+
+    def push_sync_token_kinds(self, token_kinds: List[TokenKind]) -> "State":
+        return self.update(
+            sync_token_kinds=self.sync_token_kinds + [token_kinds],
+        )
+
+    def pop_sync_token_kinds(self) -> "State":
+        assert self.sync_token_kinds
+        return self.update(
+            sync_token_kinds=self.sync_token_kinds[:-1]
+        )
 
     def consume_token(self, token: Token) -> "State":
         assert self.current_token.kind != TokenKind.EOF, \
@@ -282,7 +352,9 @@ class Parser:
             token_index=0,
             offset=0,
             errors=[],
+            is_recovering=False,
             error_tokens=[],
+            sync_token_kinds=[[TokenKind.EOF]],
         )
 
         # File with only whitespace.
@@ -300,6 +372,36 @@ class Parser:
             )
             t_eof = state.current_token
             syntax_tree = SyntaxTree(n_expr=n_expr, t_eof=t_eof)
+
+            state = state.assert_(
+                t_eof.kind == TokenKind.EOF,
+                code=ErrorCode.SHOULD_END_WITH_EOF,
+                message=(
+                    "Expected the last token to be parsed "
+                    + "to be the EOF token, "
+                    + f"but instead it was of kind {t_eof.kind.name!r} "
+                    + f"at index {state.token_index} "
+                    + f"(zero-indexed, out of {len(state.tokens)})."
+                ),
+            )
+
+            source_code_length = len(file_info.source_code)
+            tokens_length = sum(
+                token.full_width
+                for token in walk_tokens(syntax_tree)
+            )
+            state = state.assert_(
+                source_code_length == tokens_length,
+                code=ErrorCode.PARSED_LENGTH_MISMATCH,
+                message=(
+                    f"Mismatch between source code length " +
+                    f"({source_code_length}) " +
+                    f"and total length of parsed tokens " +
+                    f"({tokens_length}). " +
+                    f"The parse tree for this file is probably incorrect."
+                ),
+            )
+
             return Parsation(green_cst=syntax_tree, errors=state.errors)
         except UnhandledParserException:
             raise
@@ -315,6 +417,8 @@ class Parser:
         (state, t_let) = self.expect_token(state, [TokenKind.LET])
         if not t_let:
             return (state, None)
+
+        state = state.push_sync_token_kinds([TokenKind.DUMMY_IN])
         let_note = Note(
             file_info=state.file_info,
             message="This is the beginning of the let-binding.",
@@ -323,53 +427,33 @@ class Parser:
         notes = [let_note]
 
         (state, n_let_expr) = self.parse_let_expr_binding(
-            state=state,
+            state,
             allow_naked_lets=allow_naked_lets,
             t_let=t_let,
             notes=notes,
         )
-
-        if n_let_expr is None:
-            return (state, None)
-
         (state, t_in) = self.expect_token(
             state,
             [TokenKind.DUMMY_IN],
             notes=notes,
         )
-        if not t_in:
-            return (state, LetExpr(
-                t_let=t_let,
-                n_pattern=n_let_expr.n_pattern,
-                t_equals=n_let_expr.t_equals,
-                n_value=n_let_expr.n_value,
-                t_in=None,
-                n_body=None,
-            ))
+        if allow_naked_lets and state.current_token.kind == TokenKind.EOF:
+            n_body = None
+        else:
+            (state, n_body) = self.parse_expr_with_left_recursion(
+                state,
+                allow_naked_lets=allow_naked_lets,
+            )
 
-        (body_state, n_body) = self.parse_expr_with_left_recursion(
-            state,
-            allow_naked_lets=allow_naked_lets,
-        )
-        if not n_body and not allow_naked_lets:
-            state = state.add_error(Error(
-                file_info=state.file_info,
-                code=ErrorCode.EXPECTED_LET_EXPRESSION,
-                severity=Severity.ERROR,
-                message="I was expecting an expression to follow " +
-                        "the previous let-binding.",
-                notes=notes,
-                range=state.current_token_range,
-            ))
-            return (state, None)
-        elif n_body:
-            state = body_state
-
+        n_pattern = n_let_expr.n_pattern if n_let_expr is not None else None
+        t_equals = n_let_expr.t_equals if n_let_expr is not None else None
+        n_value = n_let_expr.n_value if n_let_expr is not None else None
+        state = state.pop_sync_token_kinds()
         return (state, LetExpr(
             t_let=t_let,
-            n_pattern=n_let_expr.n_pattern,
-            t_equals=n_let_expr.t_equals,
-            n_value=n_let_expr.n_value,
+            n_pattern=n_pattern,
+            t_equals=t_equals,
+            n_value=n_value,
             t_in=t_in,
             n_body=n_body,
         ))
@@ -395,68 +479,26 @@ class Parser:
                 range=state.current_token_range,
             ))
         else:
-            (pattern_state, n_pattern) = self.parse_pattern(state)
-            if not n_pattern:
-                state = self.add_error_and_recover(
-                    state,
-                    Error(
-                        file_info=state.file_info,
-                        code=ErrorCode.EXPECTED_PATTERN,
-                        severity=Severity.ERROR,
-                        message="I was expecting a pattern after 'let'.",
-                        notes=notes,
-                        range=state.current_token_range,
-                    ),
-                )
-
-                return (state, LetExpr(
-                    t_let=t_let,
-                    n_pattern=None,
-                    t_equals=None,
-                    n_value=None,
-                    t_in=None,
-                    n_body=None,
-                ))
-            state = pattern_state
-
+            (state, n_pattern) = self.parse_pattern(
+                state,
+                error=Error(
+                    file_info=state.file_info,
+                    code=ErrorCode.EXPECTED_PATTERN,
+                    severity=Severity.ERROR,
+                    message="I was expecting a pattern after 'let'.",
+                    notes=notes,
+                    range=state.current_token_range,
+                ),
+            )
         (state, t_equals) = self.expect_token(
             state,
             [TokenKind.EQUALS],
             notes=notes,
         )
-        if not t_equals:
-            return (state, LetExpr(
-                t_let=t_let,
-                n_pattern=n_pattern,
-                t_equals=None,
-                n_value=None,
-                t_in=None,
-                n_body=None,
-            ))
-
-        (expr_state, n_value) = self.parse_expr_with_left_recursion(
+        (state, n_value) = self.parse_expr_with_left_recursion(
             state,
             allow_naked_lets=False,
         )
-        if not n_value:
-            state = self.add_error_and_recover(state, Error(
-                file_info=state.file_info,
-                code=ErrorCode.EXPECTED_EXPRESSION,
-                severity=Severity.ERROR,
-                message="I was expecting a value after the " +
-                        "'=' in this let-binding.",
-                notes=notes,
-                range=state.current_token_range,
-            ))
-            return (state, LetExpr(
-                t_let=t_let,
-                n_pattern=n_pattern,
-                t_equals=t_equals,
-                n_value=None,
-                t_in=None,
-                n_body=None,
-            ))
-        state = expr_state
 
         return (state, LetExpr(
             t_let=t_let,
@@ -467,14 +509,20 @@ class Parser:
             n_body=None,  # Parsed by caller.
         ))
 
-    def parse_pattern(self, state: State) -> Tuple[State, Optional[Pattern]]:
-        # TODO: Parse more kinds of patterns.
-        (identifier_state, t_identifier) = \
-            self.expect_token(state, [TokenKind.IDENTIFIER])
-        if not t_identifier:
+    def parse_pattern(
+        self,
+        state: State,
+        error: Error,
+    ) -> Tuple[State, Optional[Pattern]]:
+        (state, t_identifier) = self.expect_token(
+            state,
+            [TokenKind.IDENTIFIER],
+            error=error,
+        )
+        if t_identifier:
+            return (state, VariablePattern(t_identifier=t_identifier))
+        else:
             return (state, None)
-        state = identifier_state
-        return (state, VariablePattern(t_identifier=t_identifier))
 
     def parse_expr_with_left_recursion(
         self,
@@ -512,16 +560,38 @@ class Parser:
                 break
         return (state, n_expr)
 
+    def skip_past(self, state: State, kind: TokenKind) -> State:
+        while state.current_token.kind != kind:
+            state = state.consume_error_token(state.current_token)
+        state = state.consume_error_token(state.current_token)
+        return state
+
     def add_error_and_recover(
         self,
         state: State,
         error: Error,
     ) -> State:
-        synchronization_token_kinds = [TokenKind.DUMMY_IN]
+        if state.is_recovering:
+            return state
+        state = state.start_recovery()
+
+        sync_token_kinds = set(
+            token_kind
+            for sync_token_kinds in state.sync_token_kinds
+            for token_kind in sync_token_kinds
+        )
         state = state.add_error(error)
         while state.current_token.kind != TokenKind.EOF:
             current_token = state.current_token
-            if current_token.kind in synchronization_token_kinds:
+
+            if current_token.kind == TokenKind.LET:
+                # 'let' is *always* paired with a dummy 'in', thanks to the
+                # pre-parser, so make sure to synchronize past that 'in'.
+                # Otherwise we end up with too many 'in's for our 'let's
+                state = self.skip_past(state, TokenKind.DUMMY_IN)
+                continue
+
+            if current_token.kind in sync_token_kinds:
                 return state
             state = state.consume_error_token(state.current_token)
         return state
@@ -532,22 +602,7 @@ class Parser:
         allow_naked_lets: bool = False,
     ) -> Tuple[State, Optional[Expr]]:
         token = state.current_token
-        if token.kind == TokenKind.EOF:
-            # TODO: Maybe this shouldn't be here, and the caller should
-            # manually check for EOF.
-            state = self.add_error_and_recover(state, Error(
-                file_info=state.file_info,
-                severity=Severity.ERROR,
-                code=ErrorCode.EXPECTED_EXPRESSION,
-                message=(
-                    "I was expecting an expression " +
-                    "but instead reached the end of the file."
-                ),
-                range=state.current_token_range,
-                notes=[],
-            ))
-            return (state, None)
-        elif token.kind == TokenKind.IDENTIFIER:
+        if token.kind == TokenKind.IDENTIFIER:
             return self.parse_identifier(state)
         elif token.kind == TokenKind.INT_LITERAL:
             return self.parse_int_literal(state)
@@ -591,7 +646,7 @@ class Parser:
     ) -> Tuple[State, Optional[ArgumentList]]:
         (state, t_lparen) = self.expect_token(state, [TokenKind.LPAREN])
         if t_lparen is None:
-            state = state.add_error(Error(
+            state = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
                 code=ErrorCode.EXPECTED_LPAREN,
                 severity=Severity.ERROR,
@@ -606,20 +661,19 @@ class Parser:
             ))
             return (state, None)
 
+        state = state.push_sync_token_kinds([TokenKind.RPAREN])
         arguments: List[Argument] = []
         while state.current_token.kind not in [TokenKind.RPAREN, TokenKind.EOF]:
             (state, n_argument) = self.parse_argument(state)
             if n_argument is None:
-                return (state, ArgumentList(
-                    t_lparen=t_lparen,
-                    arguments=arguments,
-                    t_rparen=None,
-                ))
+                break
             arguments.append(n_argument)
+        state = state.pop_sync_token_kinds()
 
-        (rparen_state, t_rparen) = self.expect_token(state, [TokenKind.RPAREN])
-        if t_rparen is None:
-            state = state.add_error(Error(
+        (state, t_rparen) = self.expect_token(
+            state,
+            [TokenKind.RPAREN],
+            error=Error(
                 file_info=state.file_info,
                 code=ErrorCode.EXPECTED_RPAREN,
                 severity=Severity.ERROR,
@@ -632,14 +686,8 @@ class Parser:
                 # TODO: Link to the start of the function argument list.
                 notes=[],
                 range=state.current_token_range,
-            ))
-            return (state, ArgumentList(
-                t_lparen=t_lparen,
-                arguments=arguments,
-                t_rparen=None,
-            ))
-        state = rparen_state
-
+            ),
+        )
         return (state, ArgumentList(
             t_lparen=t_lparen,
             arguments=arguments,
@@ -652,43 +700,51 @@ class Parser:
         if n_expr is None:
             return (state, None)
 
-        t_comma: Optional[Token]
-        (argument_end_state, argument_end) = \
-            self.expect_token(state, [TokenKind.COMMA, TokenKind.RPAREN])
-        if argument_end is not None and argument_end.kind == TokenKind.COMMA:
-            state = argument_end_state
-            t_comma = argument_end
-        elif argument_end is not None and argument_end.kind == TokenKind.RPAREN:
-            t_comma = None
-        else:
-            t_comma = None
-
-            argument_end_offset = (
-                argument_start_offset
-                + n_expr.leading_width
-                + n_expr.width
-            )
-            # The end offset is exclusive, so when the position is used as the
-            # start offset, it's one character after the argument (where you
-            # would expect the comma to go).
-            argument_position = state.file_info.get_position_for_offset(
-                argument_end_offset,
-            )
-            expected_comma_range = Range(
-                start=argument_position,
-                end=argument_position,
-            )
-
-            state = state.add_error(Error(
-                file_info=state.file_info,
-                code=ErrorCode.EXPECTED_COMMA,
-                severity=Severity.ERROR,
-                message=(
-                    "I was expecting a ',' after the previous argument."
-                ),
-                notes=[],
-                range=expected_comma_range,
+        token = state.current_token
+        if token.kind == TokenKind.RPAREN:
+            return (state, Argument(
+                n_expr=n_expr,
+                t_comma=None,
             ))
+
+        if token.kind == TokenKind.COMMA:
+            (state, t_comma) = self.expect_token(state, [TokenKind.COMMA])
+            return (state, Argument(
+                n_expr=n_expr,
+                t_comma=t_comma,
+            ))
+
+        argument_end_offset = (
+            argument_start_offset
+            + n_expr.leading_width
+            + n_expr.width
+        )
+        # The end offset is exclusive, so when the position is used as the
+        # start offset, it's one character after the argument (where you
+        # would expect the comma to go).
+        argument_position = state.file_info.get_position_for_offset(
+            argument_end_offset,
+        )
+        expected_comma_range = Range(
+            start=argument_position,
+            end=argument_position,
+        )
+
+        error = Error(
+            file_info=state.file_info,
+            code=ErrorCode.EXPECTED_COMMA,
+            severity=Severity.ERROR,
+            message=(
+                "I was expecting a ',' after the previous argument."
+            ),
+            notes=[],
+            range=expected_comma_range,
+        )
+        (state, t_comma) = self.expect_token(
+            state,
+            [TokenKind.COMMA],
+            error=error,
+        )
 
         return (state, Argument(
             n_expr=n_expr,
@@ -720,34 +776,51 @@ class Parser:
     def expect_token(
         self,
         state: State,
-        possible_tokens: List[TokenKind],
+        possible_token_kinds: List[TokenKind],
         *,
         notes: List[Note] = [],
+        error: Error = None,
     ) -> Tuple[State, Optional[Token]]:
         token = state.current_token
-        if token.kind in possible_tokens:
-            return (state.consume_token(token), token)
+        if token.kind in possible_token_kinds:
+            if state.is_recovering:
+                state = state.finish_recovery()
+            state = state.consume_token(token)
+            return (state, token)
 
-        assert possible_tokens
-        possible_tokens_str = self.describe_token_kind(possible_tokens[0])
-        if len(possible_tokens) > 1:
+        if state.is_recovering:
+            return (state, None)
+
+        assert possible_token_kinds
+        possible_tokens_str = self.describe_token_kind(possible_token_kinds[0])
+        if len(possible_token_kinds) > 1:
             possible_tokens_str += ", ".join(
-                token.value for token in possible_tokens[0:-1]
+                token.value for token in possible_token_kinds[0:-1]
             )
-            possible_tokens_str += " or " + possible_tokens[-1].value
+            possible_tokens_str += " or " + possible_token_kinds[-1].value
 
-        message = (
-            f"I was expecting {possible_tokens_str}, " +
-            f"but instead got {self.describe_token(token)}."
-        )
-        state = self.add_error_and_recover(state, Error(
-            file_info=state.file_info,
-            code=ErrorCode.UNEXPECTED_TOKEN,
-            severity=Severity.ERROR,
-            message=message,
-            notes=[],
-            range=state.current_token_range,
-        ))
+        if error is None:
+            message = (
+                f"I was expecting {possible_tokens_str}, " +
+                f"but instead got {self.describe_token(token)}."
+            )
+            error = Error(
+                file_info=state.file_info,
+                code=ErrorCode.UNEXPECTED_TOKEN,
+                severity=Severity.ERROR,
+                message=message,
+                notes=[],
+                range=state.current_token_range,
+            )
+        state = self.add_error_and_recover(state, error)
+
+        token = state.current_token
+        if token.kind in possible_token_kinds:
+            # We recovered to a token that the caller happens to be able to
+            # handle, so return it directly.
+            state = state.consume_token(token)
+            state = state.finish_recovery()
+            return (state, token)
         return (state, None)
 
     def describe_token(self, token: Token) -> str:
@@ -768,29 +841,7 @@ class Parser:
 
 def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
     parser = Parser()
-    parsation = parser.parse(file_info=file_info, tokens=tokens)
-
-    source_code_length = len(file_info.source_code)
-    tokens_length = parsation.full_width
-    errors = parsation.errors
-    if source_code_length != tokens_length:
-        errors.append(Error(
-            file_info=file_info,
-            code=ErrorCode.PARSED_LENGTH_MISMATCH,
-            severity=Severity.WARNING,
-            message=(
-                f"Mismatch between source code length ({source_code_length}) " +
-                f"and total length of parsed tokens ({tokens_length}). " +
-                f"The parse tree for this file is probably incorrect. " +
-                f"This is a bug. Please report it!"
-            ),
-            notes=[],
-        ))
-
-    return Parsation(
-        green_cst=parsation.green_cst,
-        errors=errors,
-    )
+    return parser.parse(file_info=file_info, tokens=tokens)
 
 
 __all__ = ["parse"]

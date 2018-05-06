@@ -4,7 +4,7 @@ SyntaxTree
             Token 'print'
         ArgumentList
             Token '('
-            <missing>
-    Leading ','
-    Leading ')\n'
+            Leading ','
+            Token ')'
+            Trailing '\n'
     Token EOF ''

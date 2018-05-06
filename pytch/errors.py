@@ -37,6 +37,7 @@ class ErrorCode(Enum):
     PARSED_LENGTH_MISMATCH = 9000
     NOT_A_REAL_ERROR = 9001
     """Not a real error code, just for testing purposes."""
+    SHOULD_END_WITH_EOF = 9002
 
 
 class Glyphs:

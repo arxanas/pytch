@@ -17,7 +17,7 @@ SyntaxTree
                         Token '1'
                     <missing>
                 Token ')'
+        Leading 'J\n'
+        Token DUMMY_IN ''
         <missing>
-        <missing>
-    Leading 'J\n'
-    Token DUMMY_IN ''
+    Token EOF ''

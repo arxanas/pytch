@@ -9,20 +9,17 @@ SyntaxTree
         FunctionCallExpr
             IdentifierExpr
                 Leading ' '
-                Token 'foo'
+                Token 'letprint'
             ArgumentList
                 Token '('
-                Trailing '\n'
                 Argument
-                    IdentifierExpr
-                        Leading '  '
-                        Token 'bar'
-                        Trailing '\n'
+                    IntLiteralExpr
+                        Token '1'
                     <missing>
-                Leading '  baz'
-                Leading ' qux'
-                Token ')'
-                Trailing '\n'
+                <missing>
+        Leading 'let'
+        Leading ')\n'
+        Leading ''
         Token DUMMY_IN ''
         <missing>
     Token EOF ''
