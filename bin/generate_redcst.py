@@ -65,7 +65,7 @@ def get_green_to_red_node_map(
     map = "GREEN_TO_RED_NODE_MAP = {\n"
     for node_type in node_types:
         node_class = node_type.name
-        map += f"    {node_class}: greencst.{node_class},\n"
+        map += f"    greencst.{node_class}: {node_class},\n"
     map += "}\n"
     return map
 

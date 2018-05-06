@@ -390,16 +390,16 @@ class FunctionCallExpr(Expr):
 
 
 GREEN_TO_RED_NODE_MAP = {
-    Expr: greencst.Expr,
-    SyntaxTree: greencst.SyntaxTree,
-    Pattern: greencst.Pattern,
-    VariablePattern: greencst.VariablePattern,
-    LetExpr: greencst.LetExpr,
-    IdentifierExpr: greencst.IdentifierExpr,
-    IntLiteralExpr: greencst.IntLiteralExpr,
-    Argument: greencst.Argument,
-    ArgumentList: greencst.ArgumentList,
-    FunctionCallExpr: greencst.FunctionCallExpr,
+    greencst.Expr: Expr,
+    greencst.SyntaxTree: SyntaxTree,
+    greencst.Pattern: Pattern,
+    greencst.VariablePattern: VariablePattern,
+    greencst.LetExpr: LetExpr,
+    greencst.IdentifierExpr: IdentifierExpr,
+    greencst.IntLiteralExpr: IntLiteralExpr,
+    greencst.Argument: Argument,
+    greencst.ArgumentList: ArgumentList,
+    greencst.FunctionCallExpr: FunctionCallExpr,
 }
 
 
