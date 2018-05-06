@@ -5,7 +5,7 @@ SyntaxTree
         <missing>
         <missing>
         <missing>
-        Token ''
+        Token DUMMY_IN ''
         LetExpr
             Token 'let'
             VariablePattern
@@ -17,13 +17,13 @@ SyntaxTree
                 Leading ' '
                 Token 'bar'
                 Trailing '\n'
-            Token ''
+            Token DUMMY_IN ''
             LetExpr
                 Token 'let'
                 Trailing '\n'
                 <missing>
                 <missing>
                 <missing>
-                Token ''
+                Token DUMMY_IN ''
                 <missing>
-    Token ''
+    Token EOF ''

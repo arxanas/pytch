@@ -1,7 +1,7 @@
 SyntaxTree
     <missing>
     Leading ' '
-    Token ''
+    Token EOF ''
     Trailing '\n'
     Trailing ' '
     Trailing '\n'

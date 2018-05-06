@@ -31,6 +31,6 @@ SyntaxTree
                     <missing>
                 Token ')'
                 Trailing '\n'
-        Token ''
+        Token DUMMY_IN ''
         <missing>
-    Token ''
+    Token EOF ''

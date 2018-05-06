@@ -18,6 +18,6 @@ SyntaxTree
                     <missing>
                 <missing>
         Leading '!\n'
-        Token ''
+        Token DUMMY_IN ''
         <missing>
-    Token ''
+    Token EOF ''

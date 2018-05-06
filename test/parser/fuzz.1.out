@@ -11,6 +11,6 @@ SyntaxTree
         Leading '('
         Leading '1'
         Leading ')\n'
-        Token ''
+        Token DUMMY_IN ''
         <missing>
-    Token ''
+    Token EOF ''

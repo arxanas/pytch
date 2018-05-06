@@ -6,4 +6,4 @@ SyntaxTree
             Token '('
             Trailing '\n'
             <missing>
-    Token ''
+    Token EOF ''

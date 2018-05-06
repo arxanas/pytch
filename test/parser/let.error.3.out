@@ -8,6 +8,6 @@ SyntaxTree
         Token '='
         Trailing '\n'
         <missing>
-        Token ''
+        Token DUMMY_IN ''
         <missing>
-    Token ''
+    Token EOF ''
