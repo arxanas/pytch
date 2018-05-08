@@ -470,6 +470,11 @@ def get_error_segments(glyphs: Glyphs, error: Error):
             )
             if segment is not None:
                 segments.append(segment)
+
+    segments.extend(get_segments_without_ranges(
+        glyphs=glyphs,
+        diagnostics=diagnostics,
+    ))
     return segments
 
 
@@ -612,6 +617,25 @@ def get_context_segment(
     )
 
 
+def get_segments_without_ranges(
+    glyphs: Glyphs,
+    diagnostics: List[Diagnostic],
+) -> List[Segment]:
+    segments = []
+    for diagnostic in diagnostics:
+        if diagnostic.range is None:
+            segments.append(Segment(
+                glyphs=glyphs,
+                header=None,
+                gutter_lines=[""],
+                message_lines=[get_colored_diagnostic_message(
+                    glyphs,
+                    diagnostic,
+                )],
+            ))
+    return segments
+
+
 def _get_diagnostic_lines_to_insert(
     glyphs: Glyphs,
     context: _DiagnosticContext,
@@ -625,7 +649,8 @@ def _get_diagnostic_lines_to_insert(
     ]
     for diagnostic in diagnostics:
         diagnostic_range = diagnostic.range
-        assert diagnostic_range is not None
+        if diagnostic_range is None:
+            continue
 
         underlined_lines = underline_lines(
             glyphs=glyphs,

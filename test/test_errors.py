@@ -153,6 +153,42 @@ Error: Look into this
 """
 
 
+def test_note_with_no_range() -> None:
+    file_info = FileInfo(
+        file_path="dummy.pytch",
+        source_code="""dummy1 line1
+dummy1 line2
+""")
+    error = Error(
+        file_info=file_info,
+        code=ErrorCode.NOT_A_REAL_ERROR,
+        severity=Severity.ERROR,
+        message="Look into this",
+        range=Range(
+            start=Position(line=0, character=7),
+            end=Position(line=0, character=12),
+        ),
+        notes=[Note(
+            file_info=file_info,
+            message="This is an additional point of interest",
+        )],
+    )
+    lines = lines_to_string(get_error_lines(error, ascii=True))
+    print(lines)
+    assert lines == """\
+NOT_A_REAL_ERROR[9001] in dummy.pytch, line 1, character 8:
+Error: Look into this
+   +-----------------------------------------------+
+   | dummy.pytch                                   |
+ 1 | dummy1 line1                                  |
+   |        ^~~~~ Error: Look into this            |
+ 2 | dummy1 line2                                  |
+   +-----------------------------------------------+
+   | Note: This is an additional point of interest |
+   +-----------------------------------------------+
+"""
+
+
 def test_get_diagnostic_lines_to_insert() -> None:
     file_info = FileInfo(
         file_path="dummy.pytch",
