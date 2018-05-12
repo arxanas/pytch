@@ -10,7 +10,7 @@ from pytch.errors import (
     Error,
     ErrorCode,
     get_error_lines,
-    get_glyphs,
+    get_output_env,
     Note,
     Severity,
 )
@@ -273,7 +273,7 @@ def test_get_diagnostic_lines_to_insert() -> None:
     )]
     context = _DiagnosticContext(file_info=file_info, line_range=(0, 3))
     assert _get_diagnostic_lines_to_insert(
-        glyphs=get_glyphs(ascii=True),
+        output_env=get_output_env(ascii=True),
         context=context,
         diagnostics=diagnostics,
     ) == {

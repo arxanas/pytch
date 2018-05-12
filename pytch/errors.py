@@ -80,6 +80,12 @@ class Glyphs:
         self.underline_point_character = underline_point_character
 
 
+class OutputEnv:
+    def __init__(self, glyphs: Glyphs, max_width: int) -> None:
+        self.glyphs = glyphs
+        self.max_width = max_width
+
+
 class Diagnostic(Protocol):
     @property
     def file_info(self) -> FileInfo:
@@ -235,10 +241,10 @@ class Error:
 
 
 def get_colored_diagnostic_message(
-    glyphs: Glyphs,
+    output_env: OutputEnv,
     diagnostic: Diagnostic,
 ) -> str:
-    return glyphs.make_colored(
+    return output_env.glyphs.make_colored(
         diagnostic.preamble_message + ": " + diagnostic.message,
         diagnostic.color,
     )
@@ -287,6 +293,16 @@ def get_glyphs(ascii: bool) -> Glyphs:
         )
 
 
+def get_output_env(ascii: bool) -> OutputEnv:
+    glyphs = get_glyphs(ascii=ascii)
+    if ascii:
+        max_width = 80
+    else:
+        (terminal_width, _terminal_height) = click.get_terminal_size()
+        max_width = terminal_width
+    return OutputEnv(glyphs=glyphs, max_width=max_width)
+
+
 class Segment:
     """A box-enclosed segment of the error display.
 
@@ -312,14 +328,14 @@ class Segment:
 
     def __init__(
         self,
-        glyphs: Glyphs,
+        output_env: OutputEnv,
         header: Optional[str],
         gutter_lines: Optional[List[str]],
         message_lines: List[str],
     ) -> None:
         if gutter_lines is not None:
             assert len(gutter_lines) == len(message_lines)
-        self._glyphs = glyphs
+        self._output_env = output_env
         self._header = header
         self._gutter_lines = gutter_lines
         self._message_lines = message_lines
@@ -371,24 +387,25 @@ class Segment:
 
         lines = []
 
+        glyphs = self._output_env.glyphs
         top_line = ""
         if is_first:
-            top_line += self._glyphs.box_upper_left
+            top_line += glyphs.box_upper_left
         else:
-            top_line += self._glyphs.box_continuation_left
-        top_line = top_line.ljust(box_width - 1, self._glyphs.box_horizontal)
+            top_line += glyphs.box_continuation_left
+        top_line = top_line.ljust(box_width - 1, glyphs.box_horizontal)
         if is_first:
-            top_line += self._glyphs.box_upper_right
+            top_line += glyphs.box_upper_right
         else:
-            top_line += self._glyphs.box_continuation_right
+            top_line += glyphs.box_continuation_right
         lines.append(empty_gutter + top_line)
 
         if self._header:
             header_line = (" " + self._header).ljust(box_width - 2)
             header_line = (
-                self._glyphs.box_vertical
-                + self._glyphs.make_bold(header_line)
-                + self._glyphs.box_vertical
+                glyphs.box_vertical
+                + glyphs.make_bold(header_line)
+                + glyphs.box_vertical
             )
             lines.append(empty_gutter + header_line)
 
@@ -397,27 +414,28 @@ class Segment:
             gutter = " " + gutter + " "
 
             message = (
-                self._glyphs.box_vertical
+                glyphs.box_vertical
                 + " "
                 + message_line
                 + (" " * (box_width - self._line_length(message_line) - 4))
                 + " "
-                + self._glyphs.box_vertical
+                + glyphs.box_vertical
             )
             lines.append(gutter + message)
 
         if is_last:
             footer = ""
-            footer += self._glyphs.box_lower_left
-            footer = footer.ljust(box_width - 1, self._glyphs.box_horizontal)
-            footer += self._glyphs.box_lower_right
+            footer += glyphs.box_lower_left
+            footer = footer.ljust(box_width - 1, glyphs.box_horizontal)
+            footer += glyphs.box_lower_right
             lines.append(empty_gutter + footer)
 
         return lines
 
 
 def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
-    glyphs = get_glyphs(ascii=ascii)
+    output_env = get_output_env(ascii=ascii)
+    glyphs = output_env.glyphs
 
     output_lines = []
     if error.range is not None:
@@ -439,7 +457,7 @@ def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
         error.color,
     ))
 
-    segments = get_error_segments(glyphs=glyphs, error=error)
+    segments = get_error_segments(output_env=output_env, error=error)
     if segments:
         gutter_width = max(segment.gutter_width for segment in segments)
         box_width = max(segment.box_width for segment in segments)
@@ -455,7 +473,7 @@ def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
     return output_lines
 
 
-def get_error_segments(glyphs: Glyphs, error: Error):
+def get_error_segments(output_env: OutputEnv, error: Error):
     diagnostics: List[Diagnostic] = [error]
     diagnostics.extend(error.notes)
     diagnostic_contexts = [
@@ -474,7 +492,7 @@ def get_error_segments(glyphs: Glyphs, error: Error):
     for _file_path, contexts in partitioned_diagnostic_contexts:
         for context in _merge_contexts(list(contexts)):
             segment = get_context_segment(
-                glyphs=glyphs,
+                output_env=output_env,
                 context=context,
                 diagnostics=diagnostics,
             )
@@ -482,7 +500,7 @@ def get_error_segments(glyphs: Glyphs, error: Error):
                 segments.append(segment)
 
     segments.extend(get_segments_without_ranges(
-        glyphs=glyphs,
+        output_env=output_env,
         diagnostics=diagnostics,
     ))
     return segments
@@ -600,7 +618,7 @@ def _group_by_pred(
 
 
 def get_context_segment(
-    glyphs: Glyphs,
+    output_env: OutputEnv,
     context: _DiagnosticContext,
     diagnostics: List[Diagnostic],
 ) -> Optional[Segment]:
@@ -613,7 +631,7 @@ def get_context_segment(
     gutter_lines = []
     message_lines = []
     diagnostic_lines_to_insert = _get_diagnostic_lines_to_insert(
-        glyphs=glyphs,
+        output_env=output_env,
         context=context,
         diagnostics=diagnostics,
     )
@@ -633,7 +651,7 @@ def get_context_segment(
             gutter_lines.append("")
             message_lines.append(diagnostic_line)
     return Segment(
-        glyphs=glyphs,
+        output_env=output_env,
         header=context.file_info.file_path,
         gutter_lines=gutter_lines,
         message_lines=message_lines,
@@ -641,18 +659,18 @@ def get_context_segment(
 
 
 def get_segments_without_ranges(
-    glyphs: Glyphs,
+    output_env: OutputEnv,
     diagnostics: List[Diagnostic],
 ) -> List[Segment]:
     segments = []
     for diagnostic in diagnostics:
         if diagnostic.range is None:
             segments.append(Segment(
-                glyphs=glyphs,
+                output_env=output_env,
                 header=None,
                 gutter_lines=[""],
                 message_lines=[get_colored_diagnostic_message(
-                    glyphs,
+                    output_env,
                     diagnostic,
                 )],
             ))
@@ -660,7 +678,7 @@ def get_segments_without_ranges(
 
 
 def _get_diagnostic_lines_to_insert(
-    glyphs: Glyphs,
+    output_env: OutputEnv,
     context: _DiagnosticContext,
     diagnostics: Sequence[Diagnostic],
 ) -> Mapping[int, Sequence[str]]:
@@ -676,7 +694,7 @@ def _get_diagnostic_lines_to_insert(
             continue
 
         underlined_lines = underline_lines(
-            glyphs=glyphs,
+            output_env=output_env,
             start_line_index=context.line_range[0],
             context_lines=context_lines,
             underline_range=diagnostic_range,
@@ -684,7 +702,7 @@ def _get_diagnostic_lines_to_insert(
         )
         if underlined_lines:
             underlined_lines[-1] += " " + get_colored_diagnostic_message(
-                glyphs=glyphs,
+                output_env=output_env,
                 diagnostic=diagnostic,
             )
         for line_num, line in enumerate(
@@ -696,7 +714,7 @@ def _get_diagnostic_lines_to_insert(
 
 
 def underline_lines(
-    glyphs: Glyphs,
+    output_env: OutputEnv,
     start_line_index: int,
     context_lines: List[str],
     underline_range: Range,
@@ -747,6 +765,8 @@ def underline_lines(
                 f"bug in the caller, or it's possible that the rendering " +
                 f"logic should be changed to handle this case."
             )
+
+            glyphs = output_env.glyphs
             if underline_width == 1:
                 if has_underline_start and has_underline_end:
                     underline = glyphs.underline_point_character
