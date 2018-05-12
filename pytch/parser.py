@@ -158,28 +158,25 @@ class State:
     @property
     def current_token_offset_range(self) -> OffsetRange:
         current_token = self.tokens[self.token_index]
-        if current_token.kind == TokenKind.EOF:
-            start = len(self.file_info.source_code)
-            end = start
-        else:
-            # We usually don't want to point to a dummy token, so rewind until
-            # we find a non-dummy token.
-            token_index = self.token_index
-            offset = self.offset
-            did_rewind = False
-            while token_index > 0 and current_token.is_dummy:
-                did_rewind = True
-                token_index -= 1
-                current_token = self.tokens[token_index]
-                offset -= current_token.full_width
 
-            start = offset + current_token.leading_width
-            end = start + current_token.width
+        # We usually don't want to point to a dummy token, so rewind until
+        # we find a non-dummy token.
+        token_index = self.token_index
+        offset = self.offset
+        did_rewind = False
+        while token_index > 0 and current_token.is_dummy:
+            did_rewind = True
+            token_index -= 1
+            current_token = self.tokens[token_index]
+            offset -= current_token.full_width
 
-            if did_rewind:
-                # If we rewound, point to the location immediately after the
-                # token we rewound to, rather than that token itself.
-                start = end
+        start = offset + current_token.leading_width
+        end = start + current_token.width
+
+        if did_rewind:
+            # If we rewound, point to the location immediately after the
+            # token we rewound to, rather than that token itself.
+            start = end
         return OffsetRange(start=start, end=end)
 
     @property

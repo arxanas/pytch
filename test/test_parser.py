@@ -6,7 +6,7 @@ from utils import CaseInfo, CaseResult, find_tests, generate
 from pytch import FileInfo
 from pytch.errors import Error, get_error_lines
 from pytch.greencst import Node
-from pytch.lexer import lex, Token, TokenKind
+from pytch.lexer import lex, Token
 from pytch.parser import parse
 
 
@@ -25,7 +25,7 @@ def render_syntax_tree(
             lines.append(f"Leading {trivium.text!r}")
 
         offset += token.width
-        if token.is_dummy or token.kind == TokenKind.EOF:
+        if token.is_dummy:
             lines.append(f"Token {token.kind.name} {token.text!r}")
         else:
             lines.append(f"Token {token.text!r}")

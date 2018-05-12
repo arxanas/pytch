@@ -185,7 +185,10 @@ class Token:
 
     @property
     def is_dummy(self):
-        return self.kind.name.lower().startswith("dummy")
+        return (
+            self.kind == TokenKind.EOF
+            or self.kind.name.lower().startswith("dummy")
+        )
 
     @property
     def text(self) -> str:
