@@ -46,19 +46,24 @@ class SyntaxTree(Node):
         super().__init__(parent)
         self.origin = origin
         self.offset = offset
+        self._n_expr: Optional[Expr] = None
 
     @property
     def n_expr(self) -> Optional[Expr]:
         if self.origin.n_expr is None:
             return None
+        if self._n_expr is not None:
+            return self._n_expr
         offset = (
             self.offset
         )
-        return GREEN_TO_RED_NODE_MAP[self.origin.n_expr.__class__](
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_expr.__class__](
             parent=self,
             origin=self.origin.n_expr,
             offset=offset,
         )
+        self._n_expr = result
+        return result
 
     @property
     def t_eof(self) -> Optional[Token]:
@@ -116,6 +121,9 @@ class LetExpr(Expr):
         super().__init__(parent)
         self.origin = origin
         self.offset = offset
+        self._n_pattern: Optional[Pattern] = None
+        self._n_value: Optional[Expr] = None
+        self._n_body: Optional[Expr] = None
 
     @property
     def t_let(self) -> Optional[Token]:
@@ -125,6 +133,8 @@ class LetExpr(Expr):
     def n_pattern(self) -> Optional[Pattern]:
         if self.origin.n_pattern is None:
             return None
+        if self._n_pattern is not None:
+            return self._n_pattern
         offset = (
             self.offset
             + (
@@ -133,11 +143,13 @@ class LetExpr(Expr):
                 0
             )
         )
-        return GREEN_TO_RED_NODE_MAP[self.origin.n_pattern.__class__](
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_pattern.__class__](
             parent=self,
             origin=self.origin.n_pattern,
             offset=offset,
         )
+        self._n_pattern = result
+        return result
 
     @property
     def t_equals(self) -> Optional[Token]:
@@ -147,6 +159,8 @@ class LetExpr(Expr):
     def n_value(self) -> Optional[Expr]:
         if self.origin.n_value is None:
             return None
+        if self._n_value is not None:
+            return self._n_value
         offset = (
             self.offset
             + (
@@ -165,11 +179,13 @@ class LetExpr(Expr):
                 0
             )
         )
-        return GREEN_TO_RED_NODE_MAP[self.origin.n_value.__class__](
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_value.__class__](
             parent=self,
             origin=self.origin.n_value,
             offset=offset,
         )
+        self._n_value = result
+        return result
 
     @property
     def t_in(self) -> Optional[Token]:
@@ -179,6 +195,8 @@ class LetExpr(Expr):
     def n_body(self) -> Optional[Expr]:
         if self.origin.n_body is None:
             return None
+        if self._n_body is not None:
+            return self._n_body
         offset = (
             self.offset
             + (
@@ -207,11 +225,13 @@ class LetExpr(Expr):
                 0
             )
         )
-        return GREEN_TO_RED_NODE_MAP[self.origin.n_body.__class__](
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_body.__class__](
             parent=self,
             origin=self.origin.n_body,
             offset=offset,
         )
+        self._n_body = result
+        return result
 
     @property
     def full_width(self) -> int:
@@ -291,19 +311,24 @@ class Argument(Node):
         super().__init__(parent)
         self.origin = origin
         self.offset = offset
+        self._n_expr: Optional[Expr] = None
 
     @property
     def n_expr(self) -> Optional[Expr]:
         if self.origin.n_expr is None:
             return None
+        if self._n_expr is not None:
+            return self._n_expr
         offset = (
             self.offset
         )
-        return GREEN_TO_RED_NODE_MAP[self.origin.n_expr.__class__](
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_expr.__class__](
             parent=self,
             origin=self.origin.n_expr,
             offset=offset,
         )
+        self._n_expr = result
+        return result
 
     @property
     def t_comma(self) -> Optional[Token]:
@@ -331,6 +356,7 @@ class ArgumentList(Node):
         super().__init__(parent)
         self.origin = origin
         self.offset = offset
+        self._arguments: Optional[List[Argument]] = None
 
     @property
     def t_lparen(self) -> Optional[Token]:
@@ -340,6 +366,8 @@ class ArgumentList(Node):
     def arguments(self) -> Optional[List[Argument]]:
         if self.origin.arguments is None:
             return None
+        if self._arguments is not None:
+            return self._arguments
         offset = (
             self.offset
             + (
@@ -348,11 +376,13 @@ class ArgumentList(Node):
                 0
             )
         )
-        return GREEN_TO_RED_NODE_MAP[self.origin.arguments.__class__](
+        result = GREEN_TO_RED_NODE_MAP[self.origin.arguments.__class__](
             parent=self,
             origin=self.origin.arguments,
             offset=offset,
         )
+        self._arguments = result
+        return result
 
     @property
     def t_rparen(self) -> Optional[Token]:
@@ -381,24 +411,32 @@ class FunctionCallExpr(Expr):
         super().__init__(parent)
         self.origin = origin
         self.offset = offset
+        self._n_receiver: Optional[Expr] = None
+        self._n_argument_list: Optional[ArgumentList] = None
 
     @property
     def n_receiver(self) -> Optional[Expr]:
         if self.origin.n_receiver is None:
             return None
+        if self._n_receiver is not None:
+            return self._n_receiver
         offset = (
             self.offset
         )
-        return GREEN_TO_RED_NODE_MAP[self.origin.n_receiver.__class__](
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_receiver.__class__](
             parent=self,
             origin=self.origin.n_receiver,
             offset=offset,
         )
+        self._n_receiver = result
+        return result
 
     @property
     def n_argument_list(self) -> Optional[ArgumentList]:
         if self.origin.n_argument_list is None:
             return None
+        if self._n_argument_list is not None:
+            return self._n_argument_list
         offset = (
             self.offset
             + (
@@ -407,11 +445,13 @@ class FunctionCallExpr(Expr):
                 0
             )
         )
-        return ArgumentList(
+        result = ArgumentList(
             parent=self,
             origin=self.origin.n_argument_list,
             offset=offset,
         )
+        self._n_argument_list = result
+        return result
 
     @property
     def full_width(self) -> int:
