@@ -1,6 +1,11 @@
 import os.path
 from typing import Callable, Iterator, Optional, Sequence
 
+from pytch import FileInfo
+from pytch.lexer import lex
+from pytch.parser import parse
+from pytch.redcst import SyntaxTree
+
 
 # Note that we can't call this `TestCaseInfo` because then it would be
 # collected as a test.
@@ -129,3 +134,13 @@ def generate(
                     error_file.write(error)
         else:
             print(f"file exists, not generating: {test_info.output_filename}")
+
+
+def get_red_cst(file_info: FileInfo) -> SyntaxTree:
+    lexation = lex(file_info=file_info)
+    parsation = parse(file_info=file_info, tokens=lexation.tokens)
+    return SyntaxTree(
+        parent=None,
+        origin=parsation.green_cst,
+        offset=0,
+    )
