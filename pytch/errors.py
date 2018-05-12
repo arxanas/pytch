@@ -240,14 +240,10 @@ class Error:
         return self._range
 
 
-def get_colored_diagnostic_message(
-    output_env: OutputEnv,
+def get_full_diagnostic_message(
     diagnostic: Diagnostic,
 ) -> str:
-    return output_env.glyphs.make_colored(
-        diagnostic.preamble_message + ": " + diagnostic.message,
-        diagnostic.color,
-    )
+    return f"{diagnostic.preamble_message}: {diagnostic.message}"
 
 
 def get_glyphs(ascii: bool) -> Glyphs:
@@ -296,11 +292,48 @@ def get_glyphs(ascii: bool) -> Glyphs:
 def get_output_env(ascii: bool) -> OutputEnv:
     glyphs = get_glyphs(ascii=ascii)
     if ascii:
-        max_width = 80
+        max_width = 79
     else:
         (terminal_width, _terminal_height) = click.get_terminal_size()
-        max_width = terminal_width
+        max_width = terminal_width - 1
     return OutputEnv(glyphs=glyphs, max_width=max_width)
+
+
+class _MessageLine:
+    def __init__(
+        self,
+        text: str,
+        color: Optional[str],
+        is_wrappable: bool,
+    ) -> None:
+        self.text = text
+        self.color = color
+        self.is_wrappable = is_wrappable
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, _MessageLine):
+            return False
+        return (
+            self.text == other.text
+            and self.is_wrappable == other.is_wrappable
+        )
+
+    def wrap(self, max_width: int) -> List[str]:
+        match = re.match("\s+\S+", self.text)
+        if not match:
+            return [self.text]
+        prefix = match.group()
+        text = self.text[len(prefix):]
+        if not text:
+            return [prefix]
+        return click.wrap_text(
+            text,
+            width=max_width,
+            initial_indent=prefix,
+        ).splitlines()
+
+    def get_wrapped_width(self, max_width: int) -> int:
+        return max(map(len, self.wrap(max_width)))
 
 
 class Segment:
@@ -331,7 +364,7 @@ class Segment:
         output_env: OutputEnv,
         header: Optional[str],
         gutter_lines: Optional[List[str]],
-        message_lines: List[str],
+        message_lines: List[_MessageLine],
     ) -> None:
         if gutter_lines is not None:
             assert len(gutter_lines) == len(message_lines)
@@ -348,12 +381,17 @@ class Segment:
         max_gutter_line_length = max(len(line) for line in self._gutter_lines)
         return num_padding_characters + max_gutter_line_length
 
-    @property
-    def box_width(self) -> int:
+    def get_box_width(self, gutter_width: int) -> int:
         num_box_characters = len("||")
         num_padding_characters = len("  ")
         max_message_line_length = max(
-            self._line_length(line) for line in self._message_lines
+            line.get_wrapped_width(
+                self._output_env.max_width
+                - num_box_characters
+                - num_padding_characters
+                - gutter_width
+            )
+            for line in self._message_lines
         )
         if self._header is not None:
             max_message_line_length = max(
@@ -361,15 +399,10 @@ class Segment:
                 len(self._header),
             )
         return (
-            num_box_characters
+            max_message_line_length
+            + num_box_characters
             + num_padding_characters
-            + max_message_line_length
         )
-
-    def _line_length(self, line: str) -> int:
-        # https://stackoverflow.com/a/14693789
-        ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
-        return len(ansi_escape.sub("", line))
 
     def render_lines(
         self,
@@ -409,19 +442,38 @@ class Segment:
             )
             lines.append(empty_gutter + header_line)
 
-        for gutter_line, message_line in zip(gutter_lines, self._message_lines):
-            gutter = gutter_line.rjust(gutter_width - 2)
-            gutter = " " + gutter + " "
+        num_box_characters = len("||")
+        num_padding_characters = len("  ")
+        padding = num_box_characters + num_padding_characters
 
-            message = (
-                glyphs.box_vertical
-                + " "
-                + message_line
-                + (" " * (box_width - self._line_length(message_line) - 4))
-                + " "
-                + glyphs.box_vertical
-            )
-            lines.append(gutter + message)
+        for gutter_line, message_line in zip(gutter_lines, self._message_lines):
+            if message_line.is_wrappable:
+                wrapped_message_lines = message_line.wrap(box_width - padding)
+            else:
+                wrapped_message_lines = [message_line.text]
+
+            for wrapped_message_line in wrapped_message_lines:
+                gutter = gutter_line.rjust(
+                    gutter_width - num_padding_characters,
+                )
+                gutter = " " + gutter + " "
+
+                line_length = len(wrapped_message_line)
+                if message_line.color is not None:
+                    wrapped_message_line = glyphs.make_colored(
+                        wrapped_message_line,
+                        message_line.color,
+                    )
+
+                message = (
+                    glyphs.box_vertical
+                    + " "
+                    + wrapped_message_line
+                    + (" " * (box_width - line_length - padding))
+                    + " "
+                    + glyphs.box_vertical
+                )
+                lines.append(gutter + message)
 
         if is_last:
             footer = ""
@@ -453,14 +505,20 @@ def get_error_lines(error: Error, ascii: bool = False) -> List[str]:
             + f"in {glyphs.make_bold(error.file_info.file_path)}:"
         )
     output_lines.append(glyphs.make_colored(
-        f"{error.preamble_message}: {error.message}",
+        click.wrap_text(
+            text=f"{error.preamble_message}: {error.message}",
+            width=output_env.max_width,
+        ),
         error.color,
     ))
 
     segments = get_error_segments(output_env=output_env, error=error)
     if segments:
         gutter_width = max(segment.gutter_width for segment in segments)
-        box_width = max(segment.box_width for segment in segments)
+        box_width = max(
+            segment.get_box_width(gutter_width)
+            for segment in segments
+        )
         for i, segment in enumerate(segments):
             is_first = (i == 0)
             is_last = (i == len(segments) - 1)
@@ -644,7 +702,11 @@ def get_context_segment(
     for line_num, line in enumerate(lines, start_line):
         # 1-index the line number for display.
         gutter_lines.append(str(line_num + 1))
-        message_lines.append(line)
+        message_lines.append(_MessageLine(
+            text=line,
+            color=None,
+            is_wrappable=False,
+        ))
 
         diagnostic_lines = diagnostic_lines_to_insert.get(line_num, [])
         for diagnostic_line in diagnostic_lines:
@@ -669,9 +731,10 @@ def get_segments_without_ranges(
                 output_env=output_env,
                 header=None,
                 gutter_lines=[""],
-                message_lines=[get_colored_diagnostic_message(
-                    output_env,
-                    diagnostic,
+                message_lines=[_MessageLine(
+                    text=get_full_diagnostic_message(diagnostic),
+                    color=diagnostic.color,
+                    is_wrappable=False,
                 )],
             ))
     return segments
@@ -681,8 +744,8 @@ def _get_diagnostic_lines_to_insert(
     output_env: OutputEnv,
     context: _DiagnosticContext,
     diagnostics: Sequence[Diagnostic],
-) -> Mapping[int, Sequence[str]]:
-    result: Dict[int, List[str]] = collections.defaultdict(list)
+) -> Mapping[int, Sequence[_MessageLine]]:
+    result: Dict[int, List[_MessageLine]] = collections.defaultdict(list)
     if context.line_range is None:
         return result
     context_lines = context.file_info.lines[
@@ -701,10 +764,13 @@ def _get_diagnostic_lines_to_insert(
             underline_color=diagnostic.color,
         )
         if underlined_lines:
-            underlined_lines[-1] += " " + get_colored_diagnostic_message(
-                output_env=output_env,
-                diagnostic=diagnostic,
-            )
+            last_line = underlined_lines.pop().text
+            last_line += " " + get_full_diagnostic_message(diagnostic)
+            underlined_lines.append(_MessageLine(
+                text=last_line,
+                color=diagnostic.color,
+                is_wrappable=True,
+            ))
         for line_num, line in enumerate(
             underlined_lines,
             diagnostic_range.start.line,
@@ -719,7 +785,7 @@ def underline_lines(
     context_lines: List[str],
     underline_range: Range,
     underline_color: str,
-) -> List[str]:
+) -> List[_MessageLine]:
     start_position = underline_range.start
     end_position = underline_range.end
 
@@ -792,16 +858,18 @@ def underline_lines(
                     underline = underline + glyphs.underline_end_character
                 else:
                     underline = underline + glyphs.underline_character
-            underline_line += glyphs.make_colored(
-                underline,
-                underline_color,
-            )
-            message_lines.append(underline_line)
+            underline_line += underline
+            message_lines.append(_MessageLine(
+                text=underline_line,
+                color=underline_color,
+                is_wrappable=False,
+            ))
     return message_lines
 
 
 __all__ = [
     "_DiagnosticContext",
+    "_MessageLine",
     "_get_diagnostic_lines_to_insert",
     "_group_by_pred",
     "_merge_contexts",

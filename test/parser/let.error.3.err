@@ -1,7 +1,9 @@
 EXPECTED_EXPRESSION[1010] in test/parser/let.error.3.pytch, line 1, character 10:
-Error: I was expecting an expression, but instead got the end of a 'let' binding.
-   +----------------------------------------------------------------------------------------------+
-   | test/parser/let.error.3.pytch                                                                |
- 1 | let foo =                                                                                    |
-   |          ^ Error: I was expecting an expression, but instead got the end of a 'let' binding. |
-   +----------------------------------------------------------------------------------------------+
+Error: I was expecting an expression, but instead got the end of a 'let'
+binding.
+   +--------------------------------------------------------------------------+
+   | test/parser/let.error.3.pytch                                            |
+ 1 | let foo =                                                                |
+   |          ^ Error: I was expecting an expression, but instead got the end |
+   | of a 'let' binding.                                                      |
+   +--------------------------------------------------------------------------+

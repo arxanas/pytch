@@ -1,7 +1,9 @@
 EXPECTED_RPAREN[1012] in test/parser/function_call.error.3.pytch, line 1, character 7:
-Error: I was expecting a ')' to indicate the end of this function argument list, but instead got the end of the file.
-   +-------------------------------------------------------------------------------------------------------------------------------+
-   | test/parser/function_call.error.3.pytch                                                                                       |
- 1 | print(                                                                                                                        |
-   |       ^ Error: I was expecting a ')' to indicate the end of this function argument list, but instead got the end of the file. |
-   +-------------------------------------------------------------------------------------------------------------------------------+
+Error: I was expecting a ')' to indicate the end of this function argument
+list, but instead got the end of the file.
+   +------------------------------------------------------------------+
+   | test/parser/function_call.error.3.pytch                          |
+ 1 | print(                                                           |
+   |       ^ Error: I was expecting a ')' to indicate the end of this |
+   | function argument list, but instead got the end of the file.     |
+   +------------------------------------------------------------------+

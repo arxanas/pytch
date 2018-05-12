@@ -1,7 +1,8 @@
 EXPECTED_COMMA[1017] in test/parser/fuzz.5.pytch, line 1, character 21:
 Error: I was expecting a ',' after the previous argument.
-   +---------------------------------------------------------------------------------+
-   | test/parser/fuzz.5.pytch                                                        |
- 1 | let foo = letprint(1let)                                                        |
-   |                     ^ Error: I was expecting a ',' after the previous argument. |
-   +---------------------------------------------------------------------------------+
+   +-----------------------------------------------------------------------+
+   | test/parser/fuzz.5.pytch                                              |
+ 1 | let foo = letprint(1let)                                              |
+   |                     ^ Error: I was expecting a ',' after the previous |
+   | argument.                                                             |
+   +-----------------------------------------------------------------------+

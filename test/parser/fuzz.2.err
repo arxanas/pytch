@@ -7,8 +7,9 @@ Error: Invalid token '!'.
    +----------------------------------------------+
 EXPECTED_COMMA[1017] in test/parser/fuzz.2.pytch, line 1, character 18:
 Error: I was expecting a ',' after the previous argument.
-   +------------------------------------------------------------------------------+
-   | test/parser/fuzz.2.pytch                                                     |
- 1 | let foo = print(1!                                                           |
-   |                  ^ Error: I was expecting a ',' after the previous argument. |
-   +------------------------------------------------------------------------------+
+   +--------------------------------------------------------------------+
+   | test/parser/fuzz.2.pytch                                           |
+ 1 | let foo = print(1!                                                 |
+   |                  ^ Error: I was expecting a ',' after the previous |
+   | argument.                                                          |
+   +--------------------------------------------------------------------+

@@ -1,7 +1,9 @@
 UNEXPECTED_TOKEN[1001] in test/parser/fuzz.3.pytch, line 1, character 19:
-Error: I was expecting the end of a 'let' binding, but instead got an identifier.
-   +-------------------------------------------------------------------------------------------------------+
-   | test/parser/fuzz.3.pytch                                                                              |
- 1 | let foo = print(1)J                                                                                   |
-   |                   ^ Error: I was expecting the end of a 'let' binding, but instead got an identifier. |
-   +-------------------------------------------------------------------------------------------------------+
+Error: I was expecting the end of a 'let' binding, but instead got an
+identifier.
+   +------------------------------------------------------------------------+
+   | test/parser/fuzz.3.pytch                                               |
+ 1 | let foo = print(1)J                                                    |
+   |                   ^ Error: I was expecting the end of a 'let' binding, |
+   | but instead got an identifier.                                         |
+   +------------------------------------------------------------------------+

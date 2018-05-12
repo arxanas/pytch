@@ -6,6 +6,7 @@ from pytch.errors import (
     _get_diagnostic_lines_to_insert,
     _group_by_pred,
     _merge_contexts,
+    _MessageLine,
     _ranges_overlap,
     Error,
     ErrorCode,
@@ -47,6 +48,7 @@ def test_print_error():
         )],
     )
     lines = lines_to_string(get_error_lines(error, ascii=True))
+    print(lines)
     assert lines == """\
 NOT_A_REAL_ERROR[9001] in dummy.pytch, line 2, character 4:
 Error: Look into this
@@ -255,12 +257,54 @@ Error: I couldn't find a variable...
 """
 
 
+def test_wrap_message():
+    file_info = FileInfo(
+        file_path="dummy.pytch",
+        source_code="""line1
+  line2
+  line3
+  line4
+""")
+    long_message = (
+        ("xxxx " * (80 // len("xxxx ")))
+        + "y."
+    )
+    error = Error(
+        file_info=file_info,
+        code=ErrorCode.NOT_A_REAL_ERROR,
+        severity=Severity.ERROR,
+        message=long_message,
+        range=Range(
+            start=Position(line=1, character=3),
+            end=Position(line=2, character=2),
+        ),
+        notes=[],
+    )
+    lines = lines_to_string(get_error_lines(error, ascii=True))
+    print(lines)
+    assert lines == """\
+NOT_A_REAL_ERROR[9001] in dummy.pytch, line 2, character 4:
+Error: xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
+xxxx xxxx y.
+   +------------------------------------------------------------------------+
+   | dummy.pytch                                                            |
+ 1 | line1                                                                  |
+ 2 |   line2                                                                |
+   |    ^~~~                                                                |
+ 3 |   line3                                                                |
+   |   ~ Error: xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx |
+   | xxxx xxxx xxxx xxxx y.                                                 |
+ 4 |   line4                                                                |
+   +------------------------------------------------------------------------+
+"""
+
+
 def test_get_diagnostic_lines_to_insert() -> None:
     file_info = FileInfo(
         file_path="dummy.pytch",
         source_code="foo\nbar\nbaz\n",
     )
-    diagnostics = [Error(
+    error = Error(
         file_info=file_info,
         code=ErrorCode.NOT_A_REAL_ERROR,
         severity=Severity.ERROR,
@@ -270,15 +314,24 @@ def test_get_diagnostic_lines_to_insert() -> None:
             start=Position(line=1, character=1),
             end=Position(line=2, character=0),
         )
-    )]
+    )
+    color = error.color
     context = _DiagnosticContext(file_info=file_info, line_range=(0, 3))
     assert _get_diagnostic_lines_to_insert(
         output_env=get_output_env(ascii=True),
         context=context,
-        diagnostics=diagnostics,
+        diagnostics=[error],
     ) == {
-        1: [" ^~"],
-        2: ["~ Error: An error message"],
+        1: [_MessageLine(
+            text=" ^~",
+            color=color,
+            is_wrappable=False,
+        )],
+        2: [_MessageLine(
+            text="~ Error: An error message",
+            color=color,
+            is_wrappable=True,
+        )],
     }
 
 
