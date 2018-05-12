@@ -189,6 +189,72 @@ Error: Look into this
 """
 
 
+def test_note_with_no_range_regression1() -> None:
+    file_info = FileInfo(
+        file_path="dummy.pytch",
+        source_code="""\
+let foo =
+  let bar = 3
+  baz
+  bar
+""",
+    )
+    error = Error(
+        file_info=file_info,
+        code=ErrorCode.UNBOUND_NAME,
+        severity=Severity.ERROR,
+        message="I couldn't find a variable...",
+        range=Range(
+            start=Position(
+                line=2,
+                character=2,
+            ),
+            end=Position(
+                line=2,
+                character=5,
+            ),
+        ),
+        notes=[
+            Note(
+                file_info=file_info,
+                message="Did you mean `map` (a builtin)?",
+                range=None,
+            ),
+            Note(
+                file_info=file_info,
+                message="Did you mean `bar`, defined here?",
+                range=Range(
+                    start=Position(
+                        line=1,
+                        character=6,
+                    ),
+                    end=Position(
+                        line=1,
+                        character=9,
+                    ),
+                ),
+            ),
+        ],
+    )
+    lines = lines_to_string(get_error_lines(error, ascii=True))
+    print(lines)
+    assert lines == """\
+UNBOUND_NAME[2000] in dummy.pytch, line 3, character 3:
+Error: I couldn't find a variable...
+   +---------------------------------------------------+
+   | dummy.pytch                                       |
+ 1 | let foo =                                         |
+ 2 |   let bar = 3                                     |
+   |       ^~~ Note: Did you mean `bar`, defined here? |
+ 3 |   baz                                             |
+   |   ^~~ Error: I couldn't find a variable...        |
+ 4 |   bar                                             |
+   +---------------------------------------------------+
+   | Note: Did you mean `map` (a builtin)?             |
+   +---------------------------------------------------+
+"""
+
+
 def test_get_diagnostic_lines_to_insert() -> None:
     file_info = FileInfo(
         file_path="dummy.pytch",
@@ -254,5 +320,4 @@ def test_merge_contexts() -> None:
     assert list(_merge_contexts(contexts)) == [
         _DiagnosticContext(file_info=file_info, line_range=(1, 4)),
         _DiagnosticContext(file_info=file_info, line_range=None),
-        _DiagnosticContext(file_info=file_info, line_range=(2, 3)),
     ]

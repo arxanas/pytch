@@ -34,6 +34,8 @@ class ErrorCode(Enum):
     EXPECTED_LET_EXPRESSION = 1016
     EXPECTED_COMMA = 1017
 
+    UNBOUND_NAME = 2000
+
     PARSED_LENGTH_MISMATCH = 9000
     NOT_A_REAL_ERROR = 9001
     """Not a real error code, just for testing purposes."""
@@ -115,6 +117,14 @@ class _DiagnosticContext:
         return (
             self.file_info == other.file_info
             and self.line_range == other.line_range
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"<DiagnosticContext"
+            + f" file_info={self.file_info!r}"
+            + f" line_range={self.line_range!r}"
+            + f">"
         )
 
 
@@ -462,7 +472,7 @@ def get_error_segments(glyphs: Glyphs, error: Error):
 
     segments: List[Segment] = []
     for _file_path, contexts in partitioned_diagnostic_contexts:
-        for context in _merge_contexts(contexts):
+        for context in _merge_contexts(list(contexts)):
             segment = get_context_segment(
                 glyphs=glyphs,
                 context=context,
@@ -502,8 +512,8 @@ def get_context(
 
 
 def _merge_contexts(
-    contexts: Iterable[_DiagnosticContext],
-) -> Iterable[_DiagnosticContext]:
+    contexts: List[_DiagnosticContext],
+) -> List[_DiagnosticContext]:
     """Combine adjacent contexts with ranges into a list of contexts sorted by
     range.
 
@@ -515,10 +525,16 @@ def _merge_contexts(
 
         [(1, 4), None, (3, 5)]
     """
-    mergeable_contexts = _group_by_pred(
-        contexts,
-        pred=lambda lhs, rhs: _ranges_overlap(lhs.line_range, rhs.line_range),
-    )
+    contexts_with_ranges = [
+        context
+        for context in contexts
+        if context.line_range is not None
+    ]
+    contexts_without_ranges = [
+        context
+        for context in contexts
+        if context.line_range is None
+    ]
 
     def merge(contexts: List[_DiagnosticContext]) -> _DiagnosticContext:
         file_info = contexts[0].file_info
@@ -543,7 +559,14 @@ def _merge_contexts(
             line_range=line_range,
         )
 
-    return map(merge, mergeable_contexts)
+    result: List[_DiagnosticContext] = []
+    mergeable_contexts = _group_by_pred(
+        contexts_with_ranges,
+        pred=lambda lhs, rhs: _ranges_overlap(lhs.line_range, rhs.line_range),
+    )
+    result.extend(map(merge, mergeable_contexts))
+    result.extend(contexts_without_ranges)
+    return result
 
 
 def _ranges_overlap(
