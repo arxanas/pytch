@@ -40,6 +40,12 @@ class Child:
         assert self.type.name.startswith("Optional[")
         assert self.type.name.endswith("]")
         name = self.type.name[len("Optional["):-len("]")]
+
+        if name.startswith("List["):
+            name = name[len("List["):-len("]")]
+        if name.startswith("Sequence["):
+            name = name[len("Sequence["):-len("]")]
+
         return NodeType(
             name=name,
             supertype=None,

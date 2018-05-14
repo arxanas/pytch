@@ -425,11 +425,14 @@ class ArgumentList(Node):
                 0
             )
         )
-        result = GREEN_TO_RED_NODE_MAP[self.origin.arguments.__class__](
-            parent=self,
-            origin=self.origin.arguments,
-            offset=offset,
-        )
+        result = []
+        for child in self.origin.arguments:
+            result.append(Argument(
+                parent=self,
+                origin=child,
+                offset=offset,
+            ))
+            offset += child.full_width
         self._arguments = result
         return result
 

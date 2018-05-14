@@ -153,24 +153,42 @@ def get_class_def(
             property_body += f"    )\n"
 
             if leaf_children is not None:
-                # A specific class to construct, like `FunctionCallExpr`.
-                property_body += f"    result = {child.base_type.name}(\n"
-                property_body += f"        parent=self,\n"
-                property_body += f"        origin=self.origin.{child.name},\n"
-                property_body += f"        offset=offset,\n"
-                property_body += f"    )\n"
+                if not child.is_optional_sequence_type:
+                    # A specific class to construct, like `FunctionCallExpr`.
+                    property_body += f"""\
+    result = {child.base_type.name}(
+        parent=self,
+        origin=self.origin.{child.name},
+        offset=offset,
+    )
+"""
+                else:
+                    # A list of specific classes to construct.
+                    property_body += f"""\
+    result = []
+    for child in self.origin.{child.name}:
+        result.append({child.base_type.name}(
+            parent=self,
+            origin=child,
+            offset=offset,
+        ))
+        offset += child.full_width
+"""
             else:
                 # An abstract class to construct, like `Expr`, whose concrete
                 # implementation could be one of many subclasses.
-                property_body += f"    result = GREEN_TO_RED_NODE_MAP[" + \
-                    f"self.origin.{child.name}.__class__](\n"
-                property_body += f"        parent=self,\n"
-                property_body += f"        origin=self.origin.{child.name},\n"
-                property_body += f"        offset=offset,\n"
-                property_body += f"    )\n"
+                property_body += f"""\
+    result = GREEN_TO_RED_NODE_MAP[self.origin.{child.name}.__class__](
+        parent=self,
+        origin=self.origin.{child.name},
+        offset=offset,
+    )
+"""
 
-            property_body += f"    self._{child.name} = result\n"
-            property_body += f"    return result\n"
+            property_body += f"""\
+    self._{child.name} = result
+    return result
+"""
 
         class_body += textwrap.indent(property_body, prefix="    ")
 
