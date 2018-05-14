@@ -23,6 +23,7 @@ from .redcst import (
 GLOBAL_SCOPE: Mapping[str, List[VariablePattern]] = {
     "map": [],
     "filter": [],
+    "print": [],
 }
 
 
