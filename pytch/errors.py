@@ -346,13 +346,15 @@ class _MessageLine:
             return [self.text]
         prefix = match.group()
         text = self.text[len(prefix):]
-        if not text:
-            return [prefix]
-        return click.wrap_text(
+        wrapped_text = click.wrap_text(
             text,
             width=max_width,
             initial_indent=prefix,
-        ).splitlines()
+        )
+        if wrapped_text:
+            return wrapped_text.splitlines()
+        else:
+            return [prefix]
 
     def get_wrapped_width(self, max_width: int) -> int:
         return max(map(len, self.wrap(max_width)))
