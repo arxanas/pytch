@@ -1,10 +1,11 @@
 import sys
-from typing import List, TextIO
+from typing import List, Sequence, TextIO
 
 import click
 
 from . import FileInfo
 from .binder import bind
+from .codegen import codegen
 from .errors import Error, get_error_lines
 from .lexer import lex
 from .parser import parse
@@ -14,6 +15,18 @@ from .redcst import SyntaxTree as RedSyntaxTree
 @click.group()
 def cli() -> None:
     pass
+
+
+@cli.command("compile")
+@click.argument("source_files", type=click.File(), nargs=-1)
+def compile(source_files: Sequence[TextIO]) -> None:
+    for source_file in source_files:
+        compiled_output = do_compile(file_info=FileInfo(
+            file_path=source_file.name,
+            source_code=source_file.read(),
+        ))
+        if source_file is sys.stdin:
+            sys.stdout.write(compiled_output)
 
 
 @cli.command("run")
@@ -26,6 +39,11 @@ def run(source_file: TextIO) -> None:
 
 
 def run_file(file_info: FileInfo) -> None:
+    compiled_output = do_compile(file_info=file_info)
+    exec(compiled_output)
+
+
+def do_compile(file_info: FileInfo) -> str:
     lexation = lex(file_info=file_info)
     print_errors(lexation.errors)
 
@@ -42,6 +60,9 @@ def run_file(file_info: FileInfo) -> None:
 
     bindation = bind(file_info=file_info, syntax_tree=red_cst)
     print_errors(bindation.errors)
+
+    codegenation = codegen(syntax_tree=red_cst, bindation=bindation)
+    return codegenation.get_compiled_output()
 
 
 def print_errors(errors: List[Error]) -> None:
