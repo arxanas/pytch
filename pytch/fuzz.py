@@ -3,7 +3,8 @@ import sys
 
 import afl
 
-from pytch.__main__ import process_source_code
+from pytch import FileInfo
+from pytch.__main__ import run_file
 
 
 def main() -> None:
@@ -13,11 +14,14 @@ def main() -> None:
         # crash. See
         # https://barro.github.io/2018/01/taking-a-look-at-python-afl/
         try:
-            contents = f.read()
+            file_info = FileInfo(
+                file_path="<stdin>",
+                source_code=f.read(),
+            )
         except UnicodeDecodeError:
             pass
         else:
-            process_source_code(contents)
+            run_file(file_info)
     os._exit(0)
 
 

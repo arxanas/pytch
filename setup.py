@@ -12,7 +12,7 @@ setup(
     packages=find_packages(),
     entry_points="""
     [console_scripts]
-    pytch=pytch.__main__:main
+    pytch=pytch.__main__:cli
     """,
     install_requires=[
         "click==6.7",

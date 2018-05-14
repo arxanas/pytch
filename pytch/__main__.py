@@ -1,5 +1,7 @@
 import sys
-from typing import List
+from typing import List, TextIO
+
+import click
 
 from . import FileInfo
 from .binder import bind
@@ -9,13 +11,21 @@ from .parser import parse
 from .redcst import SyntaxTree as RedSyntaxTree
 
 
-def main():
-    process_source_code(source_code=sys.stdin.read())
+@click.group()
+def cli() -> None:
+    pass
 
 
-def process_source_code(source_code: str) -> None:
-    file_info = FileInfo(file_path="<stdin>", source_code=source_code)
+@cli.command("run")
+@click.argument("source_file", type=click.File())
+def run(source_file: TextIO) -> None:
+    run_file(file_info=FileInfo(
+        file_path=source_file.name,
+        source_code=source_file.read(),
+    ))
 
+
+def run_file(file_info: FileInfo) -> None:
     lexation = lex(file_info=file_info)
     print_errors(lexation.errors)
 
@@ -37,7 +47,3 @@ def process_source_code(source_code: str) -> None:
 def print_errors(errors: List[Error]) -> None:
     for error in errors:
         sys.stdout.write("\n".join(get_error_lines(error)) + "\n")
-
-
-if __name__ == "__main__":
-    main()
