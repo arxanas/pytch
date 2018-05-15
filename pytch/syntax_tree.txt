@@ -9,9 +9,19 @@ Pattern(Node)
 VariablePattern(Pattern)
     t_identifier: Optional[Token]
 
+Parameter(Node)
+    n_pattern: Optional[Pattern]
+    t_comma: Optional[Token]
+
+ParameterList(Node)
+    t_lparen: Optional[Token]
+    parameters: Optional[List[Parameter]]
+    t_rparen: Optional[Token]
+
 LetExpr(Expr)
     t_let: Optional[Token]
     n_pattern: Optional[Pattern]
+    n_parameter_list: Optional[ParameterList]
     t_equals: Optional[Token]
     n_value: Optional[Expr]
     t_in: Optional[Token]

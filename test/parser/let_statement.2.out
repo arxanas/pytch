@@ -4,6 +4,7 @@ SyntaxTree
         VariablePattern
             Leading ' '
             Token 'foo'
+        <missing>
         Leading ' '
         Token '='
         Trailing '\n'
@@ -13,6 +14,7 @@ SyntaxTree
             VariablePattern
                 Leading ' '
                 Token 'bar'
+            <missing>
             Leading ' '
             Token '='
             Trailing '\n'
@@ -32,6 +34,7 @@ SyntaxTree
             VariablePattern
                 Leading ' '
                 Token 'baz'
+            <missing>
             Leading ' '
             Token '='
             IntLiteralExpr

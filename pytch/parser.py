@@ -410,6 +410,7 @@ class Parser:
         return (state, LetExpr(
             t_let=t_let,
             n_pattern=n_pattern,
+            n_parameter_list=None,  # TODO
             t_equals=t_equals,
             n_value=n_value,
             t_in=t_in,
@@ -461,6 +462,7 @@ class Parser:
         return (state, LetExpr(
             t_let=t_let,
             n_pattern=n_pattern,
+            n_parameter_list=None,  # TODO
             t_equals=t_equals,
             n_value=n_value,
             t_in=None,  # Parsed by caller.

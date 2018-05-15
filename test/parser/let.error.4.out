@@ -2,6 +2,7 @@ SyntaxTree
     LetExpr
         Token 'let'
         <missing>
+        <missing>
         Leading ' '
         Token '='
         IntLiteralExpr

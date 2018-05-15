@@ -128,6 +128,125 @@ class VariablePattern(Pattern):
         ]
 
 
+class Parameter(Node):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        origin: greencst.Parameter,
+        offset: int,
+    ) -> None:
+        super().__init__(parent)
+        self.origin = origin
+        self.offset = offset
+        self._n_pattern: Optional[Pattern] = None
+
+    @property
+    def n_pattern(self) -> Optional[Pattern]:
+        if self.origin.n_pattern is None:
+            return None
+        if self._n_pattern is not None:
+            return self._n_pattern
+        offset = (
+            self.offset
+        )
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_pattern.__class__](
+            parent=self,
+            origin=self.origin.n_pattern,
+            offset=offset,
+        )
+        self._n_pattern = result
+        return result
+
+    @property
+    def t_comma(self) -> Optional[Token]:
+        return self.origin.t_comma
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
+
+    @property
+    def children(self) -> List[Optional[Union[Token, Node]]]:
+        return [
+            self.n_pattern,
+            self.t_comma,
+        ]
+
+
+class ParameterList(Node):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        origin: greencst.ParameterList,
+        offset: int,
+    ) -> None:
+        super().__init__(parent)
+        self.origin = origin
+        self.offset = offset
+        self._parameters: Optional[List[Parameter]] = None
+
+    @property
+    def t_lparen(self) -> Optional[Token]:
+        return self.origin.t_lparen
+
+    @property
+    def parameters(self) -> Optional[List[Parameter]]:
+        if self.origin.parameters is None:
+            return None
+        if self._parameters is not None:
+            return self._parameters
+        offset = (
+            self.offset
+            + (
+                self.t_lparen.full_width
+                if self.t_lparen is not None else
+                0
+            )
+        )
+        result = []
+        for child in self.origin.parameters:
+            result.append(Parameter(
+                parent=self,
+                origin=child,
+                offset=offset,
+            ))
+            offset += child.full_width
+        self._parameters = result
+        return result
+
+    @property
+    def t_rparen(self) -> Optional[Token]:
+        return self.origin.t_rparen
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
+
+    @property
+    def children(self) -> List[Optional[Union[Token, Node]]]:
+        return [
+            self.t_lparen,
+            *(self.parameters if self.parameters is not None else []),
+            self.t_rparen,
+        ]
+
+
 class LetExpr(Expr):
     def __init__(
         self,
@@ -139,6 +258,7 @@ class LetExpr(Expr):
         self.origin = origin
         self.offset = offset
         self._n_pattern: Optional[Pattern] = None
+        self._n_parameter_list: Optional[ParameterList] = None
         self._n_value: Optional[Expr] = None
         self._n_body: Optional[Expr] = None
 
@@ -169,6 +289,33 @@ class LetExpr(Expr):
         return result
 
     @property
+    def n_parameter_list(self) -> Optional[ParameterList]:
+        if self.origin.n_parameter_list is None:
+            return None
+        if self._n_parameter_list is not None:
+            return self._n_parameter_list
+        offset = (
+            self.offset
+            + (
+                self.t_let.full_width
+                if self.t_let is not None else
+                0
+            )
+            + (
+                self.n_pattern.full_width
+                if self.n_pattern is not None else
+                0
+            )
+        )
+        result = ParameterList(
+            parent=self,
+            origin=self.origin.n_parameter_list,
+            offset=offset,
+        )
+        self._n_parameter_list = result
+        return result
+
+    @property
     def t_equals(self) -> Optional[Token]:
         return self.origin.t_equals
 
@@ -188,6 +335,11 @@ class LetExpr(Expr):
             + (
                 self.n_pattern.full_width
                 if self.n_pattern is not None else
+                0
+            )
+            + (
+                self.n_parameter_list.full_width
+                if self.n_parameter_list is not None else
                 0
             )
             + (
@@ -224,6 +376,11 @@ class LetExpr(Expr):
             + (
                 self.n_pattern.full_width
                 if self.n_pattern is not None else
+                0
+            )
+            + (
+                self.n_parameter_list.full_width
+                if self.n_parameter_list is not None else
                 0
             )
             + (
@@ -267,6 +424,7 @@ class LetExpr(Expr):
         return [
             self.t_let,
             self.n_pattern,
+            self.n_parameter_list,
             self.t_equals,
             self.n_value,
             self.t_in,
@@ -538,6 +696,8 @@ GREEN_TO_RED_NODE_MAP = {
     greencst.SyntaxTree: SyntaxTree,
     greencst.Pattern: Pattern,
     greencst.VariablePattern: VariablePattern,
+    greencst.Parameter: Parameter,
+    greencst.ParameterList: ParameterList,
     greencst.LetExpr: LetExpr,
     greencst.IdentifierExpr: IdentifierExpr,
     greencst.IntLiteralExpr: IntLiteralExpr,

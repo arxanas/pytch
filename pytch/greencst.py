@@ -109,11 +109,63 @@ class VariablePattern(Pattern):
         return self._t_identifier
 
 
+class Parameter(Node):
+    def __init__(
+        self,
+        n_pattern: Optional[Pattern],
+        t_comma: Optional[Token],
+    ) -> None:
+        super().__init__([
+            n_pattern,
+            t_comma,
+        ])
+        self._n_pattern = n_pattern
+        self._t_comma = t_comma
+
+    @property
+    def n_pattern(self) -> Optional[Pattern]:
+        return self._n_pattern
+
+    @property
+    def t_comma(self) -> Optional[Token]:
+        return self._t_comma
+
+
+class ParameterList(Node):
+    def __init__(
+        self,
+        t_lparen: Optional[Token],
+        parameters: Optional[List[Parameter]],
+        t_rparen: Optional[Token],
+    ) -> None:
+        super().__init__([
+            t_lparen,
+            *(parameters if parameters is not None else []),
+            t_rparen,
+        ])
+        self._t_lparen = t_lparen
+        self._parameters = parameters
+        self._t_rparen = t_rparen
+
+    @property
+    def t_lparen(self) -> Optional[Token]:
+        return self._t_lparen
+
+    @property
+    def parameters(self) -> Optional[List[Parameter]]:
+        return self._parameters
+
+    @property
+    def t_rparen(self) -> Optional[Token]:
+        return self._t_rparen
+
+
 class LetExpr(Expr):
     def __init__(
         self,
         t_let: Optional[Token],
         n_pattern: Optional[Pattern],
+        n_parameter_list: Optional[ParameterList],
         t_equals: Optional[Token],
         n_value: Optional[Expr],
         t_in: Optional[Token],
@@ -122,6 +174,7 @@ class LetExpr(Expr):
         super().__init__([
             t_let,
             n_pattern,
+            n_parameter_list,
             t_equals,
             n_value,
             t_in,
@@ -129,6 +182,7 @@ class LetExpr(Expr):
         ])
         self._t_let = t_let
         self._n_pattern = n_pattern
+        self._n_parameter_list = n_parameter_list
         self._t_equals = t_equals
         self._n_value = n_value
         self._t_in = t_in
@@ -141,6 +195,10 @@ class LetExpr(Expr):
     @property
     def n_pattern(self) -> Optional[Pattern]:
         return self._n_pattern
+
+    @property
+    def n_parameter_list(self) -> Optional[ParameterList]:
+        return self._n_parameter_list
 
     @property
     def t_equals(self) -> Optional[Token]:

@@ -6,6 +6,7 @@ SyntaxTree
             Token 'foo'
         <missing>
         <missing>
+        <missing>
         Leading ' \x1d'
         Leading ' print'
         Leading '('
