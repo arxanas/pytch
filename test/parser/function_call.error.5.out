@@ -13,31 +13,31 @@ SyntaxTree
                 Trailing '\n'
             Argument
                 IntLiteralExpr
-                    Leading '  '
+                    Leading '    '
                     Token '2'
                 Token ','
                 Trailing '\n'
             Argument
                 IntLiteralExpr
-                    Leading '  '
+                    Leading '      '
                     Token '3'
                 Token ','
                 Trailing '\n'
             Argument
                 IntLiteralExpr
-                    Leading '  '
+                    Leading '        '
                     Token '4'
                 Token ','
                 Trailing '\n'
             Argument
                 IntLiteralExpr
-                    Leading '  '
+                    Leading '          '
                     Token '5'
                 Token ','
                 Trailing '\n'
             Argument
                 IntLiteralExpr
-                    Leading '  '
+                    Leading '            '
                     Token '6'
                 Token ','
                 Trailing '\n'

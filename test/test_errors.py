@@ -316,7 +316,7 @@ def test_get_diagnostic_lines_to_insert() -> None:
         )
     )
     color = error.color
-    context = _DiagnosticContext(file_info=file_info, line_range=(0, 3))
+    context = _DiagnosticContext(file_info=file_info, line_ranges=[(0, 3)])
     assert _get_diagnostic_lines_to_insert(
         output_env=get_output_env(ascii=True),
         context=context,
@@ -365,12 +365,21 @@ def test_group_by_pred() -> None:
 def test_merge_contexts() -> None:
     file_info = FileInfo(file_path="dummy.pytch", source_code="foo")
     contexts = [
-        _DiagnosticContext(file_info=file_info, line_range=(2, 4)),
-        _DiagnosticContext(file_info=file_info, line_range=(1, 3)),
-        _DiagnosticContext(file_info=file_info, line_range=None),
-        _DiagnosticContext(file_info=file_info, line_range=(2, 3)),
+        _DiagnosticContext(file_info=file_info, line_ranges=[(2, 4)]),
+        _DiagnosticContext(file_info=file_info, line_ranges=[(1, 3)]),
+        _DiagnosticContext(file_info=file_info, line_ranges=None),
+        _DiagnosticContext(file_info=file_info, line_ranges=[(2, 3)]),
     ]
     assert list(_merge_contexts(contexts)) == [
-        _DiagnosticContext(file_info=file_info, line_range=(1, 4)),
-        _DiagnosticContext(file_info=file_info, line_range=None),
+        _DiagnosticContext(file_info=file_info, line_ranges=[(1, 4)]),
+        _DiagnosticContext(file_info=file_info, line_ranges=None),
+    ]
+
+    contexts = [
+        _DiagnosticContext(file_info=file_info, line_ranges=[(1, 3)]),
+        _DiagnosticContext(file_info=file_info, line_ranges=[(3, 4)]),
+        _DiagnosticContext(file_info=file_info, line_ranges=[(10, 11)]),
+    ]
+    assert list(_merge_contexts(contexts)) == [
+        _DiagnosticContext(file_info=file_info, line_ranges=[(1, 4), (10, 11)]),
     ]
