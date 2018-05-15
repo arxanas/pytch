@@ -1,0 +1,27 @@
+SyntaxTree
+    FunctionCallExpr
+        IdentifierExpr
+            Token 'print'
+        ArgumentList
+            Token '('
+            Trailing '\n'
+            Argument
+                IntLiteralExpr
+                    Leading '  '
+                    Token '1'
+                Token ','
+                Trailing '\n'
+            Argument
+                IntLiteralExpr
+                    Leading '  '
+                    Token '2'
+                Token ','
+                Trailing '\n'
+            Argument
+                IntLiteralExpr
+                    Leading '  '
+                    Token '3'
+                Token ','
+                Trailing '\n'
+            <missing>
+    Token EOF ''

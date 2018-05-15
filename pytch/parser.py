@@ -641,6 +641,7 @@ class Parser:
         self,
         state: State,
     ) -> Tuple[State, Optional[ArgumentList]]:
+        t_lparen_range = state.current_token_range
         (state, t_lparen) = self.expect_token(state, [TokenKind.LPAREN])
         if t_lparen is None:
             state = self.add_error_and_recover(state, Error(
@@ -680,8 +681,11 @@ class Parser:
                     self.describe_token(state.current_token) +
                     "."
                 ),
-                # TODO: Link to the start of the function argument list.
-                notes=[],
+                notes=[Note(
+                    file_info=state.file_info,
+                    message="The beginning of the argument list is here.",
+                    range=t_lparen_range,
+                )],
                 range=state.current_token_range,
             ),
         )
