@@ -1,0 +1,4 @@
+let print_fst(x, y) =
+  print(x)
+
+let print_snd(x, y) = print(y)

@@ -1,0 +1,28 @@
+SyntaxTree
+    LetExpr
+        Token 'let'
+        VariablePattern
+            Leading ' '
+            Token 'print_fst'
+        ParameterList
+            Token '('
+            Parameter
+                VariablePattern
+                    Token 'x'
+                Token ','
+            Parameter
+                VariablePattern
+                    Leading ' '
+                    Token 'y'
+                <missing>
+            <missing>
+        <missing>
+        <missing>
+        Leading ' =\n'
+        Leading '  print'
+        Leading '('
+        Leading 'x'
+        Leading ')\n'
+        Token DUMMY_IN ''
+        <missing>
+    Token EOF ''

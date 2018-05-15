@@ -26,6 +26,8 @@ from .greencst import (
     IntLiteralExpr,
     LetExpr,
     Node,
+    Parameter,
+    ParameterList,
     Pattern,
     SyntaxTree,
     VariablePattern,
@@ -179,10 +181,10 @@ class State:
         )
 
     @property
-    def next_token(self) -> Optional[Token]:
-        if 0 <= self.token_index + 1 < len(self.tokens):
-            return self.tokens[self.token_index + 1]
-        return None
+    def next_token(self) -> Token:
+        assert self.tokens[self.token_index].kind != TokenKind.EOF, \
+            "Tried to look at the token after the EOF token"
+        return self.tokens[self.token_index + 1]
 
     def update(
         self,
@@ -404,13 +406,15 @@ class Parser:
             )
 
         n_pattern = n_let_expr.n_pattern if n_let_expr is not None else None
+        n_parameter_list = \
+            n_let_expr.n_parameter_list if n_let_expr is not None else None
         t_equals = n_let_expr.t_equals if n_let_expr is not None else None
         n_value = n_let_expr.n_value if n_let_expr is not None else None
         state = state.pop_sync_token_kinds()
         return (state, LetExpr(
             t_let=t_let,
             n_pattern=n_pattern,
-            n_parameter_list=None,  # TODO
+            n_parameter_list=n_parameter_list,
             t_equals=t_equals,
             n_value=n_value,
             t_in=t_in,
@@ -424,6 +428,8 @@ class Parser:
         t_let: Token,
         notes: List[Note],
     ) -> Tuple[State, Optional[LetExpr]]:
+        n_pattern: Optional[Pattern]
+        n_parameter_list: Optional[ParameterList] = None
         if state.current_token.kind == TokenKind.EQUALS:
             # If the token is an equals sign, assume that the name is missing
             # (e.g. during editing, the user is renaming the variable), but
@@ -437,6 +443,19 @@ class Parser:
                 notes=notes,
                 range=state.current_token_range,
             ))
+        elif (
+            state.current_token.kind == TokenKind.IDENTIFIER
+            and state.next_token.kind == TokenKind.LPAREN
+        ):
+            # Assume it's a function definition.
+            (state, t_identifier) = self.expect_token(
+                state,
+                [TokenKind.IDENTIFIER],
+            )
+            n_pattern = VariablePattern(
+                t_identifier=t_identifier,
+            )
+            (state, n_parameter_list) = self.parse_parameter_list(state)
         else:
             (state, n_pattern) = self.parse_pattern(
                 state,
@@ -462,7 +481,7 @@ class Parser:
         return (state, LetExpr(
             t_let=t_let,
             n_pattern=n_pattern,
-            n_parameter_list=None,  # TODO
+            n_parameter_list=n_parameter_list,
             t_equals=t_equals,
             n_value=n_value,
             t_in=None,  # Parsed by caller.
@@ -472,7 +491,7 @@ class Parser:
     def parse_pattern(
         self,
         state: State,
-        error: Error,
+        error: Error = None,
     ) -> Tuple[State, Optional[Pattern]]:
         (state, t_identifier) = self.expect_token(
             state,
@@ -563,7 +582,7 @@ class Parser:
     ) -> Tuple[State, Optional[Expr]]:
         token = state.current_token
         if token.kind == TokenKind.IDENTIFIER:
-            return self.parse_identifier(state)
+            return self.parse_identifier_expr(state)
         elif token.kind == TokenKind.INT_LITERAL:
             return self.parse_int_literal(state)
         elif token.kind == TokenKind.LET:
@@ -629,6 +648,8 @@ class Parser:
             if n_argument is None:
                 break
             arguments.append(n_argument)
+            if n_argument.t_comma is None:
+                break
         state = state.pop_sync_token_kinds()
 
         (state, t_rparen) = self.expect_token(
@@ -696,10 +717,10 @@ class Parser:
 
         error = Error(
             file_info=state.file_info,
-            code=ErrorCode.EXPECTED_COMMA,
+            code=ErrorCode.EXPECTED_END_OF_ARGUMENT_LIST,
             severity=Severity.ERROR,
             message=(
-                "I was expecting a ',' after the previous argument."
+                "I was expecting a ',' or ')' after the previous argument."
             ),
             notes=[],
             range=expected_comma_range,
@@ -715,7 +736,125 @@ class Parser:
             t_comma=t_comma,
         ))
 
-    def parse_identifier(
+    def parse_parameter_list(
+        self,
+        state: State,
+    ) -> Tuple[State, Optional[ParameterList]]:
+        t_lparen_range = state.current_token_range
+        (state, t_lparen) = self.expect_token(state, [TokenKind.LPAREN])
+        if t_lparen is None:
+            state = self.add_error_and_recover(state, Error(
+                file_info=state.file_info,
+                code=ErrorCode.EXPECTED_LPAREN,
+                severity=Severity.ERROR,
+                message=(
+                    "I was expecting a '(' to indicate the start of a " +
+                    "function parameter list, but instead got " +
+                    self.describe_token(state.current_token) +
+                    "."
+                ),
+                notes=[],
+                range=state.current_token_range,
+            ))
+            return (state, None)
+
+        parameters: List[Parameter] = []
+        while state.current_token.kind not in [TokenKind.RPAREN, TokenKind.EOF]:
+            (state, n_parameter) = self.parse_parameter(state)
+            if n_parameter is None:
+                break
+            parameters.append(n_parameter)
+            if n_parameter.t_comma is None:
+                break
+
+        (state, t_rparen) = self.expect_token(
+            state,
+            [TokenKind.RPAREN],
+            error=Error(
+                file_info=state.file_info,
+                code=ErrorCode.EXPECTED_RPAREN,
+                severity=Severity.ERROR,
+                message=(
+                    "I was expecting a ')' to indicate the end of this " +
+                    "function parameter list, but instead got " +
+                    self.describe_token(state.current_token) +
+                    "."
+                ),
+                notes=[Note(
+                    file_info=state.file_info,
+                    message="The beginning of the parameter list is here.",
+                    range=t_lparen_range,
+                )],
+                range=state.current_token_range,
+            ),
+        )
+        return (state, ParameterList(
+            t_lparen=t_lparen,
+            parameters=parameters,
+            t_rparen=t_rparen,
+        ))
+
+    def parse_parameter(
+        self,
+        state: State,
+    ) -> Tuple[State, Optional[Parameter]]:
+        parameter_start_offset = state.offset
+        (state, n_pattern) = self.parse_pattern(state)
+        if n_pattern is None:
+            return (state, None)
+
+        token = state.current_token
+        if token.kind == TokenKind.RPAREN:
+            return (state, Parameter(
+                n_pattern=n_pattern,
+                t_comma=None,
+            ))
+
+        if token.kind == TokenKind.COMMA:
+            (state, t_comma) = self.expect_token(state, [TokenKind.COMMA])
+            return (state, Parameter(
+                n_pattern=n_pattern,
+                t_comma=t_comma,
+            ))
+
+        parameter_end_offset = (
+            parameter_start_offset
+            + n_pattern.leading_width
+            + n_pattern.width
+        )
+        # The end offset is exclusive, so when the position is used as the
+        # start offset, it's one character after the argument (where you
+        # would expect the comma to go).
+        parameter_position = state.file_info.get_position_for_offset(
+            parameter_end_offset,
+        )
+        expected_comma_range = Range(
+            start=parameter_position,
+            end=parameter_position,
+        )
+
+        error = Error(
+            file_info=state.file_info,
+            code=ErrorCode.EXPECTED_END_OF_PARAMETER_LIST,
+            severity=Severity.ERROR,
+            message=(
+                "I was expecting a ',' or ')' after the previous parameter."
+            ),
+            notes=[],
+            range=expected_comma_range,
+        )
+        (state, t_comma) = self.expect_token(
+            state,
+            [TokenKind.COMMA],
+            error=error,
+        )
+
+        return (state, Parameter(
+            n_pattern=n_pattern,
+            t_comma=t_comma,
+        ))
+
+    def parse_identifier_expr(
         self,
         state: State,
     ) -> Tuple[State, Optional[IdentifierExpr]]:

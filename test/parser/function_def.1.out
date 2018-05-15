@@ -1,0 +1,69 @@
+SyntaxTree
+    LetExpr
+        Token 'let'
+        VariablePattern
+            Leading ' '
+            Token 'print_fst'
+        ParameterList
+            Token '('
+            Parameter
+                VariablePattern
+                    Token 'x'
+                Token ','
+            Parameter
+                VariablePattern
+                    Leading ' '
+                    Token 'y'
+                <missing>
+            Token ')'
+        Leading ' '
+        Token '='
+        Trailing '\n'
+        FunctionCallExpr
+            IdentifierExpr
+                Leading '  '
+                Token 'print'
+            ArgumentList
+                Token '('
+                Argument
+                    IdentifierExpr
+                        Token 'x'
+                    <missing>
+                Token ')'
+                Trailing '\n'
+                Trailing '\n'
+        Token DUMMY_IN ''
+        LetExpr
+            Token 'let'
+            VariablePattern
+                Leading ' '
+                Token 'print_snd'
+            ParameterList
+                Token '('
+                Parameter
+                    VariablePattern
+                        Token 'x'
+                    Token ','
+                Parameter
+                    VariablePattern
+                        Leading ' '
+                        Token 'y'
+                    <missing>
+                Token ')'
+            Leading ' '
+            Token '='
+            FunctionCallExpr
+                IdentifierExpr
+                    Leading ' '
+                    Token 'print'
+                ArgumentList
+                    Token '('
+                    Argument
+                        IdentifierExpr
+                            Token 'y'
+                        <missing>
+                    Token ')'
+                    Trailing '\n'
+            Token DUMMY_IN ''
+            <missing>
+    Token EOF ''
