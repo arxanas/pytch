@@ -343,11 +343,12 @@ class _MessageLine:
             return False
         return (
             self.text == other.text
+            and self.color == other.color
             and self.is_wrappable == other.is_wrappable
         )
 
     def wrap(self, max_width: int) -> List[str]:
-        match = re.match("\s+\S+", self.text)
+        match = re.match(r"\s*\S+", self.text)
         if not match:
             return [self.text]
         prefix = match.group()
@@ -763,6 +764,8 @@ def get_context_segments(
             message_lines.append(_MessageLine(
                 text=line,
                 color=None,
+
+                # Code segment -- print this verbatim, do not wrap.
                 is_wrappable=False,
             ))
 
@@ -801,7 +804,9 @@ def get_segments_without_ranges(
                 message_lines=[_MessageLine(
                     text=get_full_diagnostic_message(diagnostic),
                     color=diagnostic.color,
-                    is_wrappable=False,
+
+                    # Diagnostic message, wrap this if necessary.
+                    is_wrappable=True,
                 )],
             ))
     return segments
@@ -835,6 +840,8 @@ def _get_diagnostic_lines_to_insert(
                 underlined_lines.append(_MessageLine(
                     text=last_line,
                     color=diagnostic.color,
+
+                    # Diagnostic message, wrap this if necessary.
                     is_wrappable=True,
                 ))
             for line_num, line in enumerate(
@@ -928,6 +935,9 @@ def underline_lines(
             message_lines.append(_MessageLine(
                 text=underline_line,
                 color=underline_color,
+
+                # Underline, do not wrap (although it should never require
+                # wrapping, since the code should not be wrapped).
                 is_wrappable=False,
             ))
     return message_lines
