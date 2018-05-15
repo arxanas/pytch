@@ -1,5 +1,5 @@
 import os.path
-from typing import Callable, Iterator, Optional, Sequence
+from typing import Any, Callable, Iterator, Optional
 
 from pytch import FileInfo
 from pytch.lexer import lex
@@ -111,14 +111,19 @@ def find_tests(
 
 
 def generate(
-    tests: Sequence[CaseInfo],
-    make_result: Callable[[str, str], CaseResult],
+    tests: Iterator[CaseInfo],
+    make_result: Callable[[str, str, Any], CaseResult],
+    capsys: Any,
 ) -> None:
     for test_info in tests:
         with open(test_info.input_filename) as input_file:
             input = input_file.read()
         print(f"processing {test_info.input_filename}")
-        result = make_result(test_info.input_filename, input)
+        result = make_result(
+            test_info.input_filename,
+            input,
+            capsys,
+        )
         output = result.output
         error = result.error
         if not os.path.exists(test_info.output_filename):

@@ -1,4 +1,4 @@
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Any, Iterator, List, Optional, Tuple, Union
 
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
@@ -59,7 +59,11 @@ def get_parser_test_ids() -> List[str]:
     return [test.name for test in get_parser_tests()]
 
 
-def make_result(input_filename: str, source_code: str) -> CaseResult:
+def make_result(
+    input_filename: str,
+    source_code: str,
+    capsys: Any,
+) -> CaseResult:
     file_info = FileInfo(
         file_path=input_filename,
         source_code=source_code,
@@ -92,11 +96,15 @@ def make_result(input_filename: str, source_code: str) -> CaseResult:
     ids=get_parser_test_ids(),
 )
 def test_parser(test_case_info: CaseInfo) -> None:
-    result = make_result(test_case_info.input_filename, test_case_info.input)
+    result = make_result(
+        input_filename=test_case_info.input_filename,
+        source_code=test_case_info.input,
+        capsys=None,
+    )
     assert test_case_info.error == result.error
     assert test_case_info.output == result.output
 
 
 @pytest.mark.generate
-def test_generate_parser_tests():
-    generate(get_parser_tests(), make_result)
+def test_generate_parser_tests() -> None:
+    generate(get_parser_tests(), make_result, capsys=None)

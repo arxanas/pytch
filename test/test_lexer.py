@@ -1,4 +1,4 @@
-from typing import Iterator, List, Optional
+from typing import Any, Iterator, List, Optional
 
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
@@ -40,7 +40,11 @@ def get_lexer_test_ids() -> List[str]:
     return [test.name for test in get_lexer_tests()]
 
 
-def make_result(input_filename: str, source_code: str) -> CaseResult:
+def make_result(
+    input_filename: str,
+    source_code: str,
+    capsys: Any,
+) -> CaseResult:
     file_info = FileInfo(
         file_path=input_filename,
         source_code=source_code,
@@ -68,11 +72,15 @@ def make_result(input_filename: str, source_code: str) -> CaseResult:
     ids=get_lexer_test_ids(),
 )
 def test_lexer(test_case_info: CaseInfo) -> None:
-    result = make_result(test_case_info.input_filename, test_case_info.input)
+    result = make_result(
+        input_filename=test_case_info.input_filename,
+        source_code=test_case_info.input,
+        capsys=None,
+    )
     assert test_case_info.output == result.output
     assert test_case_info.error == result.error
 
 
 @pytest.mark.generate
-def test_generate_lexer_tests():
-    generate(get_lexer_tests(), make_result)
+def test_generate_lexer_tests() -> None:
+    generate(get_lexer_tests(), make_result, capsys=None)
