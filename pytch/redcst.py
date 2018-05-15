@@ -471,24 +471,24 @@ class FunctionCallExpr(Expr):
         super().__init__(parent)
         self.origin = origin
         self.offset = offset
-        self._n_receiver: Optional[Expr] = None
+        self._n_callee: Optional[Expr] = None
         self._n_argument_list: Optional[ArgumentList] = None
 
     @property
-    def n_receiver(self) -> Optional[Expr]:
-        if self.origin.n_receiver is None:
+    def n_callee(self) -> Optional[Expr]:
+        if self.origin.n_callee is None:
             return None
-        if self._n_receiver is not None:
-            return self._n_receiver
+        if self._n_callee is not None:
+            return self._n_callee
         offset = (
             self.offset
         )
-        result = GREEN_TO_RED_NODE_MAP[self.origin.n_receiver.__class__](
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_callee.__class__](
             parent=self,
-            origin=self.origin.n_receiver,
+            origin=self.origin.n_callee,
             offset=offset,
         )
-        self._n_receiver = result
+        self._n_callee = result
         return result
 
     @property
@@ -500,8 +500,8 @@ class FunctionCallExpr(Expr):
         offset = (
             self.offset
             + (
-                self.n_receiver.full_width
-                if self.n_receiver is not None else
+                self.n_callee.full_width
+                if self.n_callee is not None else
                 0
             )
         )
@@ -528,7 +528,7 @@ class FunctionCallExpr(Expr):
     @property
     def children(self) -> List[Optional[Union[Token, Node]]]:
         return [
-            self.n_receiver,
+            self.n_callee,
             self.n_argument_list,
         ]
 

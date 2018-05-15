@@ -551,7 +551,7 @@ class Parser:
                 (state, n_expr) = self.parse_function_call(
                     state,
                     current_token=token,
-                    n_receiver=n_expr,
+                    n_callee=n_expr,
                 )
             else:
                 break
@@ -629,11 +629,11 @@ class Parser:
         self,
         state: State,
         current_token: Token,
-        n_receiver: Expr,
+        n_callee: Expr,
     ) -> Tuple[State, Optional[FunctionCallExpr]]:
         (state, n_argument_list) = self.parse_argument_list(state)
         return (state, FunctionCallExpr(
-            n_receiver=n_receiver,
+            n_callee=n_callee,
             n_argument_list=n_argument_list,
         ))
 

@@ -243,19 +243,19 @@ class ArgumentList(Node):
 class FunctionCallExpr(Expr):
     def __init__(
         self,
-        n_receiver: Optional[Expr],
+        n_callee: Optional[Expr],
         n_argument_list: Optional[ArgumentList],
     ) -> None:
         super().__init__([
-            n_receiver,
+            n_callee,
             n_argument_list,
         ])
-        self._n_receiver = n_receiver
+        self._n_callee = n_callee
         self._n_argument_list = n_argument_list
 
     @property
-    def n_receiver(self) -> Optional[Expr]:
-        return self._n_receiver
+    def n_callee(self) -> Optional[Expr]:
+        return self._n_callee
 
     @property
     def n_argument_list(self) -> Optional[ArgumentList]:

@@ -166,10 +166,10 @@ def compile_function_call_expr(
     env: Env,
     function_call_expr: FunctionCallExpr,
 ) -> Tuple[Env, PyExpr, PyStmtList]:
-    n_receiver = function_call_expr.n_receiver
-    if n_receiver is not None:
-        (env, py_receiver_expr, py_receiver_statements) = \
-            compile_expr(env, n_receiver)
+    n_callee = function_call_expr.n_callee
+    if n_callee is not None:
+        (env, py_callee_expr, py_receiver_statements) = \
+            compile_expr(env, n_callee)
     else:
         return (env, PyUnavailableExpr("missing function callee"), [])
 
@@ -190,7 +190,7 @@ def compile_function_call_expr(
         py_argument_list_statements.extend(py_argument_list_statements)
 
     py_function_call_expr = PyFunctionCallExpr(
-        receiver=py_receiver_expr,
+        callee=py_callee_expr,
         arguments=py_arguments,
     )
     return (

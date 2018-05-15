@@ -33,5 +33,5 @@ ArgumentList(Node)
     t_rparen: Optional[Token]
 
 FunctionCallExpr(Expr)
-    n_receiver: Optional[Expr]
+    n_callee: Optional[Expr]
     n_argument_list: Optional[ArgumentList]

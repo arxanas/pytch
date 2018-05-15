@@ -7,7 +7,7 @@ CompiledOutput = List[str]
 class PyExpr:
     def compile(self) -> str:
         raise NotImplementedError(
-            f"`PyExpr.compile` not implemented by {self.__class__.__name__}",
+            f"`PyExpr.ile` not implemented by {self.__class__.__name__}",
         )
 
 
@@ -45,8 +45,8 @@ class PyArgument:
 
 
 class PyFunctionCallExpr(PyExpr):
-    def __init__(self, receiver: PyExpr, arguments: List[PyArgument]) -> None:
-        self.receiver = receiver
+    def __init__(self, callee: PyExpr, arguments: List[PyArgument]) -> None:
+        self.callee = callee
         self.arguments = arguments
 
     def compile(self) -> str:
@@ -54,7 +54,7 @@ class PyFunctionCallExpr(PyExpr):
         for argument in self.arguments:
             compiled_arguments.append(argument.compile())
         compiled_arguments_str = ", ".join(compiled_arguments)
-        return f"{self.receiver.compile()}({compiled_arguments_str})"
+        return f"{self.callee.compile()}({compiled_arguments_str})"
 
 
 class PyStmt:
