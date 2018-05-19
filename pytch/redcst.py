@@ -32,6 +32,12 @@ class Node:
             f"class {self.__class__.__name__} should implement `full_width`",
         )
 
+    @property
+    def offset_range(self) -> OffsetRange:
+        raise NotImplementedError(
+            f"class {self.__class__.__name__} should implement `offset_range`",
+        )
+
 
 class Expr(Node):
     pass
