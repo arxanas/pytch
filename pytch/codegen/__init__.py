@@ -12,6 +12,7 @@ from .py3ast import (
     PyUnavailableExpr,
 )
 from ..binder import Bindation
+from ..errors import Error
 from ..redcst import (
     Expr,
     FunctionCallExpr,
@@ -82,6 +83,7 @@ class Env:
 
 class Codegenation:
     def __init__(self, statements: PyStmtList) -> None:
+        self.errors: List[Error] = []
         self._statements = statements
 
     def get_compiled_output(self) -> str:

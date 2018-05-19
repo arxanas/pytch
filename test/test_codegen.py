@@ -4,7 +4,7 @@ import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
 from pytch import FileInfo
-from pytch.__main__ import do_compile
+from pytch.__main__ import run_file
 
 
 def get_codegen_tests() -> Iterator[CaseInfo]:
@@ -24,11 +24,10 @@ def make_result(
     source_code: str,
     capsys: Any,
 ) -> CaseResult:
-    compiled_output = do_compile(FileInfo(
+    run_file(FileInfo(
         file_path=input_filename,
         source_code=source_code,
     ))
-    exec(compiled_output)
     (output, error) = capsys.readouterr()
     if not error:
         error = None

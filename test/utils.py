@@ -115,10 +115,17 @@ def generate(
     make_result: Callable[[str, str, Any], CaseResult],
     capsys: Any,
 ) -> None:
+    def log(message: str) -> None:
+        if capsys is not None:
+            with capsys.disabled():
+                print(message)
+        else:
+            print(message)
+
     for test_info in tests:
         with open(test_info.input_filename) as input_file:
             input = input_file.read()
-        print(f"processing {test_info.input_filename}")
+        log(f"processing {test_info.input_filename}")
         result = make_result(
             test_info.input_filename,
             input,
@@ -138,7 +145,7 @@ def generate(
                 with open(test_info.error_filename, "w") as error_file:
                     error_file.write(error)
         else:
-            print(f"file exists, not generating: {test_info.output_filename}")
+            log(f"file exists, not generating: {test_info.output_filename}")
 
 
 def get_red_cst(file_info: FileInfo) -> SyntaxTree:

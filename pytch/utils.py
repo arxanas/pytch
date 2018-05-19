@@ -12,3 +12,6 @@ def splitlines(s: str) -> List[str]:
     if lines[-1] == "":
         lines = lines[:-1]
     return lines
+
+
+__all__ = ["splitlines"]

@@ -3,8 +3,8 @@ import sys
 
 import afl
 
-from pytch import FileInfo
-from pytch.__main__ import run_file
+from . import FileInfo
+from .__main__ import run_file
 
 
 def main() -> None:
