@@ -11,13 +11,15 @@ def test_binder() -> None:
     file_info = FileInfo(file_path="<stdin>", source_code="""\
 let foo =
   let bar = 3
-  foo
+  bar
 """)
     red_cst = get_red_cst(file_info)
     bindation = bind(file_info=file_info, syntax_tree=red_cst)
     [outer_let, inner_let] = Query(red_cst).find_instances(LetExpr)
-    [foo_ident] = Query(red_cst).find_instances(IdentifierExpr)
-    assert bindation.get(foo_ident) == [outer_let.n_pattern]
+    [bar_ident] = Query(red_cst).find_instances(IdentifierExpr)
+    assert bar_ident.t_identifier is not None
+    assert bar_ident.t_identifier.text == "bar"
+    assert bindation.get(bar_ident) == [inner_let.n_pattern]
 
 
 def test_binder_error() -> None:

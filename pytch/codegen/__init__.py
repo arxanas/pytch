@@ -8,8 +8,10 @@ from .py3ast import (
     PyExpr,
     PyExprStmt,
     PyFunctionCallExpr,
+    PyFunctionStmt,
     PyIdentifierExpr,
     PyLiteralExpr,
+    PyParameter,
     PyStmtList,
     PyUnavailableExpr,
 )
@@ -28,6 +30,14 @@ from ..redcst import (
 
 @attr.s(auto_attribs=True, frozen=True)
 class Env:
+    """Environment for codegen with the Python 3 backend.
+
+    We keep track of the emitted variable bindings here. We may need to emit
+    extra variables that don't exist in the source code as temporaries, and
+    we need to account for the differences in scoping between Pytch and
+    Python (for example, function bindings aren't recursive by default in
+    Pytch, but are in Python).
+    """
     bindation: Bindation
     scopes: List[Dict[VariablePattern, str]]
 
@@ -46,6 +56,12 @@ class Env:
         variable_pattern: VariablePattern,
         preferred_name: str,
     ) -> Tuple["Env", str]:
+        """Add a binding for a variable that exists in the source code.
+
+        `preferred_name` is used as the preferred Python variable name, but a
+        non-colliding name will be generated if there is already such a name
+        in the current Python scope.
+        """
         python_name = self._get_name(preferred_name)
         current_scope = dict(self.scopes[-1])
         current_scope[variable_pattern] = python_name
@@ -109,8 +125,8 @@ def compile_expr(env: Env, expr: Expr) -> Tuple[
     #
     #     map(helper, some_list)
     #
-    # In this case, `helper` would be the `PyExpr` above, and the definition of
-    # `helper` would be the `PyStmtList`.
+    # In this case, the expression `helper` would be the `PyExpr` above, and
+    # the definition of the helper function would be the `PyStmtList`.
     PyStmtList,
 ]:
     if isinstance(expr, LetExpr):
@@ -129,20 +145,27 @@ def compile_let_expr(
     env: Env,
     let_expr: LetExpr,
 ) -> Tuple[Env, PyExpr, PyStmtList]:
-    pattern = let_expr.n_pattern
-    value = let_expr.n_value
-    py_binding_statements: PyStmtList = []
-    if pattern is not None and value is not None:
-        assert isinstance(pattern, VariablePattern), \
-            f"Unhandled pattern type {pattern.__class__.__name__}"
+    n_pattern = let_expr.n_pattern
+    n_value = let_expr.n_value
+    py_binding_statements: PyStmtList
+    if n_pattern is not None and n_value is not None:
+        assert isinstance(n_pattern, VariablePattern), \
+            f"Unhandled pattern type {n_pattern.__class__.__name__}"
 
-        t_identifier = pattern.t_identifier
-        if t_identifier is not None:
+        t_identifier = n_pattern.t_identifier
+        if t_identifier is None:
+            return (env, PyUnavailableExpr("missing let-binding pattern"), [])
+
+        n_parameter_list = None
+        if let_expr.n_parameter_list is not None:
+            n_parameter_list = let_expr.n_parameter_list.parameters
+
+        if n_parameter_list is None:
             (env, name) = env.add_binding(
-                pattern,
+                n_pattern,
                 preferred_name=t_identifier.text,
             )
-            (env, value_expr, value_statements) = compile_expr(env, value)
+            (env, value_expr, value_statements) = compile_expr(env, n_value)
             py_binding_statements = [
                 *value_statements,
                 PyAssignmentStmt(
@@ -150,6 +173,45 @@ def compile_let_expr(
                     rhs=value_expr,
                 )
             ]
+        else:
+            function_name = t_identifier.text
+
+            env = env.push_scope()
+            py_parameters = []
+            for n_parameter in n_parameter_list:
+                n_parameter_pattern = n_parameter.n_pattern
+                if n_parameter_pattern is None:
+                    continue
+
+                assert isinstance(n_parameter_pattern, VariablePattern), \
+                    f"Unhandled pattern type " \
+                    + f"{n_parameter_pattern.__class__.__name__}"
+                t_pattern_identifier = n_parameter_pattern.t_identifier
+                if t_pattern_identifier is None:
+                    continue
+
+                parameter_name = t_pattern_identifier.text
+                (env, parameter_name) = env.add_binding(
+                    variable_pattern=n_parameter_pattern,
+                    preferred_name=parameter_name,
+                )
+                py_parameters.append(PyParameter(
+                    name=parameter_name,
+                ))
+
+            (env, py_function_body_return_expr, py_function_body_statements) = \
+                compile_expr(env, n_value)
+            env = env.pop_scope()
+            (env, actual_function_name) = env.add_binding(
+                n_pattern,
+                preferred_name=function_name,
+            )
+            py_binding_statements = [PyFunctionStmt(
+                name=actual_function_name,
+                parameters=py_parameters,
+                body_statements=py_function_body_statements,
+                return_expr=py_function_body_return_expr,
+            )]
 
     if let_expr.n_body is not None:
         (env, body_expr, body_statements) = compile_expr(env, let_expr.n_body)

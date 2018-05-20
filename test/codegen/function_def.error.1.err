@@ -1,0 +1,9 @@
+UNBOUND_NAME[2000] in test/codegen/function_def.error.1.pytch, line 2, character 1:
+Error: I couldn't find a variable in the current scope with the name `x`.
+   +------------------------------------------------------------------------+
+   | test/codegen/function_def.error.1.pytch                                |
+ 1 | let foo(x) = x                                                         |
+ 2 | x                                                                      |
+   | ^ Error: I couldn't find a variable in the current scope with the name |
+   | `x`.                                                                   |
+   +------------------------------------------------------------------------+

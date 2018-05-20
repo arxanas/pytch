@@ -1,0 +1,3 @@
+let foo(x) = print(x)
+
+foo(1)

@@ -1,0 +1,3 @@
+let foo(x) = x
+let foo(y) = 2
+print(foo(1))

@@ -66,6 +66,20 @@ class PyStmt:
         )
 
 
+PyStmtList = List[PyStmt]
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class PyIndentedStmt:
+    statement: PyStmt
+
+    def compile(self) -> CompiledOutput:
+        return [
+            "    " + line
+            for line in self.statement.compile()
+        ]
+
+
 @attr.s(auto_attribs=True, frozen=True)
 class PyAssignmentStmt(PyStmt):
     lhs: PyIdentifierExpr
@@ -74,6 +88,52 @@ class PyAssignmentStmt(PyStmt):
     def compile(self) -> CompiledOutput:
         return [
             f"{self.lhs.compile()} = {self.rhs.compile()}"
+        ]
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class PyReturnStmt(PyStmt):
+    expr: PyExpr
+
+    def compile(self) -> CompiledOutput:
+        return [f"return {self.expr.compile()}"]
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class PyParameter:
+    name: str
+
+    def compile(self) -> str:
+        return self.name
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class PyFunctionStmt(PyStmt):
+    name: str
+    parameters: List[PyParameter]
+    body_statements: PyStmtList
+    return_expr: PyExpr
+
+    def compile(self) -> CompiledOutput:
+        parameters = ", ".join(
+            parameter.compile() for parameter in self.parameters,
+        )
+        body_statements = []
+        for statement in self.body_statements:
+            body_statements.extend(
+                PyIndentedStmt(statement=statement).compile(),
+            )
+
+        return_statement = PyIndentedStmt(
+            statement=PyReturnStmt(
+                expr=self.return_expr,
+            ),
+        )
+        body_statements.extend(return_statement.compile())
+
+        return [
+            f"def {self.name}({parameters}):",
+            *body_statements,
         ]
 
 
@@ -87,6 +147,3 @@ class PyExprStmt(PyStmt):
         return [
             f"{self.expr.compile()}"
         ]
-
-
-PyStmtList = List[PyStmt]
