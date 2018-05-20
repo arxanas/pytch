@@ -4,6 +4,7 @@ import attr
 
 from .utils import splitlines
 
+__version__ = "0.1"
 
 Offset = int
 """A zero-indexed offset into a file."""
