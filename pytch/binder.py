@@ -6,6 +6,7 @@ source `VariablePattern`.)
 """
 from typing import List, Mapping, Optional, Tuple
 
+import attr
 import distance
 
 from . import FileInfo, Range
@@ -27,20 +28,16 @@ GLOBAL_SCOPE: Mapping[str, List[VariablePattern]] = {
 }
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Bindation:
-    def __init__(
-        self,
-        bindings: Mapping[IdentifierExpr, List[VariablePattern]],
-        errors: List[Error],
-    ) -> None:
-        self._bindings = bindings
-        self.errors = errors
+    bindings: Mapping[IdentifierExpr, List[VariablePattern]]
+    errors: List[Error]
 
     def get(
         self,
         node: IdentifierExpr,
     ) -> Optional[List[VariablePattern]]:
-        return self._bindings.get(node)
+        return self.bindings.get(node)
 
 
 def get_names_bound_by_node(

@@ -220,7 +220,6 @@ let foo =
             Note(
                 file_info=file_info,
                 message="Did you mean `map` (a builtin)?",
-                range=None,
             ),
             Note(
                 file_info=file_info,

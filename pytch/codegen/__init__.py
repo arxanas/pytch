@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
+import attr
+
 from .py3ast import (
     PyArgument,
     PyAssignmentStmt,
@@ -24,26 +26,20 @@ from ..redcst import (
 )
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Env:
-    def __init__(
-        self,
-        bindation: Bindation,
-        scopes: List[Dict[VariablePattern, str]],
-    ) -> None:
-        self.bindation = bindation
-        self._scopes = scopes
+    bindation: Bindation
+    scopes: List[Dict[VariablePattern, str]]
 
-    def _update(self, scopes: List[Dict[VariablePattern, str]] = None) -> "Env":
-        if scopes is None:
-            scopes = self._scopes
-        return Env(bindation=self.bindation, scopes=scopes)
+    def _update(self, **kwargs) -> "Env":
+        return attr.evolve(self, **kwargs)
 
     def push_scope(self) -> "Env":
-        return self._update(scopes=self._scopes + [{}])
+        return self._update(scopes=self.scopes + [{}])
 
     def pop_scope(self) -> "Env":
-        assert self._scopes
-        return self._update(scopes=self._scopes[:-1])
+        assert self.scopes
+        return self._update(scopes=self.scopes[:-1])
 
     def add_binding(
         self,
@@ -51,10 +47,10 @@ class Env:
         preferred_name: str,
     ) -> Tuple["Env", str]:
         python_name = self._get_name(preferred_name)
-        current_scope = dict(self._scopes[-1])
+        current_scope = dict(self.scopes[-1])
         current_scope[variable_pattern] = python_name
         return (
-            self._update(scopes=self._scopes[:-1] + [current_scope]),
+            self._update(scopes=self.scopes[:-1] + [current_scope]),
             python_name,
         )
 
@@ -62,14 +58,14 @@ class Env:
         self,
         variable_pattern: VariablePattern,
     ) -> Optional[str]:
-        for scope in reversed(self._scopes):
+        for scope in reversed(self.scopes):
             if variable_pattern in scope:
                 return scope[variable_pattern]
         return None
 
     def _get_name(self, preferred_name: str) -> str:
         for suggested_name in self._suggest_names(preferred_name):
-            if suggested_name not in self._scopes[-1].values():
+            if suggested_name not in self.scopes[-1].values():
                 return suggested_name
         assert False, "`suggest_names` should loop forever"
 
@@ -81,14 +77,14 @@ class Env:
             i += 1
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Codegenation:
-    def __init__(self, statements: PyStmtList) -> None:
-        self.errors: List[Error] = []
-        self._statements = statements
+    statements: PyStmtList
+    errors: List[Error]
 
     def get_compiled_output(self) -> str:
         compiled_output_lines = []
-        for statement in self._statements:
+        for statement in self.statements:
             compiled_output_lines.extend(statement.compile())
         return "".join(
             line + "\n"
@@ -244,9 +240,12 @@ def compile_int_literal_expr(
 def codegen(syntax_tree: SyntaxTree, bindation: Bindation) -> Codegenation:
     env = Env(bindation=bindation, scopes=[{}])
     if syntax_tree.n_expr is None:
-        return Codegenation(statements=[])
+        return Codegenation(statements=[], errors=[])
     (env, expr, statements) = compile_expr(env, syntax_tree.n_expr)
-    return Codegenation(statements=statements + [PyExprStmt(expr=expr)])
+    return Codegenation(
+        statements=statements + [PyExprStmt(expr=expr)],
+        errors=[],
+    )
 
 
 __all__ = ["codegen"]

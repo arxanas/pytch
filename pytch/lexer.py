@@ -57,9 +57,10 @@ from typing import (
     Mapping,
     Optional,
     Pattern,
-    Sequence,
     Tuple,
 )
+
+import attr
 
 from . import FileInfo, OffsetRange
 from .errors import Error, ErrorCode, Severity
@@ -95,93 +96,28 @@ class TokenKind(Enum):
     DUMMY_IN = "the end of a 'let' binding"
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Trivium:
-    def __init__(self, kind: TriviumKind, text: str) -> None:
-        self._kind = kind
-        self._text = text
-
-    def __repr__(self) -> str:
-        return f"<Trivium kind={self.kind.name} text={self.text!r}>"
-
-    def __eq__(self, other: object) -> bool:
-        if self is other:
-            return True
-        if not isinstance(other, Trivium):
-            return False
-        return self.kind == other.kind and self.text == other.text
-
-    @property
-    def kind(self) -> TriviumKind:
-        return self._kind
-
-    @property
-    def text(self) -> str:
-        return self._text
+    kind: TriviumKind
+    text: str
 
     @property
     def width(self) -> int:
-        return len(self._text)
+        return len(self.text)
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Token:
-    def __init__(
-        self,
-        kind: TokenKind,
-        text: str,
-        leading_trivia: List[Trivium],
-        trailing_trivia: List[Trivium],
-    ) -> None:
-        self._kind = kind
-        self._text = text
-        self._leading_trivia = leading_trivia
-        self._trailing_trivia = trailing_trivia
-
-    def __repr__(self) -> str:
-        r = f"<Token kind={self.kind.name}"
-        if self.leading_trivia:
-            r += f" leading={self.leading_trivia!r}"
-        if self.trailing_trivia:
-            r += f" trailing={self.trailing_trivia!r}"
-        r += ">"
-        return r
-
-    def __eq__(self, other: object) -> bool:
-        if self is other:
-            return True
-        if not isinstance(other, Token):
-            return False
-        return (
-            self.text == other.text
-            and self.kind == other.kind
-            and self.leading_trivia == other.leading_trivia
-            and self.trailing_trivia == other.trailing_trivia
-        )
+    kind: TokenKind
+    text: str
+    leading_trivia: List[Trivium]
+    trailing_trivia: List[Trivium]
 
     def update(
         self,
-        kind: TokenKind = None,
-        text: str = None,
-        leading_trivia: List[Trivium] = None,
-        trailing_trivia: List[Trivium] = None,
+        **kwargs,
     ) -> "Token":
-        if kind is None:
-            kind = self._kind
-        if text is None:
-            text = self._text
-        if leading_trivia is None:
-            leading_trivia = self._leading_trivia
-        if trailing_trivia is None:
-            trailing_trivia = self._trailing_trivia
-        return Token(
-            kind=kind,
-            text=text,
-            leading_trivia=leading_trivia,
-            trailing_trivia=trailing_trivia,
-        )
-
-    @property
-    def kind(self) -> TokenKind:
-        return self._kind
+        return attr.evolve(self, **kwargs)
 
     @property
     def is_dummy(self):
@@ -189,10 +125,6 @@ class Token:
             self.kind == TokenKind.EOF
             or self.kind.name.lower().startswith("dummy")
         )
-
-    @property
-    def text(self) -> str:
-        return self._text
 
     @property
     def full_text(self) -> str:
@@ -204,7 +136,7 @@ class Token:
 
     @property
     def width(self) -> int:
-        return len(self._text)
+        return len(self.text)
 
     @property
     def full_width(self) -> int:
@@ -212,16 +144,8 @@ class Token:
         return self.leading_width + self.width + self.trailing_width
 
     @property
-    def leading_trivia(self) -> Sequence[Trivium]:
-        return self._leading_trivia
-
-    @property
     def leading_width(self) -> int:
         return sum(trivium.width for trivium in self.leading_trivia)
-
-    @property
-    def trailing_trivia(self) -> Sequence[Trivium]:
-        return self._trailing_trivia
 
     @property
     def trailing_width(self) -> int:
@@ -235,35 +159,26 @@ class Token:
         )
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class State:
-    def __init__(
-        self,
-        file_info: FileInfo,
-        offset: int,
-    ) -> None:
-        self.file_info = file_info
-        self.offset = offset
+    file_info: FileInfo
+    offset: int
 
     def update(
         self,
-        offset: int = None,
+        **kwargs,
     ):
-        if offset is None:
-            offset = self.offset
-        return State(
-            file_info=self.file_info,
-            offset=offset,
-        )
+        return attr.evolve(self, **kwargs)
 
     def advance_offset(self, offset_delta: int) -> "State":
         assert offset_delta >= 0
         return self.update(offset=self.offset + offset_delta)
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Lexation:
-    def __init__(self, tokens: List[Token], errors: List[Error]) -> None:
-        self.tokens = tokens
-        self.errors = errors
+    tokens: List[Token]
+    errors: List[Error]
 
     @property
     def full_width(self) -> int:
@@ -360,16 +275,16 @@ class Lexer:
                 ))
                 for trivium_kind, regex in trivia_patterns.items()
             ]
-            matches = [
+            filtered_matches = [
                 (trivium_kind, match)
                 for trivium_kind, match in matches
                 if match is not None
             ]
-            if not matches:
+            if not filtered_matches:
                 return trivia
-            assert len(matches) == 1, \
+            assert len(filtered_matches) == 1, \
                 "More than one possible type of trivia found"
-            trivium_kind, match = matches[0]
+            trivium_kind, match = filtered_matches[0]
 
             trivium = Trivium(
                 kind=trivium_kind,
@@ -426,15 +341,15 @@ class Lexer:
             ))
             for token_kind, regex in token_patterns.items()
         ]
-        matches = [
+        filtered_matches = [
             (token_kind, match)
             for token_kind, match in matches
             if match is not None
         ]
-        if not matches:
+        if not filtered_matches:
             return (state, None)
 
-        (kind, match) = max(matches, key=lambda x: len(x[1].group()))
+        (kind, match) = max(filtered_matches, key=lambda x: len(x[1].group()))
         token_text = match.group()
         state = state.advance_offset(len(token_text))
         (state, trailing_trivia) = self.lex_trailing_trivia(state)

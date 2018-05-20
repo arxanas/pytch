@@ -16,6 +16,7 @@ from typing import (
     Union,
 )
 
+import attr
 import click
 from typing_extensions import Protocol
 
@@ -44,50 +45,32 @@ class ErrorCode(Enum):
     SHOULD_END_WITH_EOF = 9002
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Glyphs:
     """The set of glyphs to be used when printing out error messages."""
 
-    def __init__(
-        self,
-        make_colored: Callable[[str, str], str],
-        make_bold: Callable[[str], str],
-        make_inverted: Callable[[str], str],
-        box_vertical: str,
-        box_horizontal: str,
-        box_upper_left: str,
-        box_upper_right: str,
-        box_lower_left: str,
-        box_lower_right: str,
-        box_continuation_left: str,
-        box_continuation_right: str,
-        underline_start_character: str,
-        underline_character: str,
-        underline_end_character: str,
-        underline_point_character: str,
-        vertical_colon: str,
-    ) -> None:
-        self.make_colored = make_colored
-        self.make_bold = make_bold
-        self.make_inverted = make_inverted
-        self.box_vertical = box_vertical
-        self.box_horizontal = box_horizontal
-        self.box_upper_left = box_upper_left
-        self.box_upper_right = box_upper_right
-        self.box_lower_left = box_lower_left
-        self.box_lower_right = box_lower_right
-        self.box_continuation_left = box_continuation_left
-        self.box_continuation_right = box_continuation_right
-        self.underline_start_character = underline_start_character
-        self.underline_character = underline_character
-        self.underline_end_character = underline_end_character
-        self.underline_point_character = underline_point_character
-        self.vertical_colon = vertical_colon
+    make_colored: Callable[[str, str], str]
+    make_bold: Callable[[str], str]
+    make_inverted: Callable[[str], str]
+    box_vertical: str
+    box_horizontal: str
+    box_upper_left: str
+    box_upper_right: str
+    box_lower_left: str
+    box_lower_right: str
+    box_continuation_left: str
+    box_continuation_right: str
+    underline_start_character: str
+    underline_character: str
+    underline_end_character: str
+    underline_point_character: str
+    vertical_colon: str
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class OutputEnv:
-    def __init__(self, glyphs: Glyphs, max_width: int) -> None:
-        self.glyphs = glyphs
-        self.max_width = max_width
+    glyphs: Glyphs
+    max_width: int
 
 
 class Diagnostic(Protocol):
@@ -112,75 +95,20 @@ class Diagnostic(Protocol):
         ...
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class _DiagnosticContext:
-    def __init__(
-        self,
-        file_info: FileInfo,
-        line_ranges: Optional[List[Tuple[int, int]]],
-    ) -> None:
-        self.file_info = file_info
-        self.line_ranges = line_ranges
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, _DiagnosticContext):
-            return False
-        return (
-            self.file_info == other.file_info
-            and self.line_ranges == other.line_ranges
-        )
-
-    def __repr__(self) -> str:
-        return (
-            f"<DiagnosticContext"
-            + f" file_info={self.file_info!r}"
-            + f" line_ranges={self.line_ranges!r}"
-            + f">"
-        )
+    file_info: FileInfo
+    line_ranges: Optional[List[Tuple[int, int]]]
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Note:
     color = "blue"
     preamble_message = "Note"
 
-    def __init__(
-        self,
-        file_info: FileInfo,
-        message: str,
-        range: Range = None,
-    ) -> None:
-        self._file_info = file_info
-        self._message = message
-        self._range = range
-
-    def __repr__(self) -> str:
-        return (
-            f"<Note" +
-            f" message={self.message!r}" +
-            f" range={self.range!r}" +
-            f">"
-        )
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Note):
-            return False
-        return True
-        return (
-            self._file_info == other._file_info
-            and self._message == other._message
-            and self._range == other._range
-        )
-
-    @property
-    def file_info(self) -> FileInfo:
-        return self._file_info
-
-    @property
-    def message(self) -> str:
-        return self._message
-
-    @property
-    def range(self) -> Optional[Range]:
-        return self._range
+    file_info: FileInfo
+    message: str
+    range: Optional[Range] = attr.ib(default=None)
 
 
 class Severity(Enum):
@@ -188,57 +116,14 @@ class Severity(Enum):
     WARNING = "warning"
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Error:
-    def __init__(
-        self,
-        file_info: FileInfo,
-        code: ErrorCode,
-        severity: Severity,
-        message: str,
-        notes: List[Note],
-        range: Range = None,
-    ) -> None:
-        self._file_info = file_info
-        self._code = code
-        self._severity = severity
-        self._message = message
-        self._notes = notes
-        self._range = range
-
-    def __repr__(self) -> str:
-        return (
-            f"<Error" +
-            f" code={self.code!r}" +
-            f" severity={self.severity!r}" +
-            f" message={self.message!r}" +
-            f" notes={self.notes!r}" +
-            f" range={self.range!r}" +
-            f">"
-        )
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Error):
-            return False
-        return (
-            self._file_info == other._file_info
-            and self._code == other._code
-            and self._severity == other._severity
-            and self._message == other._message
-            and self._notes == other._notes
-            and self._range == other._range
-        )
-
-    @property
-    def file_info(self) -> FileInfo:
-        return self._file_info
-
-    @property
-    def code(self) -> ErrorCode:
-        return self._code
-
-    @property
-    def severity(self) -> Severity:
-        return self._severity
+    file_info: FileInfo
+    code: ErrorCode
+    severity: Severity
+    message: str
+    notes: List[Note]
+    range: Optional[Range] = attr.ib(default=None)
 
     @property
     def color(self) -> str:
@@ -252,18 +137,6 @@ class Error:
     @property
     def preamble_message(self) -> str:
         return self.severity.value.title()
-
-    @property
-    def message(self) -> str:
-        return self._message
-
-    @property
-    def notes(self) -> List[Note]:
-        return self._notes
-
-    @property
-    def range(self) -> Optional[Range]:
-        return self._range
 
 
 def get_full_diagnostic_message(
@@ -327,25 +200,11 @@ def get_output_env(ascii: bool) -> OutputEnv:
     return OutputEnv(glyphs=glyphs, max_width=max_width)
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class _MessageLine:
-    def __init__(
-        self,
-        text: str,
-        color: Optional[str],
-        is_wrappable: bool,
-    ) -> None:
-        self.text = text
-        self.color = color
-        self.is_wrappable = is_wrappable
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, _MessageLine):
-            return False
-        return (
-            self.text == other.text
-            and self.color == other.color
-            and self.is_wrappable == other.is_wrappable
-        )
+    text: str
+    color: Optional[str]
+    is_wrappable: bool
 
     def wrap(self, max_width: int) -> List[str]:
         match = re.match(r"\s*\S+", self.text)
@@ -367,6 +226,7 @@ class _MessageLine:
         return max(map(len, self.wrap(max_width)))
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Segment:
     """A box-enclosed segment of the error display.
 
@@ -390,31 +250,26 @@ class Segment:
     constitute "segments".
     """
 
-    def __init__(
-        self,
-        output_env: OutputEnv,
-        header: Optional[str],
-        gutter_lines: Optional[List[str]],
-        message_lines: List[_MessageLine],
+    output_env: OutputEnv
+    header: Optional[str]
+    gutter_lines: Optional[List[str]] = attr.ib()
+    message_lines: List[_MessageLine]
 
-        # Whether this segment is a vertical-colon-delimited continuation of
-        # the previous segment.
-        is_context_continuation: bool = False,
-    ) -> None:
-        if gutter_lines is not None:
-            assert len(gutter_lines) == len(message_lines)
-        self._output_env = output_env
-        self._header = header
-        self._gutter_lines = gutter_lines
-        self._message_lines = message_lines
-        self._is_context_continuation = is_context_continuation
+    @gutter_lines.validator
+    def check(self, attribute, value) -> None:
+        if self.gutter_lines is not None:
+            assert len(self.gutter_lines) == len(self.message_lines)
+
+    is_context_continuation: bool = attr.ib(default=False)
+    """"Whether this segment is a vertical-colon-delimited continuation of
+    the previous segment."""
 
     @property
     def gutter_width(self) -> int:
-        if not self._gutter_lines:
+        if not self.gutter_lines:
             return 0
         num_padding_characters = len("  ")
-        max_gutter_line_length = max(len(line) for line in self._gutter_lines)
+        max_gutter_line_length = max(len(line) for line in self.gutter_lines)
         return num_padding_characters + max_gutter_line_length
 
     def get_box_width(self, gutter_width: int) -> int:
@@ -422,17 +277,17 @@ class Segment:
         num_padding_characters = len("  ")
         max_message_line_length = max(
             line.get_wrapped_width(
-                self._output_env.max_width
+                self.output_env.max_width
                 - num_box_characters
                 - num_padding_characters
                 - gutter_width
             )
-            for line in self._message_lines
+            for line in self.message_lines
         )
-        if self._header is not None:
+        if self.header is not None:
             max_message_line_length = max(
                 max_message_line_length,
-                len(self._header),
+                len(self.header),
             )
         return (
             max_message_line_length
@@ -447,16 +302,16 @@ class Segment:
         gutter_width: int,
         box_width: int,
     ) -> List[str]:
-        if self._gutter_lines is None:
-            gutter_lines = [""] * len(self._message_lines)
+        if self.gutter_lines is None:
+            gutter_lines = [""] * len(self.message_lines)
         else:
-            gutter_lines = self._gutter_lines
+            gutter_lines = self.gutter_lines
 
         empty_gutter = " " * gutter_width
 
         lines = []
 
-        glyphs = self._output_env.glyphs
+        glyphs = self.output_env.glyphs
         # if self._is_context_continuation:
         #     assert not is_first, (
         #         "The first context should not be a continuation context, "
@@ -478,8 +333,8 @@ class Segment:
             top_line += glyphs.box_continuation_right
         lines.append(empty_gutter + top_line)
 
-        if self._header:
-            header_line = (" " + self._header).ljust(box_width - 2)
+        if self.header:
+            header_line = (" " + self.header).ljust(box_width - 2)
             header_line = (
                 glyphs.box_vertical
                 + glyphs.make_bold(header_line)
@@ -491,7 +346,7 @@ class Segment:
         num_padding_characters = len("  ")
         padding = num_box_characters + num_padding_characters
 
-        for gutter_line, message_line in zip(gutter_lines, self._message_lines):
+        for gutter_line, message_line in zip(gutter_lines, self.message_lines):
             if message_line.is_wrappable:
                 wrapped_message_lines = message_line.wrap(box_width - padding)
             else:

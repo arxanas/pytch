@@ -13,6 +13,8 @@ therefore reference cycles).
 """
 from typing import Iterator, List, Optional, Tuple
 
+import attr
+
 from . import FileInfo, OffsetRange, Range
 from .errors import Error, ErrorCode, Note, Severity
 from .greencst import (
@@ -43,10 +45,10 @@ def walk_tokens(node: Node) -> Iterator[Token]:
             assert False, f"Unexpected node child type: {child!r}"
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class Parsation:
-    def __init__(self, green_cst: SyntaxTree, errors: List[Error]) -> None:
-        self.green_cst = green_cst
-        self.errors = errors
+    green_cst: SyntaxTree
+    errors: List[Error]
 
     @property
     def is_buggy(self) -> bool:
@@ -63,55 +65,46 @@ class ParseException(Exception):
         self.error = error
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class State:
-    def __init__(
-        self,
-        file_info: FileInfo,
-        tokens: List[Token],
-        token_index: int,
-        offset: int,
-        errors: List[Error],
-        is_recovering: bool,
-        error_tokens: List[Token],
-        sync_token_kinds: List[List[TokenKind]],
-    ) -> None:
-        """The parser state.
+    file_info: FileInfo
+    tokens: List[Token] = attr.ib()
+    """The list of tokens that make up the file."""
 
-        :param file_info: Metadata about the file that we're parsing.
-        :param tokens: The list of tokens that make up the file.
-        :param token_index: The index into the token list indicating where we
-            currently are in the process of parsing.
-        :param offset: The offset into the source file. Must be kept in sync
-            with `token_index`.
-        :param errors: A list of errors that have occurred during parsing so
-            far.
-        :param is_recovering: Whether or not we are in the process of
-            recovering from a parser error. While recovering, we'll consume
-            tokens blindly until we find a token of a kind that we're
-            expecting (a synchronization token), and resume parsing from
-            there.
-        :param error_tokens: A list of tokens that have been consumed during
-            error recovery.
-        :param sync_token_kinds: A stack of collections of tokens. Some
-            callers will push a set of tokens into this stack. This set
-            indicates tokens that can be synchronized to. If a function
-            deeper in the stack encounters an error, then parsing will
-            synchronize to the next token that appears somewhere in this
-            stack, and unwind to the its caller.
-        """
-        assert len(tokens) > 0, "Expected at least one token (the EOF token)."
-        assert tokens[-1].kind == TokenKind.EOF, \
+    @tokens.validator
+    def check(self, attribute, value) -> None:
+        assert len(self.tokens) > 0, \
+            "Expected at least one token (the EOF token)."
+        assert self.tokens[-1].kind == TokenKind.EOF, \
             "Token stream must end with an EOF token."
-        assert token_index < len(tokens)
 
-        self.file_info = file_info
-        self.tokens = tokens
-        self.token_index = token_index
-        self.offset = offset
-        self.errors = errors
-        self.is_recovering = is_recovering
-        self.error_tokens = error_tokens
-        self.sync_token_kinds = sync_token_kinds
+    token_index: int
+    """The index into the token list indicating where we currently are in the
+    process of parsing."""
+
+    offset: int
+    """The offset into the source file. Must be kept in sync
+    with `token_index`."""
+
+    errors: List[Error]
+    """A list of errors that have occurred during parsing so far."""
+
+    is_recovering: bool
+    """Whether or not we are in the process of recovering from a parser
+    error. While recovering, we'll consume tokens blindly until we find a
+    token of a kind that we're expecting (a synchronization token), and
+    resume parsing from there."""
+
+    error_tokens: List[Token]
+    """A list of tokens that have been consumed during error recovery."""
+
+    sync_token_kinds: List[List[TokenKind]]
+    """A stack of collections of tokens. Some callers will push a set of
+    tokens into this stack. This set indicates tokens that can be
+    synchronized to. If a function deeper in the stack encounters an error,
+    then parsing will synchronize to the next token that appears somewhere in
+    this stack, and unwind to the its caller."""
+    # assert token_index < len(tokens)
 
     @property
     def end_of_file_offset_range(self) -> OffsetRange:
@@ -193,41 +186,9 @@ class State:
 
     def update(
         self,
-        file_info: FileInfo = None,
-        tokens: List[Token] = None,
-        token_index: int = None,
-        offset: int = None,
-        errors: List[Error] = None,
-        is_recovering: bool = None,
-        error_tokens: List[Token] = None,
-        sync_token_kinds: List[List[TokenKind]] = None,
+        **kwargs,
     ) -> "State":
-        if file_info is None:
-            file_info = self.file_info
-        if tokens is None:
-            tokens = self.tokens
-        if token_index is None:
-            token_index = self.token_index
-        if offset is None:
-            offset = self.offset
-        if errors is None:
-            errors = self.errors
-        if is_recovering is None:
-            is_recovering = self.is_recovering
-        if error_tokens is None:
-            error_tokens = self.error_tokens
-        if sync_token_kinds is None:
-            sync_token_kinds = self.sync_token_kinds
-        return State(
-            file_info=file_info,
-            tokens=tokens,
-            token_index=token_index,
-            offset=offset,
-            errors=errors,
-            is_recovering=is_recovering,
-            error_tokens=error_tokens,
-            sync_token_kinds=sync_token_kinds,
-        )
+        return attr.evolve(self, **kwargs)
 
     def add_error(self, error: Error) -> "State":
         return self.update(errors=self.errors + [error])

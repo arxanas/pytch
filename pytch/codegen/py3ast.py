@@ -1,5 +1,7 @@
 from typing import List
 
+import attr
+
 
 CompiledOutput = List[str]
 
@@ -7,47 +9,47 @@ CompiledOutput = List[str]
 class PyExpr:
     def compile(self) -> str:
         raise NotImplementedError(
-            f"`PyExpr.ile` not implemented by {self.__class__.__name__}",
+            f"`PyExpr.compile` not implemented by {self.__class__.__name__}",
         )
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class PyUnavailableExpr(PyExpr):
     """Indicates a value deriving from malformed source code."""
-    def __init__(self, reason: str) -> None:
-        self.reason = reason
+    reason: str
 
     def compile(self) -> str:
         return f'"<pytch unavailable expr: {self.reason}>"'
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class PyIdentifierExpr(PyExpr):
-    def __init__(self, name: str) -> None:
-        self.name = name
+    name: str
 
     def compile(self) -> str:
         return self.name
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class PyLiteralExpr(PyExpr):
-    def __init__(self, value: str) -> None:
-        self.value = value
+    value: str
 
     def compile(self) -> str:
         return self.value
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class PyArgument:
-    def __init__(self, value: PyExpr) -> None:
-        self.value = value
+    value: PyExpr
 
     def compile(self) -> str:
         return self.value.compile()
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class PyFunctionCallExpr(PyExpr):
-    def __init__(self, callee: PyExpr, arguments: List[PyArgument]) -> None:
-        self.callee = callee
-        self.arguments = arguments
+    callee: PyExpr
+    arguments: List[PyArgument]
 
     def compile(self) -> str:
         compiled_arguments = []
@@ -64,10 +66,10 @@ class PyStmt:
         )
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class PyAssignmentStmt(PyStmt):
-    def __init__(self, lhs: PyIdentifierExpr, rhs: PyExpr) -> None:
-        self.lhs = lhs
-        self.rhs = rhs
+    lhs: PyIdentifierExpr
+    rhs: PyExpr
 
     def compile(self) -> CompiledOutput:
         return [
@@ -75,9 +77,9 @@ class PyAssignmentStmt(PyStmt):
         ]
 
 
+@attr.s(auto_attribs=True, frozen=True)
 class PyExprStmt(PyStmt):
-    def __init__(self, expr: PyExpr) -> None:
-        self.expr = expr
+    expr: PyExpr
 
     def compile(self) -> CompiledOutput:
         if isinstance(self.expr, PyUnavailableExpr):
