@@ -753,13 +753,22 @@ class Parser:
         if state.is_recovering:
             return (state, None)
 
-        assert possible_token_kinds
-        possible_tokens_str = self.describe_token_kind(possible_token_kinds[0])
-        if len(possible_token_kinds) > 1:
-            possible_tokens_str += ", ".join(
-                token.value for token in possible_token_kinds[0:-1]
+        assert len(possible_token_kinds) > 0
+        if len(possible_token_kinds) == 1:
+            possible_tokens_str = self.describe_token_kind(
+                possible_token_kinds[0],
             )
-            possible_tokens_str += " or " + possible_token_kinds[-1].value
+        elif len(possible_token_kinds) == 2:
+            possible_tokens_str = " or ".join([
+                self.describe_token_kind(possible_token_kinds[0]),
+                possible_token_kinds[1].value,
+            ])
+        else:
+            possible_tokens_str = ", ".join(
+                token.value
+                for token in possible_token_kinds[:-1]
+            )
+            possible_tokens_str += ", or " + possible_token_kinds[-1].value
 
         if error is None:
             message = (
