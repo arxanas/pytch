@@ -137,6 +137,3 @@ def bind(file_info: FileInfo, syntax_tree: SyntaxTree) -> Bindation:
         bindings=bindings,
         errors=errors,
     )
-
-
-__all__ = ["bind"]

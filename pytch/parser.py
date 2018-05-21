@@ -813,6 +813,3 @@ class Parser:
 def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
     parser = Parser()
     return parser.parse(file_info=file_info, tokens=tokens)
-
-
-__all__ = ["parse"]

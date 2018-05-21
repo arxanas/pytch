@@ -246,6 +246,3 @@ def codegen(syntax_tree: SyntaxTree, bindation: Bindation) -> Codegenation:
         statements=statements + [PyExprStmt(expr=expr)],
         errors=[],
     )
-
-
-__all__ = ["codegen"]

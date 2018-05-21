@@ -105,11 +105,3 @@ def print_errors(errors: List[Error]) -> None:
     ascii = (not sys.stderr.isatty())
     for error in errors:
         sys.stderr.write("\n".join(get_error_lines(error, ascii=ascii)) + "\n")
-
-
-__all__ = [
-    "compile_file",
-    "interact",
-    "print_errors",
-    "run_file",
-]

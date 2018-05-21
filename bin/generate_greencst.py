@@ -7,7 +7,7 @@ import sys
 import textwrap
 from typing import List, Sequence
 
-from sttools import Child, get_exports, get_node_types, NodeType
+from sttools import Child, get_node_types, NodeType
 
 
 PREAMBLE = """\
@@ -88,10 +88,8 @@ def main() -> None:
         for name, children
         in sections.items()
     ]
-    exports = get_exports(sections.keys())
     sys.stdout.write(PREAMBLE)
-    sys.stdout.write("\n\n".join(class_defs) + "\n\n")
-    sys.stdout.write(exports)
+    sys.stdout.write("\n\n".join(class_defs))
 
 
 def get_children_parameter_list(children: Sequence[Child]) -> str:

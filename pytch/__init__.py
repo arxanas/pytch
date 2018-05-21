@@ -70,6 +70,3 @@ class FileInfo:
                 offset_range.end,
             )
         )
-
-
-__all__ = ["FileInfo", "Position", "Range"]

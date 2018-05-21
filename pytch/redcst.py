@@ -545,18 +545,3 @@ GREEN_TO_RED_NODE_MAP = {
     greencst.ArgumentList: ArgumentList,
     greencst.FunctionCallExpr: FunctionCallExpr,
 }
-
-
-__all__ = [
-    "Argument",
-    "ArgumentList",
-    "Expr",
-    "FunctionCallExpr",
-    "IdentifierExpr",
-    "IntLiteralExpr",
-    "LetExpr",
-    "Node",
-    "Pattern",
-    "SyntaxTree",
-    "VariablePattern",
-]

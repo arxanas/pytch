@@ -1,6 +1,5 @@
 """Tools for generating syntax trees."""
-import textwrap
-from typing import Dict, Iterable, List, Mapping, Optional
+from typing import Dict, List, Mapping, Optional
 
 
 class NodeType:
@@ -64,17 +63,6 @@ class Child:
             self.type.name.startswith("Optional[List[")
             or self.type.name.startswith("Optional[Sequence[")
         )
-
-
-def get_exports(node_types: Iterable[NodeType]) -> str:
-    export_names = [node_type.name for node_type in node_types]
-    export_names += ["Node"]
-    sorted_exports = sorted(export_names)
-    exports = "[\n" + "".join(
-        textwrap.indent(f'"{export}",\n', prefix="    ")
-        for export in sorted_exports
-    ) + "]\n"
-    return "__all__ = " + exports
 
 
 def get_node_type_from_header(header: str) -> NodeType:

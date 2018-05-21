@@ -7,7 +7,7 @@ import sys
 import textwrap
 from typing import List, Mapping, Optional
 
-from sttools import Child, get_exports, get_node_types, NodeType, TOKEN_TYPE
+from sttools import Child, get_node_types, NodeType, TOKEN_TYPE
 
 
 PREAMBLE = """\
@@ -57,11 +57,9 @@ def main() -> None:
         for name, children
         in sections.items()
     ]
-    exports = get_exports(sections.keys())
     sys.stdout.write(PREAMBLE)
     sys.stdout.write("\n\n".join(class_defs) + "\n\n")
-    sys.stdout.write(get_green_to_red_node_map(sections) + "\n\n")
-    sys.stdout.write(exports)
+    sys.stdout.write(get_green_to_red_node_map(sections))
 
 
 def get_green_to_red_node_map(

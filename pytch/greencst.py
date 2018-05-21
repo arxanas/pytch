@@ -260,18 +260,3 @@ class FunctionCallExpr(Expr):
     @property
     def n_argument_list(self) -> Optional[ArgumentList]:
         return self._n_argument_list
-
-
-__all__ = [
-    "Argument",
-    "ArgumentList",
-    "Expr",
-    "FunctionCallExpr",
-    "IdentifierExpr",
-    "IntLiteralExpr",
-    "LetExpr",
-    "Node",
-    "Pattern",
-    "SyntaxTree",
-    "VariablePattern",
-]

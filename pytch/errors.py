@@ -796,18 +796,3 @@ def underline_lines(
                 is_wrappable=False,
             ))
     return message_lines
-
-
-__all__ = [
-    "_DiagnosticContext",
-    "_MessageLine",
-    "_get_diagnostic_lines_to_insert",
-    "_group_by_pred",
-    "_merge_contexts",
-    "_ranges_overlap",
-
-    "Error",
-    "get_error_lines",
-    "Note",
-    "Severity",
-]

@@ -472,6 +472,3 @@ def lex(file_info: FileInfo) -> Lexation:
         ))
 
     return Lexation(tokens=tokens, errors=errors)
-
-
-__all__ = ["lex", "Lexation", "Token", "TokenKind", "Trivium", "TriviumKind"]
