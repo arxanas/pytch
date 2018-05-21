@@ -1,0 +1,5 @@
+SyntaxTree
+    IdentifierExpr
+        Token 'foo'
+    Leading ' bar\n'
+    Token EOF ''

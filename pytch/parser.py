@@ -333,20 +333,8 @@ class Parser:
                 state,
                 allow_naked_lets=True,
             )
-            t_eof = state.get_current_token()
+            (state, t_eof) = self.expect_token(state, [TokenKind.EOF])
             syntax_tree = SyntaxTree(n_expr=n_expr, t_eof=t_eof)
-
-            state = state.assert_(
-                t_eof.kind == TokenKind.EOF,
-                code=ErrorCode.SHOULD_END_WITH_EOF,
-                message=(
-                    "Expected the last token to be parsed "
-                    + "to be the EOF token, "
-                    + f"but instead it was of kind {t_eof.kind.name!r} "
-                    + f"at index {state.token_index} "
-                    + f"(zero-indexed, out of {len(state.tokens)})."
-                ),
-            )
 
             source_code_length = len(file_info.source_code)
             tokens_length = sum(
@@ -891,7 +879,8 @@ class Parser:
         if token.kind in possible_token_kinds:
             if state.is_recovering:
                 state = state.finish_recovery()
-            state = state.consume_token(token)
+            if token.kind != TokenKind.EOF:
+                state = state.consume_token(token)
             return (state, token)
 
         if state.is_recovering:
@@ -933,7 +922,8 @@ class Parser:
         if token.kind in possible_token_kinds:
             # We recovered to a token that the caller happens to be able to
             # handle, so return it directly.
-            state = state.consume_token(token)
+            if token.kind != TokenKind.EOF:
+                state = state.consume_token(token)
             state = state.finish_recovery()
             return (state, token)
         return (state, None)

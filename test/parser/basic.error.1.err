@@ -1,0 +1,8 @@
+UNEXPECTED_TOKEN[1001] in test/parser/basic.error.1.pytch, line 1, character 5:
+Error: I was expecting the end of the file, but instead got an identifier.
+   +------------------------------------------------------------------------+
+   | test/parser/basic.error.1.pytch                                        |
+ 1 | foo bar                                                                |
+   |     ^~~ Error: I was expecting the end of the file, but instead got an |
+   | identifier.                                                            |
+   +------------------------------------------------------------------------+
