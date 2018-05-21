@@ -4,7 +4,7 @@ import sys
 import afl
 
 from . import FileInfo
-from .__main__ import run_file
+from .__main__ import compile_file
 
 
 def main() -> None:
@@ -21,7 +21,7 @@ def main() -> None:
         except UnicodeDecodeError:
             pass
         else:
-            run_file(file_info)
+            compile_file(file_info, fuzz=True)
     os._exit(0)
 
 
