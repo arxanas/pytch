@@ -138,8 +138,7 @@ class State:
             end = start
         return OffsetRange(start=start, end=end)
 
-    @property
-    def current_token(self) -> Token:
+    def get_current_token(self) -> Token:
         assert 0 <= self.token_index < len(self.tokens)
         token = self.tokens[self.token_index]
         error_trivia = [
@@ -173,6 +172,10 @@ class State:
             # token we rewound to, rather than that token itself.
             start = end
         return OffsetRange(start=start, end=end)
+
+    @property
+    def current_token_kind(self) -> TokenKind:
+        return self.tokens[self.token_index].kind
 
     @property
     def current_token_range(self) -> Range:
@@ -233,7 +236,7 @@ class State:
         )
 
     def consume_token(self, token: Token) -> "State":
-        assert self.current_token.kind != TokenKind.EOF, \
+        assert self.get_current_token().kind != TokenKind.EOF, \
             "Tried to consume the EOF token."
 
         # We may have added leading error tokens as trivia, but we don't want
@@ -294,7 +297,7 @@ Parser location:
 
 There are {len(self._state.tokens)} tokens total,
 and we are currently at token #{self._state.token_index},
-which is: {self._state.current_token}.
+which is: {self._state.get_current_token()}.
 
 Errors so far:
 {error_messages or "<none>"}
@@ -318,10 +321,10 @@ class Parser:
         )
 
         # File with only whitespace.
-        if state.current_token.kind == TokenKind.EOF:
+        if state.get_current_token().kind == TokenKind.EOF:
             syntax_tree = SyntaxTree(
                 n_expr=None,
-                t_eof=state.current_token,
+                t_eof=state.get_current_token(),
             )
             return Parsation(green_cst=syntax_tree, errors=state.errors)
 
@@ -330,7 +333,7 @@ class Parser:
                 state,
                 allow_naked_lets=True,
             )
-            t_eof = state.current_token
+            t_eof = state.get_current_token()
             syntax_tree = SyntaxTree(n_expr=n_expr, t_eof=t_eof)
 
             state = state.assert_(
@@ -397,7 +400,7 @@ class Parser:
             [TokenKind.DUMMY_IN],
             notes=notes,
         )
-        if allow_naked_lets and state.current_token.kind == TokenKind.EOF:
+        if allow_naked_lets and state.get_current_token().kind == TokenKind.EOF:
             n_body = None
         else:
             (state, n_body) = self.parse_expr_with_left_recursion(
@@ -430,7 +433,7 @@ class Parser:
     ) -> Tuple[State, Optional[LetExpr]]:
         n_pattern: Optional[Pattern]
         n_parameter_list: Optional[ParameterList] = None
-        if state.current_token.kind == TokenKind.EQUALS:
+        if state.get_current_token().kind == TokenKind.EQUALS:
             # If the token is an equals sign, assume that the name is missing
             # (e.g. during editing, the user is renaming the variable), but
             # that the rest of the let-binding is present.
@@ -444,7 +447,7 @@ class Parser:
                 range=state.current_token_range,
             ))
         elif (
-            state.current_token.kind == TokenKind.IDENTIFIER
+            state.get_current_token().kind == TokenKind.IDENTIFIER
             and state.next_token.kind == TokenKind.LPAREN
         ):
             # Assume it's a function definition.
@@ -526,7 +529,7 @@ class Parser:
             allow_naked_lets=allow_naked_lets,
         )
         while n_expr is not None:
-            token = state.current_token
+            token = state.get_current_token()
             if token.kind == TokenKind.EOF:
                 break
             elif token.kind == TokenKind.LPAREN:
@@ -540,9 +543,9 @@ class Parser:
         return (state, n_expr)
 
     def skip_past(self, state: State, kind: TokenKind) -> State:
-        while state.current_token.kind != kind:
-            state = state.consume_error_token(state.current_token)
-        state = state.consume_error_token(state.current_token)
+        while state.current_token_kind != kind:
+            state = state.consume_error_token(state.get_current_token())
+        state = state.consume_error_token(state.get_current_token())
         return state
 
     def add_error_and_recover(
@@ -560,8 +563,8 @@ class Parser:
             for token_kind in sync_token_kinds
         )
         state = state.add_error(error)
-        while state.current_token.kind != TokenKind.EOF:
-            current_token = state.current_token
+        while state.current_token_kind != TokenKind.EOF:
+            current_token = state.get_current_token()
 
             if current_token.kind == TokenKind.LET:
                 # 'let' is *always* paired with a dummy 'in', thanks to the
@@ -572,7 +575,7 @@ class Parser:
 
             if current_token.kind in sync_token_kinds:
                 return state
-            state = state.consume_error_token(state.current_token)
+            state = state.consume_error_token(state.get_current_token())
         return state
 
     def parse_expr(
@@ -580,7 +583,7 @@ class Parser:
         state: State,
         allow_naked_lets: bool = False,
     ) -> Tuple[State, Optional[Expr]]:
-        token = state.current_token
+        token = state.get_current_token()
         if token.kind == TokenKind.IDENTIFIER:
             return self.parse_identifier_expr(state)
         elif token.kind == TokenKind.INT_LITERAL:
@@ -594,7 +597,7 @@ class Parser:
                 code=ErrorCode.EXPECTED_EXPRESSION,
                 message=(
                     "I was expecting an expression, but instead got " +
-                    self.describe_token(state.current_token) +
+                    self.describe_token(state.get_current_token()) +
                     "."
                 ),
                 range=state.current_token_range,
@@ -633,7 +636,7 @@ class Parser:
                 message=(
                     "I was expecting a '(' to indicate the start of a " +
                     "function argument list, but instead got " +
-                    self.describe_token(state.current_token) +
+                    self.describe_token(state.get_current_token()) +
                     "."
                 ),
                 notes=[],
@@ -643,7 +646,7 @@ class Parser:
 
         state = state.push_sync_token_kinds([TokenKind.RPAREN])
         arguments: List[Argument] = []
-        while state.current_token.kind not in [TokenKind.RPAREN, TokenKind.EOF]:
+        while state.current_token_kind not in [TokenKind.RPAREN, TokenKind.EOF]:
             (state, n_argument) = self.parse_argument(state)
             if n_argument is None:
                 break
@@ -662,7 +665,7 @@ class Parser:
                 message=(
                     "I was expecting a ')' to indicate the end of this " +
                     "function argument list, but instead got " +
-                    self.describe_token(state.current_token) +
+                    self.describe_token(state.get_current_token()) +
                     "."
                 ),
                 notes=[Note(
@@ -685,7 +688,7 @@ class Parser:
         if n_expr is None:
             return (state, None)
 
-        token = state.current_token
+        token = state.get_current_token()
         if token.kind == TokenKind.RPAREN:
             return (state, Argument(
                 n_expr=n_expr,
@@ -750,7 +753,7 @@ class Parser:
                 message=(
                     "I was expecting a '(' to indicate the start of a " +
                     "function parameter list, but instead got " +
-                    self.describe_token(state.current_token) +
+                    self.describe_token(state.get_current_token()) +
                     "."
                 ),
                 notes=[],
@@ -759,7 +762,7 @@ class Parser:
             return (state, None)
 
         parameters: List[Parameter] = []
-        while state.current_token.kind not in [TokenKind.RPAREN, TokenKind.EOF]:
+        while state.current_token_kind not in [TokenKind.RPAREN, TokenKind.EOF]:
             (state, n_parameter) = self.parse_parameter(state)
             if n_parameter is None:
                 break
@@ -777,7 +780,7 @@ class Parser:
                 message=(
                     "I was expecting a ')' to indicate the end of this " +
                     "function parameter list, but instead got " +
-                    self.describe_token(state.current_token) +
+                    self.describe_token(state.get_current_token()) +
                     "."
                 ),
                 notes=[Note(
@@ -803,7 +806,7 @@ class Parser:
         if n_pattern is None:
             return (state, None)
 
-        token = state.current_token
+        token = state.get_current_token()
         if token.kind == TokenKind.RPAREN:
             return (state, Parameter(
                 n_pattern=n_pattern,
@@ -884,7 +887,7 @@ class Parser:
         notes: List[Note] = [],
         error: Error = None,
     ) -> Tuple[State, Optional[Token]]:
-        token = state.current_token
+        token = state.get_current_token()
         if token.kind in possible_token_kinds:
             if state.is_recovering:
                 state = state.finish_recovery()
@@ -926,7 +929,7 @@ class Parser:
             )
         state = self.add_error_and_recover(state, error)
 
-        token = state.current_token
+        token = state.get_current_token()
         if token.kind in possible_token_kinds:
             # We recovered to a token that the caller happens to be able to
             # handle, so return it directly.
