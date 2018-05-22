@@ -21,7 +21,7 @@ barbaz
 qux"""
     file_info = FileInfo(file_path="dummy", source_code=source_code)
 
-    for i, c in enumerate(source_code):
+    for i, _c in enumerate(source_code):
         expected_position = slower_get_position_for_offset(
             source_code=source_code,
             offset=i,
