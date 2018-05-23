@@ -11,7 +11,7 @@ The *red* CST is based off of the green syntax tree. It is also immutable,
 but its nodes are generated lazily (since they contain `parent` pointers and
 therefore reference cycles).
 """
-from typing import Iterator, List, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple, Union
 
 import attr
 
@@ -947,3 +947,40 @@ class Parser:
 def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
     parser = Parser()
     return parser.parse(file_info=file_info, tokens=tokens)
+
+
+def dump_syntax_tree(
+    source_code: str,
+    ast_node: Union[Node, Token, None],
+    offset: int = 0,
+) -> Tuple[int, List[str]]:
+    if ast_node is None:
+        return (offset, ["<missing>"])
+    elif isinstance(ast_node, Token):
+        token = ast_node
+        lines = []
+        for trivium in token.leading_trivia:
+            offset += trivium.width
+            lines.append(f"Leading {trivium.text!r}")
+
+        offset += token.width
+        if token.is_dummy:
+            lines.append(f"Token {token.kind.name} {token.text!r}")
+        else:
+            lines.append(f"Token {token.text!r}")
+
+        for trivium in token.trailing_trivia:
+            offset += trivium.width
+            lines.append(f"Trailing {trivium.text!r}")
+
+        return (offset, lines)
+    else:
+        lines = [f"{ast_node.__class__.__name__}"]
+        for child in ast_node.children:
+            (offset, rendered_child) = \
+                dump_syntax_tree(source_code, child, offset)
+            lines.extend(
+                f"    {subline}"
+                for subline in rendered_child
+            )
+        return (offset, lines)
