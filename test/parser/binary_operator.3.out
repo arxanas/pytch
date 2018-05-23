@@ -1,0 +1,35 @@
+SyntaxTree
+    BinaryExpr
+        BinaryExpr
+            IntLiteralExpr
+                Token '1'
+            Leading ' '
+            Token '+'
+            IntLiteralExpr
+                Leading ' '
+                Token '2'
+        Leading ' '
+        Token 'or'
+        BinaryExpr
+            BinaryExpr
+                IntLiteralExpr
+                    Leading ' '
+                    Token '3'
+                Leading ' '
+                Token '+'
+                IntLiteralExpr
+                    Leading ' '
+                    Token '4'
+            Leading ' '
+            Token 'and'
+            BinaryExpr
+                IntLiteralExpr
+                    Leading ' '
+                    Token '5'
+                Leading ' '
+                Token '+'
+                IntLiteralExpr
+                    Leading ' '
+                    Token '6'
+                    Trailing '\n'
+    Token EOF ''

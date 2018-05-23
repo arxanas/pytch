@@ -82,6 +82,11 @@ class TokenKind(Enum):
     LPAREN = "'('"
     RPAREN = "')'"
 
+    PLUS = "'+'"
+    MINUS = "'-'"
+    OR = "'or'"
+    AND = "'and'"
+
     ERROR = "error"
     """Any invalid token."""
 
@@ -194,6 +199,10 @@ LET_RE = re.compile("let")
 COMMA_RE = re.compile(",")
 LPAREN_RE = re.compile("\(")
 RPAREN_RE = re.compile("\)")
+PLUS_RE = re.compile("\+")
+MINUS_RE = re.compile("-")
+OR_RE = re.compile("or")
+AND_RE = re.compile("and")
 
 UNKNOWN_TOKEN_RE = re.compile("[^ \n\t\ra-zA-Z0-9]+")
 
@@ -301,6 +310,10 @@ class Lexer:
             TokenKind.COMMA: COMMA_RE,
             TokenKind.LPAREN: LPAREN_RE,
             TokenKind.RPAREN: RPAREN_RE,
+            TokenKind.PLUS: PLUS_RE,
+            TokenKind.MINUS: MINUS_RE,
+            TokenKind.OR: OR_RE,
+            TokenKind.AND: AND_RE,
             TokenKind.IDENTIFIER: IDENTIFIER_RE,
         })
 

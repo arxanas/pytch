@@ -506,6 +506,88 @@ class IntLiteralExpr(Expr):
         ]
 
 
+class BinaryExpr(Expr):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        origin: greencst.BinaryExpr,
+        offset: int,
+    ) -> None:
+        super().__init__(parent)
+        self.origin = origin
+        self.offset = offset
+        self._n_lhs: Optional[Expr] = None
+        self._n_rhs: Optional[Expr] = None
+
+    @property
+    def n_lhs(self) -> Optional[Expr]:
+        if self.origin.n_lhs is None:
+            return None
+        if self._n_lhs is not None:
+            return self._n_lhs
+        offset = (
+            self.offset
+        )
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_lhs.__class__](
+            parent=self,
+            origin=self.origin.n_lhs,
+            offset=offset,
+        )
+        self._n_lhs = result
+        return result
+
+    @property
+    def t_operator(self) -> Optional[Token]:
+        return self.origin.t_operator
+
+    @property
+    def n_rhs(self) -> Optional[Expr]:
+        if self.origin.n_rhs is None:
+            return None
+        if self._n_rhs is not None:
+            return self._n_rhs
+        offset = (
+            self.offset
+            + (
+                self.n_lhs.full_width
+                if self.n_lhs is not None else
+                0
+            )
+            + (
+                self.t_operator.full_width
+                if self.t_operator is not None else
+                0
+            )
+        )
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_rhs.__class__](
+            parent=self,
+            origin=self.origin.n_rhs,
+            offset=offset,
+        )
+        self._n_rhs = result
+        return result
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
+
+    @property
+    def children(self) -> List[Optional[Union[Token, Node]]]:
+        return [
+            self.n_lhs,
+            self.t_operator,
+            self.n_rhs,
+        ]
+
+
 class Argument(Node):
     def __init__(
         self,
@@ -707,6 +789,7 @@ GREEN_TO_RED_NODE_MAP = {
     greencst.LetExpr: LetExpr,
     greencst.IdentifierExpr: IdentifierExpr,
     greencst.IntLiteralExpr: IntLiteralExpr,
+    greencst.BinaryExpr: BinaryExpr,
     greencst.Argument: Argument,
     greencst.ArgumentList: ArgumentList,
     greencst.FunctionCallExpr: FunctionCallExpr,

@@ -11,7 +11,8 @@ The *red* CST is based off of the green syntax tree. It is also immutable,
 but its nodes are generated lazily (since they contain `parent` pointers and
 therefore reference cycles).
 """
-from typing import Iterator, List, Optional, Tuple, Union
+from enum import Enum
+from typing import Iterator, List, Mapping, Optional, Tuple, Union
 
 import attr
 
@@ -20,6 +21,7 @@ from .errors import Error, ErrorCode, Note, Severity
 from .greencst import (
     Argument,
     ArgumentList,
+    BinaryExpr,
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
@@ -307,6 +309,34 @@ Original exception:
 """
 
 
+class Associativity(Enum):
+    LEFT = "left"
+    RIGHT = "right"
+
+
+BINARY_OPERATORS: Mapping[TokenKind, Tuple[
+    int,  # Precedence: higher binds more tightly.
+    Associativity,
+]] = {
+    TokenKind.PLUS: (3, Associativity.LEFT),
+    TokenKind.MINUS: (3, Associativity.LEFT),
+    TokenKind.AND: (2, Associativity.LEFT),
+    TokenKind.OR: (1, Associativity.LEFT),
+}
+
+BINARY_OPERATOR_PRECEDENCES = set(
+    precedence
+    for precedence, associativity in BINARY_OPERATORS.values(),
+)
+assert all(precedence > 0 for precedence in BINARY_OPERATOR_PRECEDENCES)
+assert BINARY_OPERATOR_PRECEDENCES == set(range(
+    min(BINARY_OPERATOR_PRECEDENCES),
+    max(BINARY_OPERATOR_PRECEDENCES) + 1),
+)
+
+BINARY_OPERATOR_KINDS = list(BINARY_OPERATORS.keys())
+
+
 class Parser:
     def parse(self, file_info: FileInfo, tokens: List[Token]) -> Parsation:
         state = State(
@@ -329,7 +359,7 @@ class Parser:
             return Parsation(green_cst=syntax_tree, errors=state.errors)
 
         try:
-            (state, n_expr) = self.parse_expr_with_left_recursion(
+            (state, n_expr) = self.parse_expr(
                 state,
                 allow_naked_lets=True,
             )
@@ -391,7 +421,7 @@ class Parser:
         if allow_naked_lets and state.get_current_token().kind == TokenKind.EOF:
             n_body = None
         else:
-            (state, n_body) = self.parse_expr_with_left_recursion(
+            (state, n_body) = self.parse_expr(
                 state,
                 allow_naked_lets=allow_naked_lets,
             )
@@ -464,7 +494,7 @@ class Parser:
             [TokenKind.EQUALS],
             notes=notes,
         )
-        (state, n_value) = self.parse_expr_with_left_recursion(
+        (state, n_value) = self.parse_expr(
             state,
             allow_naked_lets=False,
         )
@@ -494,9 +524,10 @@ class Parser:
         else:
             return (state, None)
 
-    def parse_expr_with_left_recursion(
+    def parse_expr(
         self,
         state: State,
+        min_precedence: int = 0,
 
         # Set when we allow let-bindings without associated expressions. For
         # example, this at the top-level:
@@ -511,8 +542,58 @@ class Parser:
         #     let bar = 2
         allow_naked_lets: bool = False,
     ) -> Tuple[State, Optional[Expr]]:
-        """Parse an expression, even if that parse involves left-recursion."""
-        (state, n_expr) = self.parse_expr(
+        """Parse an expression, even if that parse involves left-recursion.
+
+        This parses the expression using precedence-climbing to account for
+        operator precedence and associativity. See this excellent article:
+
+        https://eli.thegreenplace.net/2012/08/02/parsing-expressions-by-precedence-climbing
+        """
+        (state, n_expr) = self.parse_non_binary_expr(
+            state,
+            allow_naked_lets=allow_naked_lets,
+        )
+        if n_expr is None:
+            return (state, None)
+
+        while state.current_token_kind in BINARY_OPERATORS:
+            (precedence, associativity) = \
+                BINARY_OPERATORS[state.current_token_kind]
+            if precedence < min_precedence:
+                break
+
+            if associativity is Associativity.LEFT:
+                next_min_precedence = precedence + 1
+            elif associativity is Associativity.RIGHT:
+                next_min_precedence = precedence
+            else:
+                assert False, "Invalid associativity"
+
+            (state, t_operator) = self.expect_token(
+                state,
+                BINARY_OPERATOR_KINDS,
+            )
+            assert t_operator is not None, \
+                "Should have been checked by the while-loop condition"
+
+            (state, n_rhs) = self.parse_expr(
+                state,
+                min_precedence=next_min_precedence,
+                allow_naked_lets=allow_naked_lets,
+            )
+            n_expr = BinaryExpr(
+                n_lhs=n_expr,
+                t_operator=t_operator,
+                n_rhs=n_rhs,
+            )
+        return (state, n_expr)
+
+    def parse_non_binary_expr(
+        self,
+        state: State,
+        allow_naked_lets: bool,
+    ) -> Tuple[State, Optional[Expr]]:
+        (state, n_expr) = self.parse_atom(
             state,
             allow_naked_lets=allow_naked_lets,
         )
@@ -566,7 +647,7 @@ class Parser:
             state = state.consume_error_token(state.get_current_token())
         return state
 
-    def parse_expr(
+    def parse_atom(
         self,
         state: State,
         allow_naked_lets: bool = False,
@@ -577,7 +658,10 @@ class Parser:
         elif token.kind == TokenKind.INT_LITERAL:
             return self.parse_int_literal(state)
         elif token.kind == TokenKind.LET:
-            return self.parse_let_expr(state, allow_naked_lets=allow_naked_lets)
+            return self.parse_let_expr(
+                state,
+                allow_naked_lets=allow_naked_lets,
+            )
         else:
             state = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
@@ -672,7 +756,7 @@ class Parser:
 
     def parse_argument(self, state: State) -> Tuple[State, Optional[Argument]]:
         argument_start_offset = state.offset
-        (state, n_expr) = self.parse_expr_with_left_recursion(state)
+        (state, n_expr) = self.parse_expr(state)
         if n_expr is None:
             return (state, None)
 

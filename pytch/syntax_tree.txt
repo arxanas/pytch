@@ -33,6 +33,11 @@ IdentifierExpr(Expr)
 IntLiteralExpr(Expr)
     t_int_literal: Optional[Token]
 
+BinaryExpr(Expr)
+    n_lhs: Optional[Expr]
+    t_operator: Optional[Token]
+    n_rhs: Optional[Expr]
+
 Argument(Node)
     n_expr: Optional[Expr]
     t_comma: Optional[Token]

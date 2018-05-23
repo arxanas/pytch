@@ -1,0 +1,11 @@
+SyntaxTree
+    BinaryExpr
+        IntLiteralExpr
+            Token '1'
+        Leading ' '
+        Token '+'
+        IntLiteralExpr
+            Leading ' '
+            Token '2'
+            Trailing '\n'
+    Token EOF ''

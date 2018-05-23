@@ -247,6 +247,35 @@ class IntLiteralExpr(Expr):
         return self._t_int_literal
 
 
+class BinaryExpr(Expr):
+    def __init__(
+        self,
+        n_lhs: Optional[Expr],
+        t_operator: Optional[Token],
+        n_rhs: Optional[Expr],
+    ) -> None:
+        super().__init__([
+            n_lhs,
+            t_operator,
+            n_rhs,
+        ])
+        self._n_lhs = n_lhs
+        self._t_operator = t_operator
+        self._n_rhs = n_rhs
+
+    @property
+    def n_lhs(self) -> Optional[Expr]:
+        return self._n_lhs
+
+    @property
+    def t_operator(self) -> Optional[Token]:
+        return self._t_operator
+
+    @property
+    def n_rhs(self) -> Optional[Expr]:
+        return self._n_rhs
+
+
 class Argument(Node):
     def __init__(
         self,

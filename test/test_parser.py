@@ -63,8 +63,8 @@ def test_parser(test_case_info: CaseInfo) -> None:
         source_code=test_case_info.input,
         capsys=None,
     )
-    assert test_case_info.error == result.error
     assert test_case_info.output == result.output
+    assert test_case_info.error == result.error
 
 
 @pytest.mark.generate
