@@ -5,6 +5,7 @@ import attr
 from .py3ast import (
     PyArgument,
     PyAssignmentStmt,
+    PyBinaryExpr,
     PyExpr,
     PyExprStmt,
     PyFunctionCallExpr,
@@ -18,6 +19,7 @@ from .py3ast import (
 from ..binder import Bindation
 from ..errors import Error
 from ..redcst import (
+    BinaryExpr,
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
@@ -133,6 +135,8 @@ def compile_expr(env: Env, expr: Expr) -> Tuple[
         return compile_let_expr(env, expr)
     elif isinstance(expr, FunctionCallExpr):
         return compile_function_call_expr(env, expr)
+    elif isinstance(expr, BinaryExpr):
+        return compile_binary_expr(env, expr)
     elif isinstance(expr, IdentifierExpr):
         return compile_identifier_expr(env, expr)
     elif isinstance(expr, IntLiteralExpr):
@@ -258,6 +262,31 @@ def compile_function_call_expr(
         py_function_call_expr,
         py_receiver_statements + py_argument_list_statements,
     )
+
+
+def compile_binary_expr(
+    env: Env,
+    binary_expr: BinaryExpr,
+) -> Tuple[Env, PyExpr, PyStmtList]:
+    n_lhs = binary_expr.n_lhs
+    if n_lhs is None:
+        return (env, PyUnavailableExpr("missing lhs"), [])
+
+    t_operator = binary_expr.t_operator
+    if t_operator is None:
+        return (env, PyUnavailableExpr("missing operator"), [])
+
+    n_rhs = binary_expr.n_rhs
+    if n_rhs is None:
+        return (env, PyUnavailableExpr("missing rhs"), [])
+
+    (env, py_lhs_expr, lhs_statements) = compile_expr(env, expr=n_lhs)
+    (env, py_rhs_expr, rhs_statements) = compile_expr(env, expr=n_rhs)
+    return (env, PyBinaryExpr(
+        lhs=py_lhs_expr,
+        operator=t_operator.text,
+        rhs=py_rhs_expr,
+    ), lhs_statements + rhs_statements)
 
 
 def compile_identifier_expr(

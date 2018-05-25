@@ -59,6 +59,16 @@ class PyFunctionCallExpr(PyExpr):
         return f"{self.callee.compile()}({compiled_arguments_str})"
 
 
+@attr.s(auto_attribs=True, frozen=True)
+class PyBinaryExpr(PyExpr):
+    lhs: PyExpr
+    operator: str
+    rhs: PyExpr
+
+    def compile(self) -> str:
+        return f"{self.lhs.compile()} {self.operator} {self.rhs.compile()}"
+
+
 class PyStmt:
     def compile(self) -> CompiledOutput:
         raise NotImplementedError(
