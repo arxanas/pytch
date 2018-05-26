@@ -6,3 +6,11 @@ Error: I was expecting a ',' or ')' after the previous argument.
    |                     ^ Error: I was expecting a ',' or ')' after the |
    | previous argument.                                                  |
    +---------------------------------------------------------------------+
+EXPECTED_EXPRESSION[1010] in test/parser/fuzz.5.pytch, line 1, character 24:
+Error: I was expecting an expression, but instead got a ')'.
+   +--------------------------------------------------------------------+
+   | test/parser/fuzz.5.pytch                                           |
+ 1 | let foo = letprint(1let)                                           |
+   |                        ^ Error: I was expecting an expression, but |
+   | instead got a ')'.                                                 |
+   +--------------------------------------------------------------------+

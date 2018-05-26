@@ -19,8 +19,8 @@ SyntaxTree
                     <missing>
                 <missing>
         Leading 'let'
-        Leading ')\n'
         Leading ''
         Token DUMMY_IN ''
         <missing>
+    Leading ')\n'
     Token EOF ''

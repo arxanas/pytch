@@ -99,6 +99,36 @@ class TokenKind(Enum):
 
     # Dummy tokens; inserted by the pre-parser.
     DUMMY_IN = "the end of a 'let' binding"
+    DUMMY_SEMICOLON = "the end of a statement"
+
+
+class Associativity(Enum):
+    LEFT = "left"
+    RIGHT = "right"
+
+
+BINARY_OPERATORS: Mapping[TokenKind, Tuple[
+    int,  # Precedence: higher binds more tightly.
+    Associativity,
+]] = {
+    TokenKind.PLUS: (4, Associativity.LEFT),
+    TokenKind.MINUS: (4, Associativity.LEFT),
+    TokenKind.AND: (3, Associativity.LEFT),
+    TokenKind.OR: (2, Associativity.LEFT),
+    TokenKind.DUMMY_SEMICOLON: (1, Associativity.RIGHT),
+}
+
+BINARY_OPERATOR_PRECEDENCES = set(
+    precedence
+    for precedence, associativity in BINARY_OPERATORS.values(),
+)
+assert all(precedence > 0 for precedence in BINARY_OPERATOR_PRECEDENCES)
+assert BINARY_OPERATOR_PRECEDENCES == set(range(
+    min(BINARY_OPERATOR_PRECEDENCES),
+    max(BINARY_OPERATOR_PRECEDENCES) + 1),
+)
+
+BINARY_OPERATOR_KINDS = list(BINARY_OPERATORS.keys())
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -389,6 +419,17 @@ def with_indentation_levels(
         yield (indentation_level, token)
 
 
+def make_dummy_token(kind: TokenKind) -> Token:
+    token = Token(
+        kind=kind,
+        text="",
+        leading_trivia=[],
+        trailing_trivia=[],
+    )
+    assert token.is_dummy
+    return token
+
+
 def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
     """Insert dummy tokens for lightweight constructs into the token stream.
 
@@ -412,50 +453,105 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
     the source code's indentation.
     """
     stack: List[Tuple[int, int, Token]] = []
-    eof_token = None
-    current_line = 0
-    for indentation_level, token in with_indentation_levels(tokens):
-        if stack:
-            (top_indentation_level, top_line, top_token) = stack[-1]
-            if (
-                indentation_level <= top_indentation_level
-                and current_line > top_line
-            ):
-                if top_token.kind == TokenKind.LET:
-                    yield Token(
-                        kind=TokenKind.DUMMY_IN,
-                        text="",
-                        leading_trivia=[],
-                        trailing_trivia=[],
-                    )
-                    stack.pop()
 
-        if token.kind == TokenKind.LET:
+    def unwind(
+        indentation_level: int,
+        unwind_statements: bool,
+        kind: TokenKind = None,
+    ) -> Iterator[Token]:
+        while stack:
+            (top_indentation_level, top_line, top_token) = stack[-1]
+            stack.pop()
+
+            # If we're unwinding to a specific token kind, only stop once we've
+            # reached that token kind.
+            if kind is not None and top_token.kind == kind:
+                return
+
+            if top_token.kind == TokenKind.LET:
+                yield make_dummy_token(TokenKind.DUMMY_IN)
+            elif (
+                unwind_statements
+                and indentation_level == top_indentation_level
+            ):
+                yield make_dummy_token(TokenKind.DUMMY_SEMICOLON)
+
+            if kind is None and top_indentation_level <= indentation_level:
+                return
+
+    is_first_token = True
+    current_line = 0
+    eof_token = None
+    previous_line = None
+    previous_token = None
+    for indentation_level, token in with_indentation_levels(tokens):
+        if token.kind == TokenKind.EOF:
+            eof_token = token
+            break
+
+        if stack:
+            (previous_indentation_level, _, _) = stack[-1]
+        else:
+            previous_indentation_level = 0
+
+        maybe_new_statement = False
+        if previous_line is not None:
+            assert previous_line <= current_line
+            if current_line > previous_line:
+                maybe_new_statement = True
+
+        is_part_of_binary_expr = (
+            token.kind in BINARY_OPERATOR_KINDS
+            or (
+                previous_token is not None
+                and previous_token.kind in BINARY_OPERATOR_KINDS
+            )
+        )
+        has_comma = (
+            token.kind == TokenKind.COMMA
+            or (
+                previous_token is not None
+                and previous_token.kind == TokenKind.COMMA
+            )
+        )
+
+        if token.kind == TokenKind.LPAREN:
+            # Pass `0` as the indentation level to reset the indentation level
+            # in the stack until we've exited the parenthesized tokens.
+            stack.append((0, current_line, token))
+        elif token.kind == TokenKind.RPAREN:
+            yield from unwind(
+                indentation_level,
+                unwind_statements=False,
+                kind=TokenKind.LPAREN,
+            )
+        elif token.kind == TokenKind.LET:
+            if indentation_level <= previous_indentation_level:
+                yield from unwind(indentation_level, unwind_statements=False)
+            stack.append((indentation_level, current_line, token))
+        elif (
+            maybe_new_statement
+            and not is_part_of_binary_expr
+            and not has_comma
+        ):
+            if indentation_level <= previous_indentation_level:
+                yield from unwind(indentation_level, unwind_statements=True)
+            stack.append((indentation_level, current_line, token))
+        elif is_first_token:
             stack.append((indentation_level, current_line, token))
 
-        if token.kind != TokenKind.EOF:
-            yield token
-        else:
-            eof_token = token
+        yield token
 
+        is_first_token = False
+        previous_line = current_line
+        previous_token = token
         current_line += sum(
             len(trivium.text)
             for trivium in token.trailing_trivia
             if trivium.kind == TriviumKind.NEWLINE
         )
 
-    while stack:
-        (_, _, top_token) = stack.pop()
-        if top_token.kind == TokenKind.LET:
-            yield Token(
-                kind=TokenKind.DUMMY_IN,
-                text="",
-                leading_trivia=[],
-                trailing_trivia=[],
-            )
-        else:
-            assert False, \
-                f"Unexpected token kind in pre-parser: {token.kind.value}"
+    yield from unwind(indentation_level=-1, unwind_statements=False)
 
     assert eof_token is not None
     yield eof_token
@@ -480,6 +576,28 @@ def lex(file_info: FileInfo) -> Lexation:
                 f"and total length of parsed tokens ({tokens_length}). " +
                 f"The parse tree for this file is probably incorrect. " +
                 f"This is a bug. Please report it!"
+            ),
+            notes=[],
+        ))
+
+    num_lets = 0
+    num_ins = 0
+    for token in tokens:
+        if token.kind == TokenKind.LET:
+            num_lets += 1
+        elif token.kind == TokenKind.DUMMY_IN:
+            num_ins += 1
+    if num_lets != num_ins:
+        errors.append(Error(
+            file_info=file_info,
+            code=ErrorCode.LET_IN_MISMATCH,
+            severity=Severity.WARNING,
+            message=(
+                f"Mismatch between the number of 'let' bindings ({num_lets}) "
+                + f"and the number of inferred ends "
+                + f"of these 'let' bindings ({num_ins}). "
+                + f"The parse tree for this file is probably incorrect. "
+                + f"This is a bug. Please report it!"
             ),
             notes=[],
         ))

@@ -1,0 +1,23 @@
+identifier 'foo'
+'('
+trailing newline '\n'
+leading whitespace '  '
+identifier 'bar'
+'('
+trailing newline '\n'
+leading whitespace '    '
+identifier 'baz'
+')'
+')'
+trailing newline '\n'
+the end of a statement
+identifier 'qux'
+'('
+')'
+trailing newline '\n'
+the end of a statement
+identifier 'grault'
+'('
+')'
+trailing newline '\n'
+the end of the file

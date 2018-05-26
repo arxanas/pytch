@@ -1,0 +1,10 @@
+identifier 'foo'
+'('
+')'
+trailing newline '\n'
+the end of a statement
+identifier 'bar'
+'('
+')'
+trailing newline '\n'
+the end of the file

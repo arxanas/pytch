@@ -1,0 +1,8 @@
+let foo =
+  bar(
+    baz,
+    let qux = 1
+    qux, grault
+    xyzzy,
+    plugh
+  )

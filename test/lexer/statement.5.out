@@ -1,0 +1,28 @@
+integer literal '1'
+leading whitespace ' '
+'+'
+leading whitespace ' '
+integer literal '2'
+trailing newline '\n'
+the end of a statement
+integer literal '3'
+leading whitespace ' '
+'+'
+leading whitespace ' '
+integer literal '4'
+trailing newline '\n'
+the end of a statement
+integer literal '5'
+trailing newline '\n'
+'+'
+leading whitespace ' '
+integer literal '6'
+trailing newline '\n'
+the end of a statement
+integer literal '7'
+leading whitespace ' '
+'+'
+trailing newline '\n'
+integer literal '8'
+trailing newline '\n'
+the end of the file

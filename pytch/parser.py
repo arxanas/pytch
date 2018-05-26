@@ -11,8 +11,7 @@ The *red* CST is based off of the green syntax tree. It is also immutable,
 but its nodes are generated lazily (since they contain `parent` pointers and
 therefore reference cycles).
 """
-from enum import Enum
-from typing import Iterator, List, Mapping, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 import attr
 
@@ -34,7 +33,15 @@ from .greencst import (
     SyntaxTree,
     VariablePattern,
 )
-from .lexer import Token, TokenKind, Trivium, TriviumKind
+from .lexer import (
+    Associativity,
+    BINARY_OPERATOR_KINDS,
+    BINARY_OPERATORS,
+    Token,
+    TokenKind,
+    Trivium,
+    TriviumKind,
+)
 
 
 def walk_tokens(node: Node) -> Iterator[Token]:
@@ -307,34 +314,6 @@ Errors so far:
 Original exception:
 {self.__cause__.__class__.__name__}: {self.__cause__}
 """
-
-
-class Associativity(Enum):
-    LEFT = "left"
-    RIGHT = "right"
-
-
-BINARY_OPERATORS: Mapping[TokenKind, Tuple[
-    int,  # Precedence: higher binds more tightly.
-    Associativity,
-]] = {
-    TokenKind.PLUS: (3, Associativity.LEFT),
-    TokenKind.MINUS: (3, Associativity.LEFT),
-    TokenKind.AND: (2, Associativity.LEFT),
-    TokenKind.OR: (1, Associativity.LEFT),
-}
-
-BINARY_OPERATOR_PRECEDENCES = set(
-    precedence
-    for precedence, associativity in BINARY_OPERATORS.values(),
-)
-assert all(precedence > 0 for precedence in BINARY_OPERATOR_PRECEDENCES)
-assert BINARY_OPERATOR_PRECEDENCES == set(range(
-    min(BINARY_OPERATOR_PRECEDENCES),
-    max(BINARY_OPERATOR_PRECEDENCES) + 1),
-)
-
-BINARY_OPERATOR_KINDS = list(BINARY_OPERATORS.keys())
 
 
 class Parser:

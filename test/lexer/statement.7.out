@@ -1,0 +1,13 @@
+identifier 'print'
+'('
+trailing newline '\n'
+leading whitespace '  '
+integer literal '1'
+trailing newline '\n'
+the end of a statement
+leading whitespace '  '
+integer literal '2'
+trailing newline '\n'
+')'
+trailing newline '\n'
+the end of the file

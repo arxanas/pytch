@@ -12,8 +12,13 @@ SyntaxTree
         Leading ' ='
         Leading ' print'
         Leading '@'
-        Leading 'let'
-        Leading ''
         Token DUMMY_IN ''
-        <missing>
+        LetExpr
+            Token 'let'
+            <missing>
+            <missing>
+            <missing>
+            <missing>
+            Token DUMMY_IN ''
+            <missing>
     Token EOF ''

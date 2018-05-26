@@ -15,12 +15,16 @@ SyntaxTree
                 Token '('
                 Trailing '\n'
                 Argument
-                    IdentifierExpr
-                        Leading '  '
-                        Token 'bar'
-                        Trailing '\n'
+                    BinaryExpr
+                        IdentifierExpr
+                            Leading '  '
+                            Token 'bar'
+                            Trailing '\n'
+                        Token DUMMY_SEMICOLON ''
+                        IdentifierExpr
+                            Leading '  '
+                            Token 'baz'
                     <missing>
-                Leading '  baz'
                 Leading ' qux'
                 Token ')'
                 Trailing '\n'
