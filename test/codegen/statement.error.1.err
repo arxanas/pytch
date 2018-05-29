@@ -1,0 +1,10 @@
+UNBOUND_NAME[2000] in test/codegen/statement.error.1.pytch, line 4, character 3:
+Error: I couldn't find a variable in the current scope with the name `foo`.
+   +-----------------------------------------------------------------------+
+   | test/codegen/statement.error.1.pytch                                  |
+ 3 |   foo,                                                                |
+ 4 |   foo,                                                                |
+   |   ^~~ Error: I couldn't find a variable in the current scope with the |
+   | name `foo`.                                                           |
+ 5 | )                                                                     |
+   +-----------------------------------------------------------------------+

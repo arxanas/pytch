@@ -18,6 +18,7 @@ from .py3ast import (
 )
 from ..binder import Bindation
 from ..errors import Error
+from ..lexer import TokenKind
 from ..redcst import (
     BinaryExpr,
     Expr,
@@ -251,7 +252,7 @@ def compile_function_call_expr(
         py_arguments.append(PyArgument(
             value=py_argument_expr,
         ))
-        py_argument_list_statements.extend(py_argument_list_statements)
+        py_argument_list_statements.extend(py_argument_statements)
 
     py_function_call_expr = PyFunctionCallExpr(
         callee=py_callee_expr,
@@ -282,11 +283,19 @@ def compile_binary_expr(
 
     (env, py_lhs_expr, lhs_statements) = compile_expr(env, expr=n_lhs)
     (env, py_rhs_expr, rhs_statements) = compile_expr(env, expr=n_rhs)
-    return (env, PyBinaryExpr(
-        lhs=py_lhs_expr,
-        operator=t_operator.text,
-        rhs=py_rhs_expr,
-    ), lhs_statements + rhs_statements)
+
+    if t_operator.kind == TokenKind.DUMMY_SEMICOLON:
+        statements = lhs_statements + rhs_statements + [PyExprStmt(
+            expr=py_lhs_expr,
+        )]
+        return (env, py_rhs_expr, statements)
+    else:
+        assert not t_operator.is_dummy
+        return (env, PyBinaryExpr(
+            lhs=py_lhs_expr,
+            operator=t_operator.text,
+            rhs=py_rhs_expr,
+        ), lhs_statements + rhs_statements)
 
 
 def compile_identifier_expr(

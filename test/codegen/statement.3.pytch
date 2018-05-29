@@ -1,0 +1,6 @@
+print(
+  let foo = 1
+  foo,
+  let foo = 2
+  foo,
+)
