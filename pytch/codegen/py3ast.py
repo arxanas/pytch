@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import attr
 
@@ -107,6 +107,32 @@ class PyReturnStmt(PyStmt):
 
     def compile(self) -> CompiledOutput:
         return [f"return {self.expr.compile()}"]
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class PyIfStmt(PyStmt):
+    if_expr: PyExpr  # noqa: E701
+    then_statements: PyStmtList
+    else_statements: Optional[PyStmtList]  # noqa: E701
+
+    def compile(self) -> CompiledOutput:
+        if_statements = [
+            f"if {self.if_expr.compile()}:",
+        ]
+        for statement in self.then_statements:
+            if_statements.extend(
+                PyIndentedStmt(statement=statement).compile(),
+            )
+
+        else_statements = []
+        if self.else_statements is not None:
+            assert self.else_statements
+            else_statements.append("else:")
+            for statement in self.else_statements:
+                else_statements.extend(
+                    PyIndentedStmt(statement=statement).compile(),
+                )
+        return if_statements + else_statements
 
 
 @attr.s(auto_attribs=True, frozen=True)

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 
@@ -11,6 +11,7 @@ from .py3ast import (
     PyFunctionCallExpr,
     PyFunctionStmt,
     PyIdentifierExpr,
+    PyIfStmt,
     PyLiteralExpr,
     PyParameter,
     PyStmtList,
@@ -24,11 +25,28 @@ from ..redcst import (
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
+    IfExpr,
     IntLiteralExpr,
     LetExpr,
     SyntaxTree,
     VariablePattern,
 )
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class Scope:
+    pytch_bindings: Dict[VariablePattern, str]
+    python_bindings: Set[str]
+
+    def update(self, **kwargs) -> "Scope":
+        return attr.evolve(self, **kwargs)
+
+    @staticmethod
+    def empty() -> "Scope":
+        return Scope(
+            pytch_bindings={},
+            python_bindings=set(),
+        )
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -42,13 +60,13 @@ class Env:
     Pytch, but are in Python).
     """
     bindation: Bindation
-    scopes: List[Dict[VariablePattern, str]]
+    scopes: List[Scope]
 
     def _update(self, **kwargs) -> "Env":
         return attr.evolve(self, **kwargs)
 
     def push_scope(self) -> "Env":
-        return self._update(scopes=self.scopes + [{}])
+        return self._update(scopes=self.scopes + [Scope.empty()])
 
     def pop_scope(self) -> "Env":
         assert self.scopes
@@ -66,8 +84,24 @@ class Env:
         in the current Python scope.
         """
         python_name = self._get_name(preferred_name)
-        current_scope = dict(self.scopes[-1])
-        current_scope[variable_pattern] = python_name
+        current_pytch_bindings = dict(self.scopes[-1].pytch_bindings)
+        current_pytch_bindings[variable_pattern] = python_name
+        current_scope = self.scopes[-1].update(
+            pytch_bindings=current_pytch_bindings,
+        )
+        return (
+            self._update(scopes=self.scopes[:-1] + [current_scope]),
+            python_name,
+        )
+
+    def make_temporary(self, preferred_name: str) -> Tuple["Env", str]:
+        python_name = self._get_name(preferred_name)
+        current_python_bindings = set(self.scopes[-1].python_bindings)
+        assert python_name not in current_python_bindings
+        current_python_bindings.add(python_name)
+        current_scope = self.scopes[-1].update(
+            python_bindings=current_python_bindings,
+        )
         return (
             self._update(scopes=self.scopes[:-1] + [current_scope]),
             python_name,
@@ -78,13 +112,17 @@ class Env:
         variable_pattern: VariablePattern,
     ) -> Optional[str]:
         for scope in reversed(self.scopes):
-            if variable_pattern in scope:
-                return scope[variable_pattern]
+            if variable_pattern in scope.pytch_bindings:
+                return scope.pytch_bindings[variable_pattern]
         return None
 
     def _get_name(self, preferred_name: str) -> str:
         for suggested_name in self._suggest_names(preferred_name):
-            if suggested_name not in self.scopes[-1].values():
+            if (
+                suggested_name not in self.scopes[-1].python_bindings
+                and suggested_name not in
+                    self.scopes[-1].pytch_bindings.values()
+            ):
                 return suggested_name
         assert False, "`suggest_names` should loop forever"
 
@@ -134,6 +172,8 @@ def compile_expr(env: Env, expr: Expr) -> Tuple[
 ]:
     if isinstance(expr, LetExpr):
         return compile_let_expr(env, expr)
+    elif isinstance(expr, IfExpr):
+        return compile_if_expr(env, expr)
     elif isinstance(expr, FunctionCallExpr):
         return compile_function_call_expr(env, expr)
     elif isinstance(expr, BinaryExpr):
@@ -227,6 +267,47 @@ def compile_let_expr(
     return (env, body_expr, py_binding_statements + body_statements)
 
 
+def compile_if_expr(
+    env: Env,
+    if_expr: IfExpr,
+) -> Tuple[Env, PyExpr, PyStmtList]:
+    n_if_expr = if_expr.n_if_expr
+    n_then_expr = if_expr.n_then_expr
+    n_else_expr = if_expr.n_else_expr
+
+    if n_if_expr is None:
+        return (env, PyUnavailableExpr("missing if condition"), [])
+    (env, py_if_expr, py_if_statements) = compile_expr(env, n_if_expr)
+
+    (env, result_tmp) = env.make_temporary("_tmp_if")
+    result_tmp_identifier = PyIdentifierExpr(result_tmp)
+
+    if n_then_expr is None:
+        return (env, PyUnavailableExpr("missing then expression"), [])
+    (env, py_then_expr, py_then_statements) = compile_expr(env, n_then_expr)
+    py_then_statements.append(PyAssignmentStmt(
+        lhs=result_tmp_identifier,
+        rhs=py_then_expr,
+    ))
+
+    if n_else_expr is None:
+        py_else_expr: PyExpr = PyLiteralExpr(value="None")
+        py_else_statements: PyStmtList = []
+    else:
+        (env, py_else_expr, py_else_statements) = compile_expr(env, n_else_expr)
+    py_else_statements.append(PyAssignmentStmt(
+        lhs=result_tmp_identifier,
+        rhs=py_else_expr,
+    ))
+
+    statements = py_if_statements + [PyIfStmt(
+        if_expr=py_if_expr,
+        then_statements=py_then_statements,
+        else_statements=py_else_statements,
+    )]
+    return (env, PyIdentifierExpr(result_tmp), statements)
+
+
 def compile_function_call_expr(
     env: Env,
     function_call_expr: FunctionCallExpr,
@@ -285,9 +366,9 @@ def compile_binary_expr(
     (env, py_rhs_expr, rhs_statements) = compile_expr(env, expr=n_rhs)
 
     if t_operator.kind == TokenKind.DUMMY_SEMICOLON:
-        statements = lhs_statements + rhs_statements + [PyExprStmt(
+        statements = lhs_statements + [PyExprStmt(
             expr=py_lhs_expr,
-        )]
+        )] + rhs_statements
         return (env, py_rhs_expr, statements)
     else:
         assert not t_operator.is_dummy
@@ -338,7 +419,7 @@ def compile_int_literal_expr(
 
 
 def codegen(syntax_tree: SyntaxTree, bindation: Bindation) -> Codegenation:
-    env = Env(bindation=bindation, scopes=[{}])
+    env = Env(bindation=bindation, scopes=[Scope.empty()])
     if syntax_tree.n_expr is None:
         return Codegenation(statements=[], errors=[])
     (env, expr, statements) = compile_expr(env, syntax_tree.n_expr)
