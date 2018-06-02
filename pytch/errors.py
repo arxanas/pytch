@@ -1,3 +1,45 @@
+"""Error types and pretty-printing.
+
+## Grammar
+
+  * Use the first-person: the compiler should be a tool that works with you,
+  rather than against you. For example, see the Elm error messages:
+  http://elm-lang.org/blog/compiler-errors-for-humans
+
+  * Don't be terse. Specify subjects and pronouns explicitly.
+
+  BAD: Missing ')'.
+
+  GOOD: I was expecting a ')' here.
+
+  * Use the past progressive rather than the simple past tense. We don't use
+  the present tense to indicate that the compilation already happened -- it's
+  not still in the process of happening. We don't use the simple past tense
+  simply not to remind the user of terser compilers which use it.
+
+  BAD: Expected X.
+
+  GOOD: I was expecting an X.
+
+## Word choice
+
+  * Use articles where possible.
+
+  BAD: I was expecting ')' here.
+
+  GOOD: I was expecting a ')' here.
+
+  * Prefer the term "binding" over the term "variable".
+
+## Typography
+
+  * Use single-quotes (') instead of backticks (`) or fancy Unicode quotes.
+
+  BAD: I was expecting a `)` here.
+
+  GOOD: I was expecting a ')' here.
+
+"""
 import collections
 from enum import Enum
 import itertools
