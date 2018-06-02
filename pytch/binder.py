@@ -25,6 +25,8 @@ GLOBAL_SCOPE: Mapping[str, List[VariablePattern]] = {
     "map": [],
     "filter": [],
     "print": [],
+    "True": [],
+    "False": [],
 }
 
 
