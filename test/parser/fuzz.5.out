@@ -17,10 +17,10 @@ SyntaxTree
                     IntLiteralExpr
                         Token '1'
                     <missing>
-                <missing>
-        Leading 'let'
-        Leading ''
+                Leading 'let'
+                Leading ''
+                Token ')'
+                Trailing '\n'
         Token DUMMY_IN ''
         <missing>
-    Leading ')\n'
     Token EOF ''

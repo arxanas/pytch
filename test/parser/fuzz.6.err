@@ -27,11 +27,3 @@ Error: I was expecting a pattern after 'let'.
    |    ^ Error: I was expecting a pattern after 'let'.  |
    | ^~~ Note: This is the beginning of the let-binding. |
    +-----------------------------------------------------+
-EXPECTED_PATTERN[1013] in test/parser/fuzz.6.pytch, line 1, character 20:
-Error: I was expecting a pattern after 'let'.
-   +---------------------------------------------------------------------+
-   | test/parser/fuzz.6.pytch                                            |
- 1 | let!f/o = print@let                                                 |
-   |                    ^ Error: I was expecting a pattern after 'let'.  |
-   |                 ^~~ Note: This is the beginning of the let-binding. |
-   +---------------------------------------------------------------------+

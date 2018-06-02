@@ -1,0 +1,40 @@
+SyntaxTree
+    IfExpr
+        Token 'if'
+        Trailing '\n'
+        BinaryExpr
+            IdentifierExpr
+                Leading '  '
+                Token 'True'
+                Trailing '\n'
+            Token DUMMY_SEMICOLON ''
+            IdentifierExpr
+                Leading '  '
+                Token 'False'
+                Trailing '\n'
+        Token 'then'
+        Trailing '\n'
+        BinaryExpr
+            IntLiteralExpr
+                Leading '  '
+                Token '1'
+                Trailing '\n'
+            Token DUMMY_SEMICOLON ''
+            IntLiteralExpr
+                Leading '  '
+                Token '2'
+                Trailing '\n'
+        Token 'else'
+        Trailing '\n'
+        BinaryExpr
+            IntLiteralExpr
+                Leading '  '
+                Token '3'
+                Trailing '\n'
+            Token DUMMY_SEMICOLON ''
+            IntLiteralExpr
+                Leading '  '
+                Token '4'
+                Trailing '\n'
+        Token DUMMY_ENDIF ''
+    Token EOF ''

@@ -24,6 +24,7 @@ from .greencst import (
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
+    IfExpr,
     IntLiteralExpr,
     LetExpr,
     Node,
@@ -488,6 +489,34 @@ class Parser:
             n_body=None,  # Parsed by caller.
         ))
 
+    def parse_if_expr(self, state: State) -> Tuple[State, Optional[IfExpr]]:
+        (state, t_if) = self.expect_token(state, [TokenKind.IF])
+        if not t_if:
+            return (state, None)
+
+        state = state.push_sync_token_kinds([TokenKind.DUMMY_ENDIF])
+        (state, n_if_expr) = self.parse_expr(state)
+        (state, t_then) = self.expect_token(state, [TokenKind.THEN])
+        (state, n_then_expr) = self.parse_expr(state)
+        if state.current_token_kind == TokenKind.ELSE:
+            (state, t_else) = self.expect_token(state, [TokenKind.ELSE])
+            (state, n_else_expr) = self.parse_expr(state)
+        else:
+            t_else = None
+            n_else_expr = None
+        (state, t_endif) = self.expect_token(state, [TokenKind.DUMMY_ENDIF])
+        state = state.pop_sync_token_kinds()
+
+        return (state, IfExpr(
+            t_if=t_if,
+            n_if_expr=n_if_expr,
+            t_then=t_then,
+            n_then_expr=n_then_expr,
+            t_else=t_else,
+            n_else_expr=n_else_expr,
+            t_endif=t_endif,
+        ))
+
     def parse_pattern(
         self,
         state: State,
@@ -641,6 +670,8 @@ class Parser:
                 state,
                 allow_naked_lets=allow_naked_lets,
             )
+        elif token.kind == TokenKind.IF:
+            return self.parse_if_expr(state)
         else:
             state = self.add_error_and_recover(state, Error(
                 file_info=state.file_info,
@@ -1001,7 +1032,10 @@ class Parser:
             return token_kind.value
 
         vowels = ["a", "e", "i", "o", "u"]
-        if any(token_kind.value.startswith(vowel) for vowel in vowels):
+        if any(
+            token_kind.value.strip("'").startswith(vowel)
+            for vowel in vowels
+        ):
             return f"an {token_kind.value}"
         else:
             return f"a {token_kind.value}"

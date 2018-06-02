@@ -1,0 +1,30 @@
+SyntaxTree
+    LetExpr
+        Token 'let'
+        VariablePattern
+            Leading ' '
+            Token 'foo'
+        <missing>
+        Leading ' '
+        Token '='
+        IfExpr
+            Leading ' '
+            Token 'if'
+            IdentifierExpr
+                Leading ' '
+                Token 'True'
+            Leading ' '
+            Token 'then'
+            IntLiteralExpr
+                Leading ' '
+                Token '1'
+            Leading ' '
+            Token 'else'
+            IntLiteralExpr
+                Leading ' '
+                Token '2'
+                Trailing '\n'
+            Token DUMMY_ENDIF ''
+        Token DUMMY_IN ''
+        <missing>
+    Token EOF ''

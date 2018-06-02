@@ -1,0 +1,19 @@
+SyntaxTree
+    IfExpr
+        Token 'if'
+        IdentifierExpr
+            Leading ' '
+            Token 'True'
+            Trailing '\n'
+        Token 'then'
+        IntLiteralExpr
+            Leading ' '
+            Token '1'
+            Trailing '\n'
+        Token 'else'
+        IntLiteralExpr
+            Leading ' '
+            Token '2'
+            Trailing '\n'
+        Token DUMMY_ENDIF ''
+    Token EOF ''

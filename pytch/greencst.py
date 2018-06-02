@@ -217,6 +217,63 @@ class LetExpr(Expr):
         return self._n_body
 
 
+class IfExpr(Expr):
+    def __init__(
+        self,
+        t_if: Optional[Token],
+        n_if_expr: Optional[Expr],
+        t_then: Optional[Token],
+        n_then_expr: Optional[Expr],
+        t_else: Optional[Token],
+        n_else_expr: Optional[Expr],
+        t_endif: Optional[Token],
+    ) -> None:
+        super().__init__([
+            t_if,
+            n_if_expr,
+            t_then,
+            n_then_expr,
+            t_else,
+            n_else_expr,
+            t_endif,
+        ])
+        self._t_if = t_if
+        self._n_if_expr = n_if_expr
+        self._t_then = t_then
+        self._n_then_expr = n_then_expr
+        self._t_else = t_else
+        self._n_else_expr = n_else_expr
+        self._t_endif = t_endif
+
+    @property
+    def t_if(self) -> Optional[Token]:
+        return self._t_if
+
+    @property
+    def n_if_expr(self) -> Optional[Expr]:
+        return self._n_if_expr
+
+    @property
+    def t_then(self) -> Optional[Token]:
+        return self._t_then
+
+    @property
+    def n_then_expr(self) -> Optional[Expr]:
+        return self._n_then_expr
+
+    @property
+    def t_else(self) -> Optional[Token]:
+        return self._t_else
+
+    @property
+    def n_else_expr(self) -> Optional[Expr]:
+        return self._n_else_expr
+
+    @property
+    def t_endif(self) -> Optional[Token]:
+        return self._t_endif
+
+
 class IdentifierExpr(Expr):
     def __init__(
         self,

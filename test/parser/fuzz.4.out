@@ -5,26 +5,13 @@ SyntaxTree
         <missing>
         <missing>
         <missing>
+        Leading ' let'
+        Leading ' ='
+        Leading ' print'
+        Leading '('
+        Leading '1'
+        Leading ')\n'
+        Leading ''
         Token DUMMY_IN ''
-        LetExpr
-            Leading ' '
-            Token 'let'
-            <missing>
-            <missing>
-            Leading ' '
-            Token '='
-            FunctionCallExpr
-                IdentifierExpr
-                    Leading ' '
-                    Token 'print'
-                ArgumentList
-                    Token '('
-                    Argument
-                        IntLiteralExpr
-                            Token '1'
-                        <missing>
-                    Token ')'
-                    Trailing '\n'
-            Token DUMMY_IN ''
-            <missing>
+        <missing>
     Token EOF ''

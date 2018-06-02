@@ -82,6 +82,10 @@ class TokenKind(Enum):
     LPAREN = "'('"
     RPAREN = "')'"
 
+    IF = "'if'"
+    THEN = "'then'"
+    ELSE = "'else'"
+
     PLUS = "'+'"
     MINUS = "'-'"
     OR = "'or'"
@@ -100,6 +104,7 @@ class TokenKind(Enum):
     # Dummy tokens; inserted by the pre-parser.
     DUMMY_IN = "the end of a 'let' binding"
     DUMMY_SEMICOLON = "the end of a statement"
+    DUMMY_ENDIF = "the end of an 'if' expression"
 
 
 class Associativity(Enum):
@@ -229,6 +234,9 @@ LET_RE = re.compile("let")
 COMMA_RE = re.compile(",")
 LPAREN_RE = re.compile("\(")
 RPAREN_RE = re.compile("\)")
+IF_RE = re.compile("if")
+THEN_RE = re.compile("then")
+ELSE_RE = re.compile("else")
 PLUS_RE = re.compile("\+")
 MINUS_RE = re.compile("-")
 OR_RE = re.compile("or")
@@ -340,6 +348,9 @@ class Lexer:
             TokenKind.COMMA: COMMA_RE,
             TokenKind.LPAREN: LPAREN_RE,
             TokenKind.RPAREN: RPAREN_RE,
+            TokenKind.IF: IF_RE,
+            TokenKind.THEN: THEN_RE,
+            TokenKind.ELSE: ELSE_RE,
             TokenKind.PLUS: PLUS_RE,
             TokenKind.MINUS: MINUS_RE,
             TokenKind.OR: OR_RE,
@@ -458,6 +469,7 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
         indentation_level: int,
         unwind_statements: bool,
         kind: TokenKind = None,
+        kind_indentation_level: int = None,
     ) -> Iterator[Token]:
         while stack:
             (top_indentation_level, top_line, top_token) = stack[-1]
@@ -466,10 +478,20 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
             # If we're unwinding to a specific token kind, only stop once we've
             # reached that token kind.
             if kind is not None and top_token.kind == kind:
-                return
+                if (
+                    kind_indentation_level is None
+                    or top_indentation_level <= kind_indentation_level
+                ):
+                    return
 
             if top_token.kind == TokenKind.LET:
                 yield make_dummy_token(TokenKind.DUMMY_IN)
+            elif (
+                top_token.kind == TokenKind.IF
+                or top_token.kind == TokenKind.THEN
+                or top_token.kind == TokenKind.ELSE
+            ):
+                yield make_dummy_token(TokenKind.DUMMY_ENDIF)
             elif (
                 unwind_statements
                 and indentation_level == top_indentation_level
@@ -494,11 +516,14 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
         else:
             previous_indentation_level = 0
 
+        maybe_expr_continuation = True
         maybe_new_statement = False
         if previous_line is not None:
             assert previous_line <= current_line
             if current_line > previous_line:
                 maybe_new_statement = True
+                if indentation_level <= previous_indentation_level:
+                    maybe_expr_continuation = False
 
         is_part_of_binary_expr = (
             token.kind in BINARY_OPERATOR_KINDS
@@ -526,8 +551,27 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
                 kind=TokenKind.LPAREN,
             )
         elif token.kind == TokenKind.LET:
-            if indentation_level <= previous_indentation_level:
+            if not maybe_expr_continuation:
                 yield from unwind(indentation_level, unwind_statements=False)
+            stack.append((indentation_level, current_line, token))
+        elif token.kind == TokenKind.IF:
+            if not maybe_expr_continuation:
+                yield from unwind(indentation_level, unwind_statements=True)
+            stack.append((indentation_level, current_line, token))
+        elif token.kind == TokenKind.THEN:
+            yield from unwind(
+                indentation_level,
+                unwind_statements=False,
+                kind=TokenKind.IF,
+            )
+            stack.append((indentation_level, current_line, token))
+        elif token.kind == TokenKind.ELSE:
+            yield from unwind(
+                indentation_level,
+                unwind_statements=False,
+                kind=TokenKind.THEN,
+                kind_indentation_level=indentation_level,
+            )
             stack.append((indentation_level, current_line, token))
         elif (
             maybe_new_statement
@@ -596,6 +640,28 @@ def lex(file_info: FileInfo) -> Lexation:
                 f"Mismatch between the number of 'let' bindings ({num_lets}) "
                 + f"and the number of inferred ends "
                 + f"of these 'let' bindings ({num_ins}). "
+                + f"The parse tree for this file is probably incorrect. "
+                + f"This is a bug. Please report it!"
+            ),
+            notes=[],
+        ))
+
+    num_ifs = 0
+    num_endifs = 0
+    for token in tokens:
+        if token.kind == TokenKind.IF:
+            num_ifs += 1
+        elif token.kind == TokenKind.DUMMY_ENDIF:
+            num_endifs += 1
+    if num_ifs != num_endifs:
+        errors.append(Error(
+            file_info=file_info,
+            code=ErrorCode.IF_ENDIF_MISMATCH,
+            severity=Severity.WARNING,
+            message=(
+                f"Mismatch between the number of 'if' expressions ({num_ifs}) "
+                + f"and the number of inferred ends "
+                + f"of these 'if' expressions ({num_endifs}). "
                 + f"The parse tree for this file is probably incorrect. "
                 + f"This is a bug. Please report it!"
             ),

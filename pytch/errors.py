@@ -46,6 +46,7 @@ class ErrorCode(Enum):
     """Not a real error code, just for testing purposes."""
     SHOULD_END_WITH_EOF = 9002
     LET_IN_MISMATCH = 9003
+    IF_ENDIF_MISMATCH = 9004
 
 
 @attr.s(auto_attribs=True, frozen=True)

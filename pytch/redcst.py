@@ -438,6 +438,157 @@ class LetExpr(Expr):
         ]
 
 
+class IfExpr(Expr):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        origin: greencst.IfExpr,
+        offset: int,
+    ) -> None:
+        super().__init__(parent)
+        self.origin = origin
+        self.offset = offset
+        self._n_if_expr: Optional[Expr] = None
+        self._n_then_expr: Optional[Expr] = None
+        self._n_else_expr: Optional[Expr] = None
+
+    @property
+    def t_if(self) -> Optional[Token]:
+        return self.origin.t_if
+
+    @property
+    def n_if_expr(self) -> Optional[Expr]:
+        if self.origin.n_if_expr is None:
+            return None
+        if self._n_if_expr is not None:
+            return self._n_if_expr
+        offset = (
+            self.offset
+            + (
+                self.t_if.full_width
+                if self.t_if is not None else
+                0
+            )
+        )
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_if_expr.__class__](
+            parent=self,
+            origin=self.origin.n_if_expr,
+            offset=offset,
+        )
+        self._n_if_expr = result
+        return result
+
+    @property
+    def t_then(self) -> Optional[Token]:
+        return self.origin.t_then
+
+    @property
+    def n_then_expr(self) -> Optional[Expr]:
+        if self.origin.n_then_expr is None:
+            return None
+        if self._n_then_expr is not None:
+            return self._n_then_expr
+        offset = (
+            self.offset
+            + (
+                self.t_if.full_width
+                if self.t_if is not None else
+                0
+            )
+            + (
+                self.n_if_expr.full_width
+                if self.n_if_expr is not None else
+                0
+            )
+            + (
+                self.t_then.full_width
+                if self.t_then is not None else
+                0
+            )
+        )
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_then_expr.__class__](
+            parent=self,
+            origin=self.origin.n_then_expr,
+            offset=offset,
+        )
+        self._n_then_expr = result
+        return result
+
+    @property
+    def t_else(self) -> Optional[Token]:
+        return self.origin.t_else
+
+    @property
+    def n_else_expr(self) -> Optional[Expr]:
+        if self.origin.n_else_expr is None:
+            return None
+        if self._n_else_expr is not None:
+            return self._n_else_expr
+        offset = (
+            self.offset
+            + (
+                self.t_if.full_width
+                if self.t_if is not None else
+                0
+            )
+            + (
+                self.n_if_expr.full_width
+                if self.n_if_expr is not None else
+                0
+            )
+            + (
+                self.t_then.full_width
+                if self.t_then is not None else
+                0
+            )
+            + (
+                self.n_then_expr.full_width
+                if self.n_then_expr is not None else
+                0
+            )
+            + (
+                self.t_else.full_width
+                if self.t_else is not None else
+                0
+            )
+        )
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_else_expr.__class__](
+            parent=self,
+            origin=self.origin.n_else_expr,
+            offset=offset,
+        )
+        self._n_else_expr = result
+        return result
+
+    @property
+    def t_endif(self) -> Optional[Token]:
+        return self.origin.t_endif
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(
+            start=start,
+            end=start + self.origin.width,
+        )
+
+    @property
+    def children(self) -> List[Optional[Union[Token, Node]]]:
+        return [
+            self.t_if,
+            self.n_if_expr,
+            self.t_then,
+            self.n_then_expr,
+            self.t_else,
+            self.n_else_expr,
+            self.t_endif,
+        ]
+
+
 class IdentifierExpr(Expr):
     def __init__(
         self,
@@ -787,6 +938,7 @@ GREEN_TO_RED_NODE_MAP = {
     greencst.Parameter: Parameter,
     greencst.ParameterList: ParameterList,
     greencst.LetExpr: LetExpr,
+    greencst.IfExpr: IfExpr,
     greencst.IdentifierExpr: IdentifierExpr,
     greencst.IntLiteralExpr: IntLiteralExpr,
     greencst.BinaryExpr: BinaryExpr,
