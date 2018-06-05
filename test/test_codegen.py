@@ -1,10 +1,11 @@
-from typing import Any, Iterator, List
+from typing import Any, Iterator, List, Optional
 
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
 from pytch import FileInfo
-from pytch.__main__ import run_file
+from pytch.__main__ import compile_file
+from pytch.errors import get_error_lines
 
 
 def get_codegen_tests() -> Iterator[CaseInfo]:
@@ -24,15 +25,26 @@ def make_result(
     source_code: str,
     capsys: Any,
 ) -> CaseResult:
-    run_file(FileInfo(
+    (compiled_output, errors) = compile_file(FileInfo(
         file_path=input_filename,
         source_code=source_code,
     ))
-    (output, error) = capsys.readouterr()
-    if not error:
+
+    if compiled_output is None:
+        compiled_output = ""
+
+    error_lines = []
+    for i in errors:
+        error_lines.extend(get_error_lines(i, ascii=True))
+
+    error: Optional[str]
+    if error_lines:
+        error = "".join(line + "\n" for line in error_lines)
+    else:
         error = None
+
     return CaseResult(
-        output=output,
+        output=compiled_output,
         error=error,
     )
 
@@ -42,16 +54,16 @@ def make_result(
     get_codegen_tests(),
     ids=get_codegen_test_ids(),
 )
-def test_codegen(capsys: Any, test_case_info: CaseInfo) -> None:
+def test_codegen(test_case_info: CaseInfo) -> None:
     result = make_result(
         test_case_info.input_filename,
         test_case_info.input,
-        capsys,
+        None,
     )
     assert test_case_info.error == result.error
     assert test_case_info.output == result.output
 
 
 @pytest.mark.generate
-def test_generate_parser_tests(capsys: Any) -> None:
-    generate(get_codegen_tests(), make_result, capsys=capsys)
+def test_generate_parser_tests() -> None:
+    generate(get_codegen_tests(), make_result, capsys=None)

@@ -28,6 +28,7 @@ from ..redcst import (
     IfExpr,
     IntLiteralExpr,
     LetExpr,
+    Pattern,
     SyntaxTree,
     VariablePattern,
 )
@@ -186,39 +187,110 @@ def compile_expr(env: Env, expr: Expr) -> Tuple[
         assert False, f"Unhandled expr type {expr.__class__.__name__}"
 
 
+PY_EXPR_NO_TARGET = PyUnavailableExpr(
+    "should have been directly stored already",
+)
+
+
+def compile_expr_target(
+    env: Env,
+    expr: Expr,
+    target: PyIdentifierExpr,
+    preferred_name: str,
+) -> Tuple[Env, PyStmtList]:
+    """Like `compile_expr`, but store the result in the given target.
+
+    This cleans up the generated code by avoiding temporary stores that make
+    it hard to read. For example, this code:
+
+    ```
+    let foo =
+      if True
+      then 1
+      else 2
+    print(foo)
+    ```
+
+    May compile into this, if we don't elide intermediate stores:
+
+    ```
+    if True:
+        _tmp_if = 1
+    else:
+        _tmp_if = 2
+    foo = _tmp_if
+    print(foo)
+    ```
+
+    But we can write this more succinctly by noting that the result of the
+    `if`-expression should be directly assigned to `foo`:
+
+    ```
+    if True:
+        foo = 1
+    else:
+        foo = 2
+    print(foo)
+    ```
+    """
+    if isinstance(expr, LetExpr):
+        (env, _py_expr, statements) = \
+            compile_let_expr(env, let_expr=expr, target=target)
+        return (env, statements)
+    elif isinstance(expr, IfExpr):
+        (env, _py_expr, statements) = \
+            compile_if_expr(env, if_expr=expr, target=target)
+        return (env, statements)
+    elif isinstance(expr, IntLiteralExpr):
+        (env, _py_expr, statements) = \
+            compile_int_literal_expr(env, expr, target=target)
+        return (env, statements)
+    else:
+        (env, py_expr, statements) = compile_expr(env, expr)
+        statements = statements + [PyAssignmentStmt(
+            lhs=target,
+            rhs=py_expr,
+        )]
+        return (env, statements)
+
+
 def compile_let_expr(
     env: Env,
     let_expr: LetExpr,
+    target: PyIdentifierExpr = None,
 ) -> Tuple[Env, PyExpr, PyStmtList]:
     n_pattern = let_expr.n_pattern
     n_value = let_expr.n_value
     py_binding_statements: PyStmtList
     if n_pattern is not None and n_value is not None:
-        assert isinstance(n_pattern, VariablePattern), \
-            f"Unhandled pattern type {n_pattern.__class__.__name__}"
-
-        t_identifier = n_pattern.t_identifier
-        if t_identifier is None:
-            return (env, PyUnavailableExpr("missing let-binding pattern"), [])
-
         n_parameter_list = None
         if let_expr.n_parameter_list is not None:
             n_parameter_list = let_expr.n_parameter_list.parameters
 
         if n_parameter_list is None:
-            (env, name) = env.add_binding(
-                n_pattern,
-                preferred_name=t_identifier.text,
-            )
-            (env, value_expr, value_statements) = compile_expr(env, n_value)
-            py_binding_statements = [
-                *value_statements,
-                PyAssignmentStmt(
-                    lhs=PyIdentifierExpr(name=name),
-                    rhs=value_expr,
+            if target is not None:
+                (env, py_binding_statements) = compile_expr_target(
+                    env,
+                    n_value,
+                    target=target,
+                    preferred_name="_tmp_let",
                 )
-            ]
+            else:
+                (env, py_binding_statements) = compile_assign_to_pattern(
+                    env,
+                    expr=n_value,
+                    pattern=n_pattern,
+                )
         else:
+            assert isinstance(n_pattern, VariablePattern), \
+                f"Bad pattern type {n_pattern.__class__.__name__} for function"
+
+            t_identifier = n_pattern.t_identifier
+            if t_identifier is None:
+                return (env, PyUnavailableExpr(
+                    "missing let-binding function name",
+                ), [])
+
             function_name = t_identifier.text
 
             env = env.push_scope()
@@ -270,6 +342,7 @@ def compile_let_expr(
 def compile_if_expr(
     env: Env,
     if_expr: IfExpr,
+    target: PyIdentifierExpr = None,
 ) -> Tuple[Env, PyExpr, PyStmtList]:
     n_if_expr = if_expr.n_if_expr
     n_then_expr = if_expr.n_then_expr
@@ -279,33 +352,73 @@ def compile_if_expr(
         return (env, PyUnavailableExpr("missing if condition"), [])
     (env, py_if_expr, py_if_statements) = compile_expr(env, n_if_expr)
 
-    (env, result_tmp) = env.make_temporary("_tmp_if")
-    result_tmp_identifier = PyIdentifierExpr(result_tmp)
+    if target is None:
+        (env, target_name) = env.make_temporary("_tmp_if")
+        target = PyIdentifierExpr(name=target_name)
 
     if n_then_expr is None:
         return (env, PyUnavailableExpr("missing then expression"), [])
-    (env, py_then_expr, py_then_statements) = compile_expr(env, n_then_expr)
-    py_then_statements.append(PyAssignmentStmt(
-        lhs=result_tmp_identifier,
-        rhs=py_then_expr,
-    ))
+    (env, py_then_statements) = compile_expr_target(
+        env,
+        n_then_expr,
+        target=target,
+        preferred_name="_tmp_if",
+    )
 
+    py_else_statements: PyStmtList
     if n_else_expr is None:
-        py_else_expr: PyExpr = PyLiteralExpr(value="None")
-        py_else_statements: PyStmtList = []
+        py_else_expr = PyLiteralExpr(value="None")
+        py_else_statements = [PyAssignmentStmt(
+            lhs=target,
+            rhs=py_else_expr,
+        )]
     else:
-        (env, py_else_expr, py_else_statements) = compile_expr(env, n_else_expr)
-    py_else_statements.append(PyAssignmentStmt(
-        lhs=result_tmp_identifier,
-        rhs=py_else_expr,
-    ))
+        (env, py_else_statements) = compile_expr_target(
+            env,
+            n_else_expr,
+            target=target,
+            preferred_name="_tmp_if",
+        )
 
     statements = py_if_statements + [PyIfStmt(
         if_expr=py_if_expr,
         then_statements=py_then_statements,
         else_statements=py_else_statements,
     )]
-    return (env, PyIdentifierExpr(result_tmp), statements)
+    if isinstance(target, PyIdentifierExpr):
+        return (env, target, statements)
+    else:
+        return (env, PY_EXPR_NO_TARGET, statements)
+
+
+def compile_assign_to_pattern(
+    env: Env,
+    expr: Expr,
+    pattern: Pattern,
+) -> Tuple[Env, PyStmtList]:
+    if isinstance(pattern, VariablePattern):
+        t_identifier = pattern.t_identifier
+        if t_identifier is None:
+            return (env, [PyExprStmt(
+                expr=PyUnavailableExpr(
+                    "missing identifier for variable pattern",
+                ),
+            )])
+
+        preferred_name = t_identifier.text
+        (env, name) = env.add_binding(
+            pattern,
+            preferred_name=preferred_name,
+        )
+        target = PyIdentifierExpr(name=name)
+        return compile_expr_target(
+            env,
+            expr=expr,
+            target=target,
+            preferred_name=preferred_name,
+        )
+    else:
+        assert False, f"unimplemented pattern: {pattern.__class__.__name__}"
 
 
 def compile_function_call_expr(
@@ -409,13 +522,22 @@ def compile_identifier_expr(
 def compile_int_literal_expr(
     env: Env,
     int_literal_expr: IntLiteralExpr,
+    target: PyIdentifierExpr = None,
 ) -> Tuple[Env, PyExpr, PyStmtList]:
     t_int_literal = int_literal_expr.t_int_literal
     if t_int_literal is None:
         return (env, PyUnavailableExpr("missing int literal"), [])
+
+    value = t_int_literal.text
+    py_expr = PyLiteralExpr(value=str(value))
+    if target is None:
+        return (env, py_expr, [])
     else:
-        value = int(t_int_literal.text)
-        return (env, PyLiteralExpr(value=str(value)), [])
+        statements: PyStmtList = [PyAssignmentStmt(
+            lhs=target,
+            rhs=py_expr,
+        )]
+        return (env, PY_EXPR_NO_TARGET, statements)
 
 
 def codegen(syntax_tree: SyntaxTree, bindation: Bindation) -> Codegenation:
