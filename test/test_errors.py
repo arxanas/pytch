@@ -205,7 +205,7 @@ let foo =
         file_info=file_info,
         code=ErrorCode.UNBOUND_NAME,
         severity=Severity.ERROR,
-        message="I couldn't find a variable...",
+        message="I couldn't find a binding...",
         range=Range(
             start=Position(
                 line=2,
@@ -219,11 +219,11 @@ let foo =
         notes=[
             Note(
                 file_info=file_info,
-                message="Did you mean `map` (a builtin)?",
+                message="Did you mean 'map' (a builtin)?",
             ),
             Note(
                 file_info=file_info,
-                message="Did you mean `bar`, defined here?",
+                message="Did you mean 'bar', defined here?",
                 range=Range(
                     start=Position(
                         line=1,
@@ -241,17 +241,17 @@ let foo =
     print(lines)
     assert lines == """\
 UNBOUND_NAME[2000] in dummy.pytch, line 3, character 3:
-Error: I couldn't find a variable...
+Error: I couldn't find a binding...
    +---------------------------------------------------+
    | dummy.pytch                                       |
  1 | let foo =                                         |
  2 |   let bar = 3                                     |
-   |       ^~~ Note: Did you mean `bar`, defined here? |
+   |       ^~~ Note: Did you mean 'bar', defined here? |
  3 |   baz                                             |
-   |   ^~~ Error: I couldn't find a variable...        |
+   |   ^~~ Error: I couldn't find a binding...         |
  4 |   bar                                             |
    +---------------------------------------------------+
-   | Note: Did you mean `map` (a builtin)?             |
+   | Note: Did you mean 'map' (a builtin)?             |
    +---------------------------------------------------+
 """
 

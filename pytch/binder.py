@@ -124,7 +124,7 @@ def bind(file_info: FileInfo, syntax_tree: SyntaxTree) -> Bindation:
                 location = " (a builtin)"
             notes.append(Note(
                 file_info=file_info,
-                message=f"Did you mean `{suggestion}`{location}?",
+                message=f"Did you mean '{suggestion}'{location}?",
                 range=range,
             ))
 
@@ -133,8 +133,8 @@ def bind(file_info: FileInfo, syntax_tree: SyntaxTree) -> Bindation:
             code=ErrorCode.UNBOUND_NAME,
             severity=Severity.ERROR,
             message=(
-                f"I couldn't find a variable " +
-                f"in the current scope with the name `{name}`."
+                f"I couldn't find a binding " +
+                f"in the current scope with the name '{name}'."
             ),
             notes=notes,
             range=file_info.get_range_from_offset_range(

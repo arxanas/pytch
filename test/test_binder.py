@@ -35,8 +35,8 @@ let foo =
         code=ErrorCode.UNBOUND_NAME,
         severity=Severity.ERROR,
         message=(
-            "I couldn't find a variable in the current scope "
-            + "with the name `baz`."
+            "I couldn't find a binding in the current scope "
+            + "with the name 'baz'."
         ),
         range=Range(
             start=Position(
@@ -51,12 +51,12 @@ let foo =
         notes=[
             Note(
                 file_info=file_info,
-                message="Did you mean `map` (a builtin)?",
+                message="Did you mean 'map' (a builtin)?",
                 range=None,
             ),
             Note(
                 file_info=file_info,
-                message="Did you mean `bar`, defined here?",
+                message="Did you mean 'bar', defined here?",
                 range=Range(
                     start=Position(
                         line=1,
