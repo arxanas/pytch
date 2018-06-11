@@ -1,3 +1,4 @@
+import keyword
 from typing import Dict, List, Optional, Set, Tuple
 
 import attr
@@ -120,7 +121,8 @@ class Env:
     def _get_name(self, preferred_name: str) -> str:
         for suggested_name in self._suggest_names(preferred_name):
             if (
-                suggested_name not in self.scopes[-1].python_bindings
+                not keyword.iskeyword(suggested_name)
+                and suggested_name not in self.scopes[-1].python_bindings
                 and suggested_name not in
                     self.scopes[-1].pytch_bindings.values()
             ):
