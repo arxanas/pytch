@@ -38,18 +38,14 @@ class PytchRepl(InteractiveConsole):
         source_code = "\n".join(self.buffer)
         self.resetbuffer()
 
-        run_file(FileInfo(
-            file_path="<repl>",
-            source_code=self.all_source_code + source_code,
-        ))
+        run_file(
+            FileInfo(file_path="<repl>", source_code=self.all_source_code + source_code)
+        )
         return NO_MORE_INPUT_REQUIRED
 
 
 def interact() -> None:
-    PytchRepl().interact(
-        banner=f"Pytch version {__version__} REPL",
-        exitmsg="",
-    )
+    PytchRepl().interact(banner=f"Pytch version {__version__} REPL", exitmsg="")
 
 
 def run_file(file_info: FileInfo) -> None:
@@ -60,8 +56,7 @@ def run_file(file_info: FileInfo) -> None:
 
 
 def compile_file(
-    file_info: FileInfo,
-    fuzz: bool = False,
+    file_info: FileInfo, fuzz: bool = False
 ) -> Tuple[Optional[str], List[Error]]:
     all_errors = []
     lexation = lex(file_info=file_info)
@@ -75,11 +70,7 @@ def compile_file(
     if has_fatal_error(all_errors):
         return (None, all_errors)
 
-    red_cst = RedSyntaxTree(
-        parent=None,
-        origin=parsation.green_cst,
-        offset=0,
-    )
+    red_cst = RedSyntaxTree(parent=None, origin=parsation.green_cst, offset=0)
 
     bindation = bind(file_info=file_info, syntax_tree=red_cst)
     all_errors.extend(bindation.errors)
@@ -95,13 +86,10 @@ def compile_file(
 
 
 def has_fatal_error(errors: Sequence[Error]) -> bool:
-    return any(
-        error.severity == Severity.ERROR
-        for error in errors
-    )
+    return any(error.severity == Severity.ERROR for error in errors)
 
 
 def print_errors(errors: List[Error]) -> None:
-    ascii = (not sys.stderr.isatty())
+    ascii = not sys.stderr.isatty()
     for error in errors:
         sys.stderr.write("\n".join(get_error_lines(error, ascii=ascii)) + "\n")

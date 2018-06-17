@@ -50,15 +50,7 @@ strings.
 """
 from enum import Enum
 import re
-from typing import (
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Pattern,
-    Tuple,
-)
+from typing import Iterable, Iterator, List, Mapping, Optional, Pattern, Tuple
 
 import attr
 
@@ -112,10 +104,9 @@ class Associativity(Enum):
     RIGHT = "right"
 
 
-BINARY_OPERATORS: Mapping[TokenKind, Tuple[
-    int,  # Precedence: higher binds more tightly.
-    Associativity,
-]] = {
+BINARY_OPERATORS: Mapping[
+    TokenKind, Tuple[int, Associativity]  # Precedence: higher binds more tightly.
+] = {
     TokenKind.PLUS: (4, Associativity.LEFT),
     TokenKind.MINUS: (4, Associativity.LEFT),
     TokenKind.AND: (3, Associativity.LEFT),
@@ -124,13 +115,11 @@ BINARY_OPERATORS: Mapping[TokenKind, Tuple[
 }
 
 BINARY_OPERATOR_PRECEDENCES = set(
-    precedence
-    for precedence, associativity in BINARY_OPERATORS.values(),
+    precedence for precedence, associativity in BINARY_OPERATORS.values()
 )
 assert all(precedence > 0 for precedence in BINARY_OPERATOR_PRECEDENCES)
-assert BINARY_OPERATOR_PRECEDENCES == set(range(
-    min(BINARY_OPERATOR_PRECEDENCES),
-    max(BINARY_OPERATOR_PRECEDENCES) + 1),
+assert BINARY_OPERATOR_PRECEDENCES == set(
+    range(min(BINARY_OPERATOR_PRECEDENCES), max(BINARY_OPERATOR_PRECEDENCES) + 1)
 )
 
 BINARY_OPERATOR_KINDS = list(BINARY_OPERATORS.keys())
@@ -153,25 +142,19 @@ class Token:
     leading_trivia: List[Trivium]
     trailing_trivia: List[Trivium]
 
-    def update(
-        self,
-        **kwargs,
-    ) -> "Token":
+    def update(self, **kwargs) -> "Token":
         return attr.evolve(self, **kwargs)
 
     @property
     def is_dummy(self):
-        return (
-            self.kind == TokenKind.EOF
-            or self.kind.name.lower().startswith("dummy")
-        )
+        return self.kind == TokenKind.EOF or self.kind.name.lower().startswith("dummy")
 
     @property
     def full_text(self) -> str:
         return (
-            "".join(trivium.text for trivium in self.leading_trivia) +
-            self.text +
-            "".join(trivium.text for trivium in self.trailing_trivia)
+            "".join(trivium.text for trivium in self.leading_trivia)
+            + self.text
+            + "".join(trivium.text for trivium in self.trailing_trivia)
         )
 
     @property
@@ -194,8 +177,7 @@ class Token:
     @property
     def is_followed_by_newline(self) -> bool:
         return any(
-            trivium.kind == TriviumKind.NEWLINE
-            for trivium in self.trailing_trivia
+            trivium.kind == TriviumKind.NEWLINE for trivium in self.trailing_trivia
         )
 
 
@@ -204,10 +186,7 @@ class State:
     file_info: FileInfo
     offset: int
 
-    def update(
-        self,
-        **kwargs,
-    ):
+    def update(self, **kwargs):
         return attr.evolve(self, **kwargs)
 
     def advance_offset(self, offset_delta: int) -> "State":
@@ -257,17 +236,21 @@ class Lexer:
             tokens.append(token)
             if token.kind == TokenKind.ERROR:
                 error_tokens.append(token)
-                errors.append(Error(
-                    file_info=file_info,
-                    code=ErrorCode.INVALID_TOKEN,
-                    severity=Severity.ERROR,
-                    message=f"Invalid token '{token.text}'.",
-                    notes=[],
-                    range=file_info.get_range_from_offset_range(OffsetRange(
-                        start=state.offset - token.trailing_width - token.width,
-                        end=state.offset - token.trailing_width,
-                    )),
-                ))
+                errors.append(
+                    Error(
+                        file_info=file_info,
+                        code=ErrorCode.INVALID_TOKEN,
+                        severity=Severity.ERROR,
+                        message=f"Invalid token '{token.text}'.",
+                        notes=[],
+                        range=file_info.get_range_from_offset_range(
+                            OffsetRange(
+                                start=state.offset - token.trailing_width - token.width,
+                                end=state.offset - token.trailing_width,
+                            )
+                        ),
+                    )
+                )
 
             if token.kind == TokenKind.EOF:
                 break
@@ -276,19 +259,17 @@ class Lexer:
         return Lexation(tokens=tokens, errors=errors)
 
     def lex_leading_trivia(self, state: State) -> Tuple[State, List[Trivium]]:
-        leading_trivia = self.lex_next_trivia_by_patterns(state, {
-            TriviumKind.WHITESPACE: WHITESPACE_RE,
-        })
-        state = state.advance_offset(sum(
-            trivium.width for trivium in leading_trivia,
-        ))
+        leading_trivia = self.lex_next_trivia_by_patterns(
+            state, {TriviumKind.WHITESPACE: WHITESPACE_RE}
+        )
+        state = state.advance_offset(sum(trivium.width for trivium in leading_trivia))
         return (state, leading_trivia)
 
     def lex_trailing_trivia(self, state: State) -> Tuple[State, List[Trivium]]:
-        trailing_trivia = self.lex_next_trivia_by_patterns(state, {
-            TriviumKind.WHITESPACE: WHITESPACE_RE,
-            TriviumKind.NEWLINE: NEWLINE_RE,
-        })
+        trailing_trivia = self.lex_next_trivia_by_patterns(
+            state,
+            {TriviumKind.WHITESPACE: WHITESPACE_RE, TriviumKind.NEWLINE: NEWLINE_RE},
+        )
         newline_indices = [
             i
             for (i, trivium) in enumerate(trailing_trivia)
@@ -302,24 +283,17 @@ class Lexer:
         # newline. We'll consume that as the leading trivia of the next
         # token.
         trailing_trivia = trailing_trivia[:last_newline_index]
-        state = state.advance_offset(
-            sum(trivium.width for trivium in trailing_trivia),
-        )
+        state = state.advance_offset(sum(trivium.width for trivium in trailing_trivia))
         return (state, trailing_trivia)
 
     def lex_next_trivia_by_patterns(
-        self,
-        state: State,
-        trivia_patterns: Mapping[TriviumKind, Pattern],
+        self, state: State, trivia_patterns: Mapping[TriviumKind, Pattern]
     ) -> List[Trivium]:
         trivia: List[Trivium] = []
         offset = state.offset
         while True:
             matches = [
-                (trivium_kind, regex.match(
-                    state.file_info.source_code,
-                    pos=offset,
-                ))
+                (trivium_kind, regex.match(state.file_info.source_code, pos=offset))
                 for trivium_kind, regex in trivia_patterns.items()
             ]
             filtered_matches = [
@@ -329,41 +303,42 @@ class Lexer:
             ]
             if not filtered_matches:
                 return trivia
-            assert len(filtered_matches) == 1, \
-                "More than one possible type of trivia found"
+            assert (
+                len(filtered_matches) == 1
+            ), "More than one possible type of trivia found"
             trivium_kind, match = filtered_matches[0]
 
-            trivium = Trivium(
-                kind=trivium_kind,
-                text=match.group(),
-            )
+            trivium = Trivium(kind=trivium_kind, text=match.group())
             trivia.append(trivium)
             offset += trivium.width
 
     def lex_token(self, state: State) -> Tuple[State, Token]:
-        (maybe_state, token) = self.lex_next_token_by_patterns(state, {
-            TokenKind.INT_LITERAL: INT_LITERAL_RE,
-            TokenKind.EQUALS: EQUALS_RE,
-            TokenKind.LET: LET_RE,
-            TokenKind.COMMA: COMMA_RE,
-            TokenKind.LPAREN: LPAREN_RE,
-            TokenKind.RPAREN: RPAREN_RE,
-            TokenKind.IF: IF_RE,
-            TokenKind.THEN: THEN_RE,
-            TokenKind.ELSE: ELSE_RE,
-            TokenKind.PLUS: PLUS_RE,
-            TokenKind.MINUS: MINUS_RE,
-            TokenKind.OR: OR_RE,
-            TokenKind.AND: AND_RE,
-            TokenKind.IDENTIFIER: IDENTIFIER_RE,
-        })
+        (maybe_state, token) = self.lex_next_token_by_patterns(
+            state,
+            {
+                TokenKind.INT_LITERAL: INT_LITERAL_RE,
+                TokenKind.EQUALS: EQUALS_RE,
+                TokenKind.LET: LET_RE,
+                TokenKind.COMMA: COMMA_RE,
+                TokenKind.LPAREN: LPAREN_RE,
+                TokenKind.RPAREN: RPAREN_RE,
+                TokenKind.IF: IF_RE,
+                TokenKind.THEN: THEN_RE,
+                TokenKind.ELSE: ELSE_RE,
+                TokenKind.PLUS: PLUS_RE,
+                TokenKind.MINUS: MINUS_RE,
+                TokenKind.OR: OR_RE,
+                TokenKind.AND: AND_RE,
+                TokenKind.IDENTIFIER: IDENTIFIER_RE,
+            },
+        )
 
         if token is not None:
             state = maybe_state
         else:
-            (maybe_state, token) = self.lex_next_token_by_patterns(state, {
-                TokenKind.ERROR: UNKNOWN_TOKEN_RE,
-            })
+            (maybe_state, token) = self.lex_next_token_by_patterns(
+                state, {TokenKind.ERROR: UNKNOWN_TOKEN_RE}
+            )
 
         if token is not None:
             state = maybe_state
@@ -375,7 +350,7 @@ class Lexer:
             (state, trailing_trivia) = self.lex_trailing_trivia(state)
             token = Token(
                 kind=TokenKind.EOF,
-                text='',
+                text="",
                 leading_trivia=leading_trivia,
                 trailing_trivia=trailing_trivia,
             )
@@ -383,22 +358,15 @@ class Lexer:
         return (state, token)
 
     def lex_next_token_by_patterns(
-        self,
-        state: State,
-        token_patterns: Mapping[TokenKind, Pattern],
+        self, state: State, token_patterns: Mapping[TokenKind, Pattern]
     ) -> Tuple[State, Optional[Token]]:
         (state, leading_trivia) = self.lex_leading_trivia(state)
         matches = [
-            (token_kind, regex.match(
-                state.file_info.source_code,
-                pos=state.offset,
-            ))
+            (token_kind, regex.match(state.file_info.source_code, pos=state.offset))
             for token_kind, regex in token_patterns.items()
         ]
         filtered_matches = [
-            (token_kind, match)
-            for token_kind, match in matches
-            if match is not None
+            (token_kind, match) for token_kind, match in matches if match is not None
         ]
         if not filtered_matches:
             return (state, None)
@@ -416,9 +384,7 @@ class Lexer:
         return (state, token)
 
 
-def with_indentation_levels(
-    tokens: Iterable[Token],
-) -> Iterator[Tuple[int, Token]]:
+def with_indentation_levels(tokens: Iterable[Token],) -> Iterator[Tuple[int, Token]]:
     indentation_level = 0
     is_first_token_on_line = True
     for token in tokens:
@@ -431,12 +397,7 @@ def with_indentation_levels(
 
 
 def make_dummy_token(kind: TokenKind) -> Token:
-    token = Token(
-        kind=kind,
-        text="",
-        leading_trivia=[],
-        trailing_trivia=[],
-    )
+    token = Token(kind=kind, text="", leading_trivia=[], trailing_trivia=[])
     assert token.is_dummy
     return token
 
@@ -492,10 +453,7 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
                 or top_token.kind == TokenKind.ELSE
             ):
                 yield make_dummy_token(TokenKind.DUMMY_ENDIF)
-            elif (
-                unwind_statements
-                and indentation_level == top_indentation_level
-            ):
+            elif unwind_statements and indentation_level == top_indentation_level:
                 yield make_dummy_token(TokenKind.DUMMY_SEMICOLON)
 
             if kind is None and top_indentation_level <= indentation_level:
@@ -525,19 +483,11 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
                 if indentation_level <= previous_indentation_level:
                     maybe_expr_continuation = False
 
-        is_part_of_binary_expr = (
-            token.kind in BINARY_OPERATOR_KINDS
-            or (
-                previous_token is not None
-                and previous_token.kind in BINARY_OPERATOR_KINDS
-            )
+        is_part_of_binary_expr = token.kind in BINARY_OPERATOR_KINDS or (
+            previous_token is not None and previous_token.kind in BINARY_OPERATOR_KINDS
         )
-        has_comma = (
-            token.kind == TokenKind.COMMA
-            or (
-                previous_token is not None
-                and previous_token.kind == TokenKind.COMMA
-            )
+        has_comma = token.kind == TokenKind.COMMA or (
+            previous_token is not None and previous_token.kind == TokenKind.COMMA
         )
 
         if token.kind == TokenKind.LPAREN:
@@ -546,9 +496,7 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
             stack.append((0, current_line, token))
         elif token.kind == TokenKind.RPAREN:
             yield from unwind(
-                indentation_level,
-                unwind_statements=False,
-                kind=TokenKind.LPAREN,
+                indentation_level, unwind_statements=False, kind=TokenKind.LPAREN
             )
         elif token.kind == TokenKind.LET:
             if not maybe_expr_continuation:
@@ -560,9 +508,7 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
             stack.append((indentation_level, current_line, token))
         elif token.kind == TokenKind.THEN:
             yield from unwind(
-                indentation_level,
-                unwind_statements=False,
-                kind=TokenKind.IF,
+                indentation_level, unwind_statements=False, kind=TokenKind.IF
             )
             stack.append((indentation_level, current_line, token))
         elif token.kind == TokenKind.ELSE:
@@ -573,11 +519,7 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
                 kind_indentation_level=indentation_level,
             )
             stack.append((indentation_level, current_line, token))
-        elif (
-            maybe_new_statement
-            and not is_part_of_binary_expr
-            and not has_comma
-        ):
+        elif maybe_new_statement and not is_part_of_binary_expr and not has_comma:
             if indentation_level <= previous_indentation_level:
                 yield from unwind(indentation_level, unwind_statements=True)
             stack.append((indentation_level, current_line, token))
@@ -611,18 +553,20 @@ def lex(file_info: FileInfo) -> Lexation:
     source_code_length = len(file_info.source_code)
     tokens_length = sum(token.full_width for token in lexation.tokens)
     if source_code_length != tokens_length:
-        errors.append(Error(
-            file_info=file_info,
-            code=ErrorCode.PARSED_LENGTH_MISMATCH,
-            severity=Severity.WARNING,
-            message=(
-                f"Mismatch between source code length ({source_code_length}) " +
-                f"and total length of parsed tokens ({tokens_length}). " +
-                f"The parse tree for this file is probably incorrect. " +
-                f"This is a bug. Please report it!"
-            ),
-            notes=[],
-        ))
+        errors.append(
+            Error(
+                file_info=file_info,
+                code=ErrorCode.PARSED_LENGTH_MISMATCH,
+                severity=Severity.WARNING,
+                message=(
+                    f"Mismatch between source code length ({source_code_length}) "
+                    + f"and total length of parsed tokens ({tokens_length}). "
+                    + f"The parse tree for this file is probably incorrect. "
+                    + f"This is a bug. Please report it!"
+                ),
+                notes=[],
+            )
+        )
 
     num_lets = 0
     num_ins = 0
@@ -632,19 +576,21 @@ def lex(file_info: FileInfo) -> Lexation:
         elif token.kind == TokenKind.DUMMY_IN:
             num_ins += 1
     if num_lets != num_ins:
-        errors.append(Error(
-            file_info=file_info,
-            code=ErrorCode.LET_IN_MISMATCH,
-            severity=Severity.WARNING,
-            message=(
-                f"Mismatch between the number of 'let' bindings ({num_lets}) "
-                + f"and the number of inferred ends "
-                + f"of these 'let' bindings ({num_ins}). "
-                + f"The parse tree for this file is probably incorrect. "
-                + f"This is a bug. Please report it!"
-            ),
-            notes=[],
-        ))
+        errors.append(
+            Error(
+                file_info=file_info,
+                code=ErrorCode.LET_IN_MISMATCH,
+                severity=Severity.WARNING,
+                message=(
+                    f"Mismatch between the number of 'let' bindings ({num_lets}) "
+                    + f"and the number of inferred ends "
+                    + f"of these 'let' bindings ({num_ins}). "
+                    + f"The parse tree for this file is probably incorrect. "
+                    + f"This is a bug. Please report it!"
+                ),
+                notes=[],
+            )
+        )
 
     num_ifs = 0
     num_endifs = 0
@@ -654,18 +600,20 @@ def lex(file_info: FileInfo) -> Lexation:
         elif token.kind == TokenKind.DUMMY_ENDIF:
             num_endifs += 1
     if num_ifs != num_endifs:
-        errors.append(Error(
-            file_info=file_info,
-            code=ErrorCode.IF_ENDIF_MISMATCH,
-            severity=Severity.WARNING,
-            message=(
-                f"Mismatch between the number of 'if' expressions ({num_ifs}) "
-                + f"and the number of inferred ends "
-                + f"of these 'if' expressions ({num_endifs}). "
-                + f"The parse tree for this file is probably incorrect. "
-                + f"This is a bug. Please report it!"
-            ),
-            notes=[],
-        ))
+        errors.append(
+            Error(
+                file_info=file_info,
+                code=ErrorCode.IF_ENDIF_MISMATCH,
+                severity=Severity.WARNING,
+                message=(
+                    f"Mismatch between the number of 'if' expressions ({num_ifs}) "
+                    + f"and the number of inferred ends "
+                    + f"of these 'if' expressions ({num_endifs}). "
+                    + f"The parse tree for this file is probably incorrect. "
+                    + f"This is a bug. Please report it!"
+                ),
+                notes=[],
+            )
+        )
 
     return Lexation(tokens=tokens, errors=errors)

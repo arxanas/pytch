@@ -9,13 +9,14 @@ CompiledOutput = List[str]
 class PyExpr:
     def compile(self) -> str:
         raise NotImplementedError(
-            f"`PyExpr.compile` not implemented by {self.__class__.__name__}",
+            f"`PyExpr.compile` not implemented by {self.__class__.__name__}"
         )
 
 
 @attr.s(auto_attribs=True, frozen=True)
 class PyUnavailableExpr(PyExpr):
     """Indicates a value deriving from malformed source code."""
+
     reason: str
 
     def compile(self) -> str:
@@ -72,7 +73,7 @@ class PyBinaryExpr(PyExpr):
 class PyStmt:
     def compile(self) -> CompiledOutput:
         raise NotImplementedError(
-            f"`PyStmt.compile` not implemented by {self.__class__.__name__}",
+            f"`PyStmt.compile` not implemented by {self.__class__.__name__}"
         )
 
 
@@ -84,10 +85,7 @@ class PyIndentedStmt:
     statement: PyStmt
 
     def compile(self) -> CompiledOutput:
-        return [
-            "    " + line
-            for line in self.statement.compile()
-        ]
+        return ["    " + line for line in self.statement.compile()]
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -96,9 +94,7 @@ class PyAssignmentStmt(PyStmt):
     rhs: PyExpr
 
     def compile(self) -> CompiledOutput:
-        return [
-            f"{self.lhs.compile()} = {self.rhs.compile()}"
-        ]
+        return [f"{self.lhs.compile()} = {self.rhs.compile()}"]
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -116,22 +112,16 @@ class PyIfStmt(PyStmt):
     else_statements: Optional[PyStmtList]  # noqa: E701
 
     def compile(self) -> CompiledOutput:
-        if_statements = [
-            f"if {self.if_expr.compile()}:",
-        ]
+        if_statements = [f"if {self.if_expr.compile()}:"]
         for statement in self.then_statements:
-            if_statements.extend(
-                PyIndentedStmt(statement=statement).compile(),
-            )
+            if_statements.extend(PyIndentedStmt(statement=statement).compile())
 
         else_statements = []
         if self.else_statements is not None:
             assert self.else_statements
             else_statements.append("else:")
             for statement in self.else_statements:
-                else_statements.extend(
-                    PyIndentedStmt(statement=statement).compile(),
-                )
+                else_statements.extend(PyIndentedStmt(statement=statement).compile())
         return if_statements + else_statements
 
 
@@ -151,26 +141,15 @@ class PyFunctionStmt(PyStmt):
     return_expr: PyExpr
 
     def compile(self) -> CompiledOutput:
-        parameters = ", ".join(
-            parameter.compile() for parameter in self.parameters,
-        )
+        parameters = ", ".join(parameter.compile() for parameter in self.parameters)
         body_statements = []
         for statement in self.body_statements:
-            body_statements.extend(
-                PyIndentedStmt(statement=statement).compile(),
-            )
+            body_statements.extend(PyIndentedStmt(statement=statement).compile())
 
-        return_statement = PyIndentedStmt(
-            statement=PyReturnStmt(
-                expr=self.return_expr,
-            ),
-        )
+        return_statement = PyIndentedStmt(statement=PyReturnStmt(expr=self.return_expr))
         body_statements.extend(return_statement.compile())
 
-        return [
-            f"def {self.name}({parameters}):",
-            *body_statements,
-        ]
+        return [f"def {self.name}({parameters}):", *body_statements]
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -180,6 +159,4 @@ class PyExprStmt(PyStmt):
     def compile(self) -> CompiledOutput:
         if isinstance(self.expr, PyUnavailableExpr):
             return []
-        return [
-            f"{self.expr.compile()}"
-        ]
+        return [f"{self.expr.compile()}"]

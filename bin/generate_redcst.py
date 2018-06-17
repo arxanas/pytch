@@ -59,18 +59,14 @@ def main() -> None:
     lines = sys.stdin.read().splitlines()
     sections = get_node_types(lines)
     class_defs = [
-        get_class_def(name, sections, children)
-        for name, children
-        in sections.items()
+        get_class_def(name, sections, children) for name, children in sections.items()
     ]
     sys.stdout.write(PREAMBLE)
     sys.stdout.write("\n\n".join(class_defs) + "\n\n")
     sys.stdout.write(get_green_to_red_node_map(sections))
 
 
-def get_green_to_red_node_map(
-    node_types: Mapping[NodeType, List[Child]],
-) -> str:
+def get_green_to_red_node_map(node_types: Mapping[NodeType, List[Child]],) -> str:
     map = "GREEN_TO_RED_NODE_MAP = {\n"
     for node_type in node_types:
         node_class = node_type.name
@@ -85,8 +81,7 @@ def get_class_def(
     children: List[Child],
 ) -> str:
     node_types = {
-        NodeType(name=k.name, supertype=None): v
-        for k, v in node_types.items()
+        NodeType(name=k.name, supertype=None): v for k, v in node_types.items()
     }
 
     def get_leaf_children(base_type: NodeType) -> Optional[List[Child]]:
@@ -204,8 +199,7 @@ def get_class_def(
     children_prop_body += "\n"
     children_prop_body += "@property\n"
     children_prop_body += "def offset_range(self) -> OffsetRange:\n"
-    children_prop_body += \
-        "    start = self.offset + self.origin.leading_width\n"
+    children_prop_body += "    start = self.offset + self.origin.leading_width\n"
     children_prop_body += "    return OffsetRange(\n"
     children_prop_body += "        start=start,\n"
     children_prop_body += "        end=start + self.origin.width,\n"
@@ -213,16 +207,15 @@ def get_class_def(
 
     children_prop_body += "\n"
     children_prop_body += f"@property\n"
-    children_prop_body += \
-        f"def children(self) -> List[Optional[Union[Token, Node]]]:\n"
+    children_prop_body += f"def children(self) -> List[Optional[Union[Token, Node]]]:\n"
     children_prop_body += f"    return [\n"
     for child in children:
         if child.is_sequence_type:
             children_prop_body += f"        *self.{child.name},\n"
         elif child.is_optional_sequence_type:
             children_prop_body += (
-                f"        *(self.{child.name} " +
-                f"if self.{child.name} is not None else []),\n"
+                f"        *(self.{child.name} "
+                + f"if self.{child.name} is not None else []),\n"
             )
         else:
             children_prop_body += f"        self.{child.name},\n"

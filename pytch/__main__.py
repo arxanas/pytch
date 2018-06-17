@@ -19,10 +19,7 @@ def cli() -> None:
 @click.option("--dump-tree", is_flag=True)
 def compile(source_files: Sequence[TextIO], dump_tree: bool) -> None:
     for source_file in source_files:
-        file_info = FileInfo(
-            file_path=source_file.name,
-            source_code=source_file.read(),
-        )
+        file_info = FileInfo(file_path=source_file.name, source_code=source_file.read())
         if dump_tree:
             errors = []
             lexation = lex(file_info=file_info)
@@ -32,8 +29,7 @@ def compile(source_files: Sequence[TextIO], dump_tree: bool) -> None:
             print_errors(errors)
 
             (offset, lines) = dump_syntax_tree(
-                file_info.source_code,
-                ast_node=parsation.green_cst,
+                file_info.source_code, ast_node=parsation.green_cst
             )
             sys.stdout.write("".join(line + "\n" for line in lines))
         else:
@@ -46,10 +42,9 @@ def compile(source_files: Sequence[TextIO], dump_tree: bool) -> None:
 @cli.command("run")
 @click.argument("source_file", type=click.File())
 def run(source_file: TextIO) -> None:
-    run_file(file_info=FileInfo(
-        file_path=source_file.name,
-        source_code=source_file.read(),
-    ))
+    run_file(
+        file_info=FileInfo(file_path=source_file.name, source_code=source_file.read())
+    )
 
 
 @cli.command("repl")

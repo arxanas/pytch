@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 "e1839a8" = {path = ".", editable = true}
+black = "==18.6b2"
 
 [dev-packages]
 attrs = "==18.1.0"

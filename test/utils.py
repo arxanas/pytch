@@ -11,10 +11,7 @@ from pytch.redcst import SyntaxTree
 # collected as a test.
 class CaseInfo:
     def __init__(
-        self,
-        input_filename: str,
-        output_filename: str,
-        error_filename: Optional[str],
+        self, input_filename: str, output_filename: str, error_filename: Optional[str]
     ) -> None:
         self._input_filename = input_filename
         self._output_filename = output_filename
@@ -81,7 +78,7 @@ def find_tests(
     dir_name: str,
     input_extension: str,
     output_extension: str = ".out",
-    error_extension: str = ".err"
+    error_extension: str = ".err",
 ) -> Iterator[CaseInfo]:
     current_dir = os.path.dirname(__file__)
     tests_dir = os.path.join(current_dir, dir_name)
@@ -92,16 +89,15 @@ def find_tests(
     # read.
     tests_dir = os.path.relpath(tests_dir)
 
-    tests = set(os.path.splitext(filename)[0]
-                for filename in os.listdir(tests_dir)
-                if filename.endswith(input_extension))
+    tests = set(
+        os.path.splitext(filename)[0]
+        for filename in os.listdir(tests_dir)
+        if filename.endswith(input_extension)
+    )
     for test_name in tests:
         input_filename = os.path.join(tests_dir, test_name + input_extension)
         output_filename = os.path.join(tests_dir, test_name + output_extension)
-        error_filename = os.path.join(
-            tests_dir,
-            test_name + error_extension,
-        )
+        error_filename = os.path.join(tests_dir, test_name + error_extension)
 
         yield CaseInfo(
             input_filename=input_filename,
@@ -126,11 +122,7 @@ def generate(
         with open(test_info.input_filename) as input_file:
             input = input_file.read()
         log(f"processing {test_info.input_filename}")
-        result = make_result(
-            test_info.input_filename,
-            input,
-            capsys,
-        )
+        result = make_result(test_info.input_filename, input, capsys)
         output = result.output
         error = result.error
         if not os.path.exists(test_info.output_filename):
@@ -151,8 +143,4 @@ def generate(
 def get_red_cst(file_info: FileInfo) -> SyntaxTree:
     lexation = lex(file_info=file_info)
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
-    return SyntaxTree(
-        parent=None,
-        origin=parsation.green_cst,
-        offset=0,
-    )
+    return SyntaxTree(parent=None, origin=parsation.green_cst, offset=0)

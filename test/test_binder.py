@@ -8,11 +8,14 @@ from pytch.redcst import IdentifierExpr, LetExpr
 
 
 def test_binder() -> None:
-    file_info = FileInfo(file_path="<stdin>", source_code="""\
+    file_info = FileInfo(
+        file_path="<stdin>",
+        source_code="""\
 let foo =
   let bar = 3
   bar
-""")
+""",
+    )
     red_cst = get_red_cst(file_info)
     bindation = bind(file_info=file_info, syntax_tree=red_cst)
     [outer_let, inner_let] = Query(red_cst).find_instances(LetExpr)
@@ -23,50 +26,42 @@ let foo =
 
 
 def test_binder_error() -> None:
-    file_info = FileInfo(file_path="<stdin>", source_code="""\
+    file_info = FileInfo(
+        file_path="<stdin>",
+        source_code="""\
 let foo =
   let bar = 3
   baz
-""")
+""",
+    )
     red_cst = get_red_cst(file_info)
     bindation = bind(file_info=file_info, syntax_tree=red_cst)
-    assert bindation.errors == [Error(
-        file_info=file_info,
-        code=ErrorCode.UNBOUND_NAME,
-        severity=Severity.ERROR,
-        message=(
-            "I couldn't find a binding in the current scope "
-            + "with the name 'baz'."
-        ),
-        range=Range(
-            start=Position(
-                line=2,
-                character=2,
+    assert bindation.errors == [
+        Error(
+            file_info=file_info,
+            code=ErrorCode.UNBOUND_NAME,
+            severity=Severity.ERROR,
+            message=(
+                "I couldn't find a binding in the current scope "
+                + "with the name 'baz'."
             ),
-            end=Position(
-                line=2,
-                character=5,
+            range=Range(
+                start=Position(line=2, character=2), end=Position(line=2, character=5)
             ),
-        ),
-        notes=[
-            Note(
-                file_info=file_info,
-                message="Did you mean 'map' (a builtin)?",
-                range=None,
-            ),
-            Note(
-                file_info=file_info,
-                message="Did you mean 'bar', defined here?",
-                range=Range(
-                    start=Position(
-                        line=1,
-                        character=6,
-                    ),
-                    end=Position(
-                        line=1,
-                        character=9,
+            notes=[
+                Note(
+                    file_info=file_info,
+                    message="Did you mean 'map' (a builtin)?",
+                    range=None,
+                ),
+                Note(
+                    file_info=file_info,
+                    message="Did you mean 'bar', defined here?",
+                    range=Range(
+                        start=Position(line=1, character=6),
+                        end=Position(line=1, character=9),
                     ),
                 ),
-            ),
-        ],
-    )]
+            ],
+        )
+    ]

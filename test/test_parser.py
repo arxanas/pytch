@@ -10,32 +10,18 @@ from pytch.parser import dump_syntax_tree, parse
 
 
 def get_parser_tests() -> Iterator[CaseInfo]:
-    return find_tests(
-        "parser",
-        input_extension=".pytch",
-        error_extension=".err",
-    )
+    return find_tests("parser", input_extension=".pytch", error_extension=".err")
 
 
 def get_parser_test_ids() -> List[str]:
     return [test.name for test in get_parser_tests()]
 
 
-def make_result(
-    input_filename: str,
-    source_code: str,
-    capsys: Any,
-) -> CaseResult:
-    file_info = FileInfo(
-        file_path=input_filename,
-        source_code=source_code,
-    )
+def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResult:
+    file_info = FileInfo(file_path=input_filename, source_code=source_code)
     lexation = lex(file_info=file_info)
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
-    offset, rendered_st_lines = dump_syntax_tree(
-        source_code,
-        parsation.green_cst,
-    )
+    offset, rendered_st_lines = dump_syntax_tree(source_code, parsation.green_cst)
     output = "".join(line + "\n" for line in rendered_st_lines)
 
     error_lines = []
@@ -53,9 +39,7 @@ def make_result(
 
 
 @pytest.mark.parametrize(
-    "test_case_info",
-    get_parser_tests(),
-    ids=get_parser_test_ids(),
+    "test_case_info", get_parser_tests(), ids=get_parser_test_ids()
 )
 def test_parser(test_case_info: CaseInfo) -> None:
     result = make_result(

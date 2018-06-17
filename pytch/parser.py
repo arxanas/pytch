@@ -85,10 +85,10 @@ class State:
 
     @tokens.validator
     def check(self, attribute, value) -> None:
-        assert len(self.tokens) > 0, \
-            "Expected at least one token (the EOF token)."
-        assert self.tokens[-1].kind == TokenKind.EOF, \
-            "Token stream must end with an EOF token."
+        assert len(self.tokens) > 0, "Expected at least one token (the EOF token)."
+        assert (
+            self.tokens[-1].kind == TokenKind.EOF
+        ), "Token stream must end with an EOF token."
 
     token_index: int
     """The index into the token list indicating where we currently are in the
@@ -122,9 +122,7 @@ class State:
     def end_of_file_offset_range(self) -> OffsetRange:
         last_offset = len(self.file_info.source_code)
         last_non_empty_token = next(
-            (token for token in reversed(self.tokens)
-             if token.full_width > 0),
-            None,
+            (token for token in reversed(self.tokens) if token.full_width > 0), None
         )
 
         if last_non_empty_token is None:
@@ -136,13 +134,11 @@ class State:
                 if trivium.kind == TriviumKind.NEWLINE:
                     break
                 first_trailing_newline_index += 1
-            trailing_trivia_up_to_newline = \
-                last_non_empty_token.trailing_trivia[
-                    :first_trailing_newline_index + 1
-                ]
+            trailing_trivia_up_to_newline = last_non_empty_token.trailing_trivia[
+                : first_trailing_newline_index + 1
+            ]
             trailing_trivia_up_to_newline_length = sum(
-                trivium.width
-                for trivium in trailing_trivia_up_to_newline
+                trivium.width for trivium in trailing_trivia_up_to_newline
             )
             start = last_offset - trailing_trivia_up_to_newline_length
             end = start
@@ -155,9 +151,7 @@ class State:
             Trivium(kind=TriviumKind.ERROR, text=error_token.full_text)
             for error_token in self.error_tokens
         ]
-        return token.update(
-            leading_trivia=[*error_trivia, *token.leading_trivia],
-        )
+        return token.update(leading_trivia=[*error_trivia, *token.leading_trivia])
 
     @property
     def current_token_offset_range(self) -> OffsetRange:
@@ -190,64 +184,58 @@ class State:
     @property
     def current_token_range(self) -> Range:
         return self.file_info.get_range_from_offset_range(
-            self.current_token_offset_range,
+            self.current_token_offset_range
         )
 
     @property
     def next_token(self) -> Token:
-        assert self.tokens[self.token_index].kind != TokenKind.EOF, \
-            "Tried to look at the token after the EOF token"
+        assert (
+            self.tokens[self.token_index].kind != TokenKind.EOF
+        ), "Tried to look at the token after the EOF token"
         return self.tokens[self.token_index + 1]
 
-    def update(
-        self,
-        **kwargs,
-    ) -> "State":
+    def update(self, **kwargs) -> "State":
         return attr.evolve(self, **kwargs)
 
     def add_error(self, error: Error) -> "State":
         return self.update(errors=self.errors + [error])
 
-    def assert_(
-        self,
-        condition: bool,
-        code: ErrorCode,
-        message: str,
-    ) -> "State":
+    def assert_(self, condition: bool, code: ErrorCode, message: str) -> "State":
         if not condition:
-            return self.add_error(Error(
-                file_info=self.file_info,
-                code=code,
-                severity=Severity.WARNING,
-                message=f"Assertion failure -- please report this! {message}",
-                notes=[],
-            ))
+            return self.add_error(
+                Error(
+                    file_info=self.file_info,
+                    code=code,
+                    severity=Severity.WARNING,
+                    message=f"Assertion failure -- please report this! {message}",
+                    notes=[],
+                )
+            )
         return self
 
     def start_recovery(self) -> "State":
-        assert not self.is_recovering, \
-            "Tried to start parser error recovery while already recovering"
+        assert (
+            not self.is_recovering
+        ), "Tried to start parser error recovery while already recovering"
         return self.update(is_recovering=True)
 
     def finish_recovery(self) -> "State":
-        assert self.is_recovering, \
-            "Tried to finish parser error recovery while not recovering"
+        assert (
+            self.is_recovering
+        ), "Tried to finish parser error recovery while not recovering"
         return self.update(is_recovering=False)
 
     def push_sync_token_kinds(self, token_kinds: List[TokenKind]) -> "State":
-        return self.update(
-            sync_token_kinds=self.sync_token_kinds + [token_kinds],
-        )
+        return self.update(sync_token_kinds=self.sync_token_kinds + [token_kinds])
 
     def pop_sync_token_kinds(self) -> "State":
         assert self.sync_token_kinds
-        return self.update(
-            sync_token_kinds=self.sync_token_kinds[:-1]
-        )
+        return self.update(sync_token_kinds=self.sync_token_kinds[:-1])
 
     def consume_token(self, token: Token) -> "State":
-        assert self.get_current_token().kind != TokenKind.EOF, \
-            "Tried to consume the EOF token."
+        assert (
+            self.get_current_token().kind != TokenKind.EOF
+        ), "Tried to consume the EOF token."
 
         # We may have added leading error tokens as trivia, but we don't want
         # to double-count their width, since they've already been consumed.
@@ -275,8 +263,9 @@ class State:
         # the error tokens.
         assert 0 <= self.token_index < len(self.tokens)
         token = self.tokens[self.token_index]
-        assert token.kind != TokenKind.EOF, \
-            "Tried to consume the EOF token as an error token."
+        assert (
+            token.kind != TokenKind.EOF
+        ), "Tried to consume the EOF token as an error token."
         return self.update(
             token_index=self.token_index + 1,
             offset=self.offset + token.full_width,
@@ -332,34 +321,25 @@ class Parser:
 
         # File with only whitespace.
         if state.get_current_token().kind == TokenKind.EOF:
-            syntax_tree = SyntaxTree(
-                n_expr=None,
-                t_eof=state.get_current_token(),
-            )
+            syntax_tree = SyntaxTree(n_expr=None, t_eof=state.get_current_token())
             return Parsation(green_cst=syntax_tree, errors=state.errors)
 
         try:
-            (state, n_expr) = self.parse_expr(
-                state,
-                allow_naked_lets=True,
-            )
+            (state, n_expr) = self.parse_expr(state, allow_naked_lets=True)
             (state, t_eof) = self.expect_token(state, [TokenKind.EOF])
             syntax_tree = SyntaxTree(n_expr=n_expr, t_eof=t_eof)
 
             source_code_length = len(file_info.source_code)
-            tokens_length = sum(
-                token.full_width
-                for token in walk_tokens(syntax_tree)
-            )
+            tokens_length = sum(token.full_width for token in walk_tokens(syntax_tree))
             state = state.assert_(
                 source_code_length == tokens_length,
                 code=ErrorCode.PARSED_LENGTH_MISMATCH,
                 message=(
-                    f"Mismatch between source code length " +
-                    f"({source_code_length}) " +
-                    f"and total length of parsed tokens " +
-                    f"({tokens_length}). " +
-                    f"The parse tree for this file is probably incorrect."
+                    f"Mismatch between source code length "
+                    + f"({source_code_length}) "
+                    + f"and total length of parsed tokens "
+                    + f"({tokens_length}). "
+                    + f"The parse tree for this file is probably incorrect."
                 ),
             )
 
@@ -370,9 +350,7 @@ class Parser:
             raise UnhandledParserException(state) from e
 
     def parse_let_expr(
-        self,
-        state: State,
-        allow_naked_lets=False,
+        self, state: State, allow_naked_lets=False
     ) -> Tuple[State, Optional[LetExpr]]:
         t_let_range = state.current_token_range
         (state, t_let) = self.expect_token(state, [TokenKind.LET])
@@ -388,46 +366,36 @@ class Parser:
         notes = [let_note]
 
         (state, n_let_expr) = self.parse_let_expr_binding(
-            state,
-            allow_naked_lets=allow_naked_lets,
-            t_let=t_let,
-            notes=notes,
+            state, allow_naked_lets=allow_naked_lets, t_let=t_let, notes=notes
         )
-        (state, t_in) = self.expect_token(
-            state,
-            [TokenKind.DUMMY_IN],
-            notes=notes,
-        )
+        (state, t_in) = self.expect_token(state, [TokenKind.DUMMY_IN], notes=notes)
         if allow_naked_lets and state.get_current_token().kind == TokenKind.EOF:
             n_body = None
         else:
-            (state, n_body) = self.parse_expr(
-                state,
-                allow_naked_lets=allow_naked_lets,
-            )
+            (state, n_body) = self.parse_expr(state, allow_naked_lets=allow_naked_lets)
 
         n_pattern = n_let_expr.n_pattern if n_let_expr is not None else None
-        n_parameter_list = \
+        n_parameter_list = (
             n_let_expr.n_parameter_list if n_let_expr is not None else None
+        )
         t_equals = n_let_expr.t_equals if n_let_expr is not None else None
         n_value = n_let_expr.n_value if n_let_expr is not None else None
         state = state.pop_sync_token_kinds()
-        return (state, LetExpr(
-            t_let=t_let,
-            n_pattern=n_pattern,
-            n_parameter_list=n_parameter_list,
-            t_equals=t_equals,
-            n_value=n_value,
-            t_in=t_in,
-            n_body=n_body,
-        ))
+        return (
+            state,
+            LetExpr(
+                t_let=t_let,
+                n_pattern=n_pattern,
+                n_parameter_list=n_parameter_list,
+                t_equals=t_equals,
+                n_value=n_value,
+                t_in=t_in,
+                n_body=n_body,
+            ),
+        )
 
     def parse_let_expr_binding(
-        self,
-        state: State,
-        allow_naked_lets: bool,
-        t_let: Token,
-        notes: List[Note],
+        self, state: State, allow_naked_lets: bool, t_let: Token, notes: List[Note]
     ) -> Tuple[State, Optional[LetExpr]]:
         n_pattern: Optional[Pattern]
         n_parameter_list: Optional[ParameterList] = None
@@ -436,26 +404,23 @@ class Parser:
             # (e.g. during editing, the user is renaming the variable), but
             # that the rest of the let-binding is present.
             n_pattern = None
-            state = state.add_error(Error(
-                file_info=state.file_info,
-                code=ErrorCode.EXPECTED_PATTERN,
-                severity=Severity.ERROR,
-                message="I was expecting a pattern after 'let'.",
-                notes=notes,
-                range=state.current_token_range,
-            ))
+            state = state.add_error(
+                Error(
+                    file_info=state.file_info,
+                    code=ErrorCode.EXPECTED_PATTERN,
+                    severity=Severity.ERROR,
+                    message="I was expecting a pattern after 'let'.",
+                    notes=notes,
+                    range=state.current_token_range,
+                )
+            )
         elif (
             state.get_current_token().kind == TokenKind.IDENTIFIER
             and state.next_token.kind == TokenKind.LPAREN
         ):
             # Assume it's a function definition.
-            (state, t_identifier) = self.expect_token(
-                state,
-                [TokenKind.IDENTIFIER],
-            )
-            n_pattern = VariablePattern(
-                t_identifier=t_identifier,
-            )
+            (state, t_identifier) = self.expect_token(state, [TokenKind.IDENTIFIER])
+            n_pattern = VariablePattern(t_identifier=t_identifier)
             (state, n_parameter_list) = self.parse_parameter_list(state)
         else:
             (state, n_pattern) = self.parse_pattern(
@@ -469,25 +434,21 @@ class Parser:
                     range=state.current_token_range,
                 ),
             )
-        (state, t_equals) = self.expect_token(
-            state,
-            [TokenKind.EQUALS],
-            notes=notes,
-        )
-        (state, n_value) = self.parse_expr(
-            state,
-            allow_naked_lets=False,
-        )
+        (state, t_equals) = self.expect_token(state, [TokenKind.EQUALS], notes=notes)
+        (state, n_value) = self.parse_expr(state, allow_naked_lets=False)
 
-        return (state, LetExpr(
-            t_let=t_let,
-            n_pattern=n_pattern,
-            n_parameter_list=n_parameter_list,
-            t_equals=t_equals,
-            n_value=n_value,
-            t_in=None,  # Parsed by caller.
-            n_body=None,  # Parsed by caller.
-        ))
+        return (
+            state,
+            LetExpr(
+                t_let=t_let,
+                n_pattern=n_pattern,
+                n_parameter_list=n_parameter_list,
+                t_equals=t_equals,
+                n_value=n_value,
+                t_in=None,  # Parsed by caller.
+                n_body=None,  # Parsed by caller.
+            ),
+        )
 
     def parse_if_expr(self, state: State) -> Tuple[State, Optional[IfExpr]]:
         (state, t_if) = self.expect_token(state, [TokenKind.IF])
@@ -507,25 +468,24 @@ class Parser:
         (state, t_endif) = self.expect_token(state, [TokenKind.DUMMY_ENDIF])
         state = state.pop_sync_token_kinds()
 
-        return (state, IfExpr(
-            t_if=t_if,
-            n_if_expr=n_if_expr,
-            t_then=t_then,
-            n_then_expr=n_then_expr,
-            t_else=t_else,
-            n_else_expr=n_else_expr,
-            t_endif=t_endif,
-        ))
+        return (
+            state,
+            IfExpr(
+                t_if=t_if,
+                n_if_expr=n_if_expr,
+                t_then=t_then,
+                n_then_expr=n_then_expr,
+                t_else=t_else,
+                n_else_expr=n_else_expr,
+                t_endif=t_endif,
+            ),
+        )
 
     def parse_pattern(
-        self,
-        state: State,
-        error: Error = None,
+        self, state: State, error: Error = None
     ) -> Tuple[State, Optional[Pattern]]:
         (state, t_identifier) = self.expect_token(
-            state,
-            [TokenKind.IDENTIFIER],
-            error=error,
+            state, [TokenKind.IDENTIFIER], error=error
         )
         if t_identifier:
             return (state, VariablePattern(t_identifier=t_identifier))
@@ -536,7 +496,6 @@ class Parser:
         self,
         state: State,
         min_precedence: int = 0,
-
         # Set when we allow let-bindings without associated expressions. For
         # example, this at the top-level:
         #
@@ -558,15 +517,13 @@ class Parser:
         https://eli.thegreenplace.net/2012/08/02/parsing-expressions-by-precedence-climbing
         """
         (state, n_expr) = self.parse_non_binary_expr(
-            state,
-            allow_naked_lets=allow_naked_lets,
+            state, allow_naked_lets=allow_naked_lets
         )
         if n_expr is None:
             return (state, None)
 
         while state.current_token_kind in BINARY_OPERATORS:
-            (precedence, associativity) = \
-                BINARY_OPERATORS[state.current_token_kind]
+            (precedence, associativity) = BINARY_OPERATORS[state.current_token_kind]
             if precedence < min_precedence:
                 break
 
@@ -577,43 +534,30 @@ class Parser:
             else:
                 assert False, "Invalid associativity"
 
-            (state, t_operator) = self.expect_token(
-                state,
-                BINARY_OPERATOR_KINDS,
-            )
-            assert t_operator is not None, \
-                "Should have been checked by the while-loop condition"
+            (state, t_operator) = self.expect_token(state, BINARY_OPERATOR_KINDS)
+            assert (
+                t_operator is not None
+            ), "Should have been checked by the while-loop condition"
 
             (state, n_rhs) = self.parse_expr(
                 state,
                 min_precedence=next_min_precedence,
                 allow_naked_lets=allow_naked_lets,
             )
-            n_expr = BinaryExpr(
-                n_lhs=n_expr,
-                t_operator=t_operator,
-                n_rhs=n_rhs,
-            )
+            n_expr = BinaryExpr(n_lhs=n_expr, t_operator=t_operator, n_rhs=n_rhs)
         return (state, n_expr)
 
     def parse_non_binary_expr(
-        self,
-        state: State,
-        allow_naked_lets: bool,
+        self, state: State, allow_naked_lets: bool
     ) -> Tuple[State, Optional[Expr]]:
-        (state, n_expr) = self.parse_atom(
-            state,
-            allow_naked_lets=allow_naked_lets,
-        )
+        (state, n_expr) = self.parse_atom(state, allow_naked_lets=allow_naked_lets)
         while n_expr is not None:
             token = state.get_current_token()
             if token.kind == TokenKind.EOF:
                 break
             elif token.kind == TokenKind.LPAREN:
                 (state, n_expr) = self.parse_function_call(
-                    state,
-                    current_token=token,
-                    n_callee=n_expr,
+                    state, current_token=token, n_callee=n_expr
                 )
             else:
                 break
@@ -625,11 +569,7 @@ class Parser:
         state = state.consume_error_token(state.get_current_token())
         return state
 
-    def add_error_and_recover(
-        self,
-        state: State,
-        error: Error,
-    ) -> State:
+    def add_error_and_recover(self, state: State, error: Error) -> State:
         if state.is_recovering:
             return state
         state = state.start_recovery()
@@ -656,9 +596,7 @@ class Parser:
         return state
 
     def parse_atom(
-        self,
-        state: State,
-        allow_naked_lets: bool = False,
+        self, state: State, allow_naked_lets: bool = False
     ) -> Tuple[State, Optional[Expr]]:
         token = state.get_current_token()
         if token.kind == TokenKind.IDENTIFIER:
@@ -666,64 +604,59 @@ class Parser:
         elif token.kind == TokenKind.INT_LITERAL:
             return self.parse_int_literal(state)
         elif token.kind == TokenKind.LET:
-            return self.parse_let_expr(
-                state,
-                allow_naked_lets=allow_naked_lets,
-            )
+            return self.parse_let_expr(state, allow_naked_lets=allow_naked_lets)
         elif token.kind == TokenKind.IF:
             return self.parse_if_expr(state)
         else:
-            state = self.add_error_and_recover(state, Error(
-                file_info=state.file_info,
-                severity=Severity.ERROR,
-                code=ErrorCode.EXPECTED_EXPRESSION,
-                message=(
-                    "I was expecting an expression, but instead got " +
-                    self.describe_token(state.get_current_token()) +
-                    "."
+            state = self.add_error_and_recover(
+                state,
+                Error(
+                    file_info=state.file_info,
+                    severity=Severity.ERROR,
+                    code=ErrorCode.EXPECTED_EXPRESSION,
+                    message=(
+                        "I was expecting an expression, but instead got "
+                        + self.describe_token(state.get_current_token())
+                        + "."
+                    ),
+                    range=state.current_token_range,
+                    notes=[],
                 ),
-                range=state.current_token_range,
-                notes=[],
-            ))
+            )
             return (state, None)
-        raise UnhandledParserException(
-            state,
-        ) from ValueError(
+        raise UnhandledParserException(state) from ValueError(
             f"tried to parse expression of unsupported token kind {token.kind}"
         )
 
     def parse_function_call(
-        self,
-        state: State,
-        current_token: Token,
-        n_callee: Expr,
+        self, state: State, current_token: Token, n_callee: Expr
     ) -> Tuple[State, Optional[FunctionCallExpr]]:
         (state, n_argument_list) = self.parse_argument_list(state)
-        return (state, FunctionCallExpr(
-            n_callee=n_callee,
-            n_argument_list=n_argument_list,
-        ))
+        return (
+            state,
+            FunctionCallExpr(n_callee=n_callee, n_argument_list=n_argument_list),
+        )
 
-    def parse_argument_list(
-        self,
-        state: State,
-    ) -> Tuple[State, Optional[ArgumentList]]:
+    def parse_argument_list(self, state: State) -> Tuple[State, Optional[ArgumentList]]:
         t_lparen_range = state.current_token_range
         (state, t_lparen) = self.expect_token(state, [TokenKind.LPAREN])
         if t_lparen is None:
-            state = self.add_error_and_recover(state, Error(
-                file_info=state.file_info,
-                code=ErrorCode.EXPECTED_LPAREN,
-                severity=Severity.ERROR,
-                message=(
-                    "I was expecting a '(' to indicate the start of a " +
-                    "function argument list, but instead got " +
-                    self.describe_token(state.get_current_token()) +
-                    "."
+            state = self.add_error_and_recover(
+                state,
+                Error(
+                    file_info=state.file_info,
+                    code=ErrorCode.EXPECTED_LPAREN,
+                    severity=Severity.ERROR,
+                    message=(
+                        "I was expecting a '(' to indicate the start of a "
+                        + "function argument list, but instead got "
+                        + self.describe_token(state.get_current_token())
+                        + "."
+                    ),
+                    notes=[],
+                    range=state.current_token_range,
                 ),
-                notes=[],
-                range=state.current_token_range,
-            ))
+            )
             return (state, None)
 
         state = state.push_sync_token_kinds([TokenKind.RPAREN])
@@ -745,24 +678,25 @@ class Parser:
                 code=ErrorCode.EXPECTED_RPAREN,
                 severity=Severity.ERROR,
                 message=(
-                    "I was expecting a ')' to indicate the end of this " +
-                    "function argument list, but instead got " +
-                    self.describe_token(state.get_current_token()) +
-                    "."
+                    "I was expecting a ')' to indicate the end of this "
+                    + "function argument list, but instead got "
+                    + self.describe_token(state.get_current_token())
+                    + "."
                 ),
-                notes=[Note(
-                    file_info=state.file_info,
-                    message="The beginning of the argument list is here.",
-                    range=t_lparen_range,
-                )],
+                notes=[
+                    Note(
+                        file_info=state.file_info,
+                        message="The beginning of the argument list is here.",
+                        range=t_lparen_range,
+                    )
+                ],
                 range=state.current_token_range,
             ),
         )
-        return (state, ArgumentList(
-            t_lparen=t_lparen,
-            arguments=arguments,
-            t_rparen=t_rparen,
-        ))
+        return (
+            state,
+            ArgumentList(t_lparen=t_lparen, arguments=arguments, t_rparen=t_rparen),
+        )
 
     def parse_argument(self, state: State) -> Tuple[State, Optional[Argument]]:
         argument_start_offset = state.offset
@@ -772,75 +706,55 @@ class Parser:
 
         token = state.get_current_token()
         if token.kind == TokenKind.RPAREN:
-            return (state, Argument(
-                n_expr=n_expr,
-                t_comma=None,
-            ))
+            return (state, Argument(n_expr=n_expr, t_comma=None))
 
         if token.kind == TokenKind.COMMA:
             (state, t_comma) = self.expect_token(state, [TokenKind.COMMA])
-            return (state, Argument(
-                n_expr=n_expr,
-                t_comma=t_comma,
-            ))
+            return (state, Argument(n_expr=n_expr, t_comma=t_comma))
 
         argument_end_offset = (
-            argument_start_offset
-            + n_expr.leading_width
-            + n_expr.width
+            argument_start_offset + n_expr.leading_width + n_expr.width
         )
         # The end offset is exclusive, so when the position is used as the
         # start offset, it's one character after the argument (where you
         # would expect the comma to go).
-        argument_position = state.file_info.get_position_for_offset(
-            argument_end_offset,
-        )
-        expected_comma_range = Range(
-            start=argument_position,
-            end=argument_position,
-        )
+        argument_position = state.file_info.get_position_for_offset(argument_end_offset)
+        expected_comma_range = Range(start=argument_position, end=argument_position)
 
         error = Error(
             file_info=state.file_info,
             code=ErrorCode.EXPECTED_END_OF_ARGUMENT_LIST,
             severity=Severity.ERROR,
-            message=(
-                "I was expecting a ',' or ')' after the previous argument."
-            ),
+            message=("I was expecting a ',' or ')' after the previous argument."),
             notes=[],
             range=expected_comma_range,
         )
-        (state, t_comma) = self.expect_token(
-            state,
-            [TokenKind.COMMA],
-            error=error,
-        )
+        (state, t_comma) = self.expect_token(state, [TokenKind.COMMA], error=error)
 
-        return (state, Argument(
-            n_expr=n_expr,
-            t_comma=t_comma,
-        ))
+        return (state, Argument(n_expr=n_expr, t_comma=t_comma))
 
     def parse_parameter_list(
-        self,
-        state: State,
+        self, state: State
     ) -> Tuple[State, Optional[ParameterList]]:
         t_lparen_range = state.current_token_range
         (state, t_lparen) = self.expect_token(state, [TokenKind.LPAREN])
         if t_lparen is None:
-            state = self.add_error_and_recover(state, Error(
-                file_info=state.file_info,
-                code=ErrorCode.EXPECTED_LPAREN,
-                severity=Severity.ERROR,
-                message=(
-                    "I was expecting a '(' to indicate the start of a " +
-                    "function parameter list, but instead got " +
-                    self.describe_token(state.get_current_token()) +
-                    "."
+            state = self.add_error_and_recover(
+                state,
+                Error(
+                    file_info=state.file_info,
+                    code=ErrorCode.EXPECTED_LPAREN,
+                    severity=Severity.ERROR,
+                    message=(
+                        "I was expecting a '(' to indicate the start of a "
+                        + "function parameter list, but instead got "
+                        + self.describe_token(state.get_current_token())
+                        + "."
+                    ),
+                    notes=[],
+                    range=state.current_token_range,
                 ),
-                notes=[],
-                range=state.current_token_range,
-            ))
+            )
             return (state, None)
 
         parameters: List[Parameter] = []
@@ -860,29 +774,27 @@ class Parser:
                 code=ErrorCode.EXPECTED_RPAREN,
                 severity=Severity.ERROR,
                 message=(
-                    "I was expecting a ')' to indicate the end of this " +
-                    "function parameter list, but instead got " +
-                    self.describe_token(state.get_current_token()) +
-                    "."
+                    "I was expecting a ')' to indicate the end of this "
+                    + "function parameter list, but instead got "
+                    + self.describe_token(state.get_current_token())
+                    + "."
                 ),
-                notes=[Note(
-                    file_info=state.file_info,
-                    message="The beginning of the parameter list is here.",
-                    range=t_lparen_range,
-                )],
+                notes=[
+                    Note(
+                        file_info=state.file_info,
+                        message="The beginning of the parameter list is here.",
+                        range=t_lparen_range,
+                    )
+                ],
                 range=state.current_token_range,
             ),
         )
-        return (state, ParameterList(
-            t_lparen=t_lparen,
-            parameters=parameters,
-            t_rparen=t_rparen,
-        ))
+        return (
+            state,
+            ParameterList(t_lparen=t_lparen, parameters=parameters, t_rparen=t_rparen),
+        )
 
-    def parse_parameter(
-        self,
-        state: State,
-    ) -> Tuple[State, Optional[Parameter]]:
+    def parse_parameter(self, state: State) -> Tuple[State, Optional[Parameter]]:
         parameter_start_offset = state.offset
         (state, n_pattern) = self.parse_pattern(state)
         if n_pattern is None:
@@ -890,73 +802,45 @@ class Parser:
 
         token = state.get_current_token()
         if token.kind == TokenKind.RPAREN:
-            return (state, Parameter(
-                n_pattern=n_pattern,
-                t_comma=None,
-            ))
+            return (state, Parameter(n_pattern=n_pattern, t_comma=None))
 
         if token.kind == TokenKind.COMMA:
             (state, t_comma) = self.expect_token(state, [TokenKind.COMMA])
-            return (state, Parameter(
-                n_pattern=n_pattern,
-                t_comma=t_comma,
-            ))
+            return (state, Parameter(n_pattern=n_pattern, t_comma=t_comma))
 
         parameter_end_offset = (
-            parameter_start_offset
-            + n_pattern.leading_width
-            + n_pattern.width
+            parameter_start_offset + n_pattern.leading_width + n_pattern.width
         )
         # The end offset is exclusive, so when the position is used as the
         # start offset, it's one character after the argument (where you
         # would expect the comma to go).
         parameter_position = state.file_info.get_position_for_offset(
-            parameter_end_offset,
+            parameter_end_offset
         )
-        expected_comma_range = Range(
-            start=parameter_position,
-            end=parameter_position,
-        )
+        expected_comma_range = Range(start=parameter_position, end=parameter_position)
 
         error = Error(
             file_info=state.file_info,
             code=ErrorCode.EXPECTED_END_OF_PARAMETER_LIST,
             severity=Severity.ERROR,
-            message=(
-                "I was expecting a ',' or ')' after the previous parameter."
-            ),
+            message=("I was expecting a ',' or ')' after the previous parameter."),
             notes=[],
             range=expected_comma_range,
         )
-        (state, t_comma) = self.expect_token(
-            state,
-            [TokenKind.COMMA],
-            error=error,
-        )
+        (state, t_comma) = self.expect_token(state, [TokenKind.COMMA], error=error)
 
-        return (state, Parameter(
-            n_pattern=n_pattern,
-            t_comma=t_comma,
-        ))
+        return (state, Parameter(n_pattern=n_pattern, t_comma=t_comma))
 
     def parse_identifier_expr(
-        self,
-        state: State,
+        self, state: State
     ) -> Tuple[State, Optional[IdentifierExpr]]:
-        (state, t_identifier) = self.expect_token(
-            state,
-            [TokenKind.IDENTIFIER],
-        )
+        (state, t_identifier) = self.expect_token(state, [TokenKind.IDENTIFIER])
         if t_identifier is None:
             return (state, None)
         return (state, IdentifierExpr(t_identifier=t_identifier))
 
-    def parse_int_literal(
-        self,
-        state: State,
-    ) -> Tuple[State, Optional[IntLiteralExpr]]:
-        (state, t_int_literal) = \
-            self.expect_token(state, [TokenKind.INT_LITERAL])
+    def parse_int_literal(self, state: State) -> Tuple[State, Optional[IntLiteralExpr]]:
+        (state, t_int_literal) = self.expect_token(state, [TokenKind.INT_LITERAL])
         if t_int_literal is None:
             return (state, None)
         return (state, IntLiteralExpr(t_int_literal=t_int_literal))
@@ -982,25 +866,24 @@ class Parser:
 
         assert len(possible_token_kinds) > 0
         if len(possible_token_kinds) == 1:
-            possible_tokens_str = self.describe_token_kind(
-                possible_token_kinds[0],
-            )
+            possible_tokens_str = self.describe_token_kind(possible_token_kinds[0])
         elif len(possible_token_kinds) == 2:
-            possible_tokens_str = " or ".join([
-                self.describe_token_kind(possible_token_kinds[0]),
-                possible_token_kinds[1].value,
-            ])
+            possible_tokens_str = " or ".join(
+                [
+                    self.describe_token_kind(possible_token_kinds[0]),
+                    possible_token_kinds[1].value,
+                ]
+            )
         else:
             possible_tokens_str = ", ".join(
-                token.value
-                for token in possible_token_kinds[:-1]
+                token.value for token in possible_token_kinds[:-1]
             )
             possible_tokens_str += ", or " + possible_token_kinds[-1].value
 
         if error is None:
             message = (
-                f"I was expecting {possible_tokens_str}, " +
-                f"but instead got {self.describe_token(token)}."
+                f"I was expecting {possible_tokens_str}, "
+                + f"but instead got {self.describe_token(token)}."
             )
             error = Error(
                 file_info=state.file_info,
@@ -1032,10 +915,7 @@ class Parser:
             return token_kind.value
 
         vowels = ["a", "e", "i", "o", "u"]
-        if any(
-            token_kind.value.strip("'").startswith(vowel)
-            for vowel in vowels
-        ):
+        if any(token_kind.value.strip("'").startswith(vowel) for vowel in vowels):
             return f"an {token_kind.value}"
         else:
             return f"a {token_kind.value}"
@@ -1047,9 +927,7 @@ def parse(file_info: FileInfo, tokens: List[Token]) -> Parsation:
 
 
 def dump_syntax_tree(
-    source_code: str,
-    ast_node: Union[Node, Token, None],
-    offset: int = 0,
+    source_code: str, ast_node: Union[Node, Token, None], offset: int = 0
 ) -> Tuple[int, List[str]]:
     if ast_node is None:
         return (offset, ["<missing>"])
@@ -1074,10 +952,6 @@ def dump_syntax_tree(
     else:
         lines = [f"{ast_node.__class__.__name__}"]
         for child in ast_node.children:
-            (offset, rendered_child) = \
-                dump_syntax_tree(source_code, child, offset)
-            lines.extend(
-                f"    {subline}"
-                for subline in rendered_child
-            )
+            (offset, rendered_child) = dump_syntax_tree(source_code, child, offset)
+            lines.extend(f"    {subline}" for subline in rendered_child)
         return (offset, lines)

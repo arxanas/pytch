@@ -14,10 +14,7 @@ def main() -> None:
         # crash. See
         # https://barro.github.io/2018/01/taking-a-look-at-python-afl/
         try:
-            file_info = FileInfo(
-                file_path="<stdin>",
-                source_code=f.read(),
-            )
+            file_info = FileInfo(file_path="<stdin>", source_code=f.read())
         except UnicodeDecodeError:
             pass
         else:

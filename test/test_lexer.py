@@ -12,9 +12,7 @@ def render_token_stream(tokens: List[Token]) -> str:
     output_lines = []
     for token in tokens:
         for trivium in token.leading_trivia:
-            output_lines.append(
-                f"leading {trivium.kind.value} {trivium.text!r}"
-            )
+            output_lines.append(f"leading {trivium.kind.value} {trivium.text!r}")
 
         if not token.text or token.kind.value == repr(token.text):
             output_lines.append(token.kind.value)
@@ -22,33 +20,20 @@ def render_token_stream(tokens: List[Token]) -> str:
             output_lines.append(f"{token.kind.value} {token.text!r}")
 
         for trivium in token.trailing_trivia:
-            output_lines.append(
-                f"trailing {trivium.kind.value} {trivium.text!r}"
-            )
+            output_lines.append(f"trailing {trivium.kind.value} {trivium.text!r}")
     return "".join(line + "\n" for line in output_lines)
 
 
 def get_lexer_tests() -> Iterator[CaseInfo]:
-    return find_tests(
-        "lexer",
-        input_extension=".pytch",
-        error_extension=".err",
-    )
+    return find_tests("lexer", input_extension=".pytch", error_extension=".err")
 
 
 def get_lexer_test_ids() -> List[str]:
     return [test.name for test in get_lexer_tests()]
 
 
-def make_result(
-    input_filename: str,
-    source_code: str,
-    capsys: Any,
-) -> CaseResult:
-    file_info = FileInfo(
-        file_path=input_filename,
-        source_code=source_code,
-    )
+def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResult:
+    file_info = FileInfo(file_path=input_filename, source_code=source_code)
     lexation = lex(file_info=file_info)
     output = render_token_stream(lexation.tokens)
 
@@ -66,11 +51,7 @@ def make_result(
     return CaseResult(output=output, error=error)
 
 
-@pytest.mark.parametrize(
-    "test_case_info",
-    get_lexer_tests(),
-    ids=get_lexer_test_ids(),
-)
+@pytest.mark.parametrize("test_case_info", get_lexer_tests(), ids=get_lexer_test_ids())
 def test_lexer(test_case_info: CaseInfo) -> None:
     result = make_result(
         input_filename=test_case_info.input_filename,

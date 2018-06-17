@@ -83,11 +83,7 @@ class Node:
 def main() -> None:
     lines = sys.stdin.read().splitlines()
     sections = get_node_types(lines)
-    class_defs = [
-        get_class_def(name, children)
-        for name, children
-        in sections.items()
-    ]
+    class_defs = [get_class_def(name, children) for name, children in sections.items()]
     sys.stdout.write(PREAMBLE)
     sys.stdout.write("\n\n".join(class_defs))
 
@@ -99,9 +95,7 @@ def get_children_parameter_list(children: Sequence[Child]) -> str:
         if child.is_sequence_type:
             list_elem += f"*{child.name}"
         elif child.is_optional_sequence_type:
-            list_elem += (
-                f"*({child.name} if {child.name} is not None else [])"
-            )
+            list_elem += f"*({child.name} if {child.name} is not None else [])"
         else:
             list_elem += child.name
         list_elem += ",\n"

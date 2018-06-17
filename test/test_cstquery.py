@@ -12,7 +12,7 @@ def test_cst_query() -> None:
 let foo =
   let bar = 3
   bar
-"""
+""",
     )
     red_cst = get_red_cst(file_info)
 

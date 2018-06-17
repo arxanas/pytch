@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 pipenv run ./bin/generate_syntax_trees.sh
+pipenv run black .
 git add pytch/{greencst,redcst}.py
 pipenv run flake8 bin pytch test
 pipenv run mypy bin pytch test \

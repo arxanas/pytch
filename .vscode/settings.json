@@ -1,5 +1,4 @@
 {
-    "python.pythonPath": "${workspaceRoot}/.venv/bin/python",
     "python.unitTest.pyTestArgs": [],
     "python.unitTest.pyTestEnabled": true,
     "python.linting.pylintEnabled": false,
@@ -8,5 +7,7 @@
     "python.linting.mypyArgs": [
         "--ignore-missing-imports",
         "--strict-optional"
-    ]
+    ],
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true
 }

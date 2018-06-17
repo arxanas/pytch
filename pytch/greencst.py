@@ -8,10 +8,7 @@ from .lexer import Token
 
 
 class Node:
-    def __init__(
-        self,
-        children: Sequence[Union["Node", Optional["Token"]]],
-    ) -> None:
+    def __init__(self, children: Sequence[Union["Node", Optional["Token"]]]) -> None:
         self._children = children
 
     @property
@@ -50,17 +47,12 @@ class Node:
     def width(self) -> int:
         if not self.children:
             return 0
-        return (
-            self.full_width
-            - self.leading_width
-            - self.trailing_width
-        )
+        return self.full_width - self.leading_width - self.trailing_width
 
     @property
     def full_width(self) -> int:
         return sum(
-            child.full_width if child is not None else 0
-            for child in self.children
+            child.full_width if child is not None else 0 for child in self.children
         )
 
 
@@ -69,15 +61,8 @@ class Expr(Node):
 
 
 class SyntaxTree(Node):
-    def __init__(
-        self,
-        n_expr: Optional[Expr],
-        t_eof: Optional[Token],
-    ) -> None:
-        super().__init__([
-            n_expr,
-            t_eof,
-        ])
+    def __init__(self, n_expr: Optional[Expr], t_eof: Optional[Token]) -> None:
+        super().__init__([n_expr, t_eof])
         self._n_expr = n_expr
         self._t_eof = t_eof
 
@@ -95,13 +80,8 @@ class Pattern(Node):
 
 
 class VariablePattern(Pattern):
-    def __init__(
-        self,
-        t_identifier: Optional[Token],
-    ) -> None:
-        super().__init__([
-            t_identifier,
-        ])
+    def __init__(self, t_identifier: Optional[Token]) -> None:
+        super().__init__([t_identifier])
         self._t_identifier = t_identifier
 
     @property
@@ -110,15 +90,8 @@ class VariablePattern(Pattern):
 
 
 class Parameter(Node):
-    def __init__(
-        self,
-        n_pattern: Optional[Pattern],
-        t_comma: Optional[Token],
-    ) -> None:
-        super().__init__([
-            n_pattern,
-            t_comma,
-        ])
+    def __init__(self, n_pattern: Optional[Pattern], t_comma: Optional[Token]) -> None:
+        super().__init__([n_pattern, t_comma])
         self._n_pattern = n_pattern
         self._t_comma = t_comma
 
@@ -138,11 +111,9 @@ class ParameterList(Node):
         parameters: Optional[List[Parameter]],
         t_rparen: Optional[Token],
     ) -> None:
-        super().__init__([
-            t_lparen,
-            *(parameters if parameters is not None else []),
-            t_rparen,
-        ])
+        super().__init__(
+            [t_lparen, *(parameters if parameters is not None else []), t_rparen]
+        )
         self._t_lparen = t_lparen
         self._parameters = parameters
         self._t_rparen = t_rparen
@@ -171,15 +142,9 @@ class LetExpr(Expr):
         t_in: Optional[Token],
         n_body: Optional[Expr],
     ) -> None:
-        super().__init__([
-            t_let,
-            n_pattern,
-            n_parameter_list,
-            t_equals,
-            n_value,
-            t_in,
-            n_body,
-        ])
+        super().__init__(
+            [t_let, n_pattern, n_parameter_list, t_equals, n_value, t_in, n_body]
+        )
         self._t_let = t_let
         self._n_pattern = n_pattern
         self._n_parameter_list = n_parameter_list
@@ -228,15 +193,9 @@ class IfExpr(Expr):
         n_else_expr: Optional[Expr],
         t_endif: Optional[Token],
     ) -> None:
-        super().__init__([
-            t_if,
-            n_if_expr,
-            t_then,
-            n_then_expr,
-            t_else,
-            n_else_expr,
-            t_endif,
-        ])
+        super().__init__(
+            [t_if, n_if_expr, t_then, n_then_expr, t_else, n_else_expr, t_endif]
+        )
         self._t_if = t_if
         self._n_if_expr = n_if_expr
         self._t_then = t_then
@@ -275,13 +234,8 @@ class IfExpr(Expr):
 
 
 class IdentifierExpr(Expr):
-    def __init__(
-        self,
-        t_identifier: Optional[Token],
-    ) -> None:
-        super().__init__([
-            t_identifier,
-        ])
+    def __init__(self, t_identifier: Optional[Token]) -> None:
+        super().__init__([t_identifier])
         self._t_identifier = t_identifier
 
     @property
@@ -290,13 +244,8 @@ class IdentifierExpr(Expr):
 
 
 class IntLiteralExpr(Expr):
-    def __init__(
-        self,
-        t_int_literal: Optional[Token],
-    ) -> None:
-        super().__init__([
-            t_int_literal,
-        ])
+    def __init__(self, t_int_literal: Optional[Token]) -> None:
+        super().__init__([t_int_literal])
         self._t_int_literal = t_int_literal
 
     @property
@@ -306,16 +255,9 @@ class IntLiteralExpr(Expr):
 
 class BinaryExpr(Expr):
     def __init__(
-        self,
-        n_lhs: Optional[Expr],
-        t_operator: Optional[Token],
-        n_rhs: Optional[Expr],
+        self, n_lhs: Optional[Expr], t_operator: Optional[Token], n_rhs: Optional[Expr]
     ) -> None:
-        super().__init__([
-            n_lhs,
-            t_operator,
-            n_rhs,
-        ])
+        super().__init__([n_lhs, t_operator, n_rhs])
         self._n_lhs = n_lhs
         self._t_operator = t_operator
         self._n_rhs = n_rhs
@@ -334,15 +276,8 @@ class BinaryExpr(Expr):
 
 
 class Argument(Node):
-    def __init__(
-        self,
-        n_expr: Optional[Expr],
-        t_comma: Optional[Token],
-    ) -> None:
-        super().__init__([
-            n_expr,
-            t_comma,
-        ])
+    def __init__(self, n_expr: Optional[Expr], t_comma: Optional[Token]) -> None:
+        super().__init__([n_expr, t_comma])
         self._n_expr = n_expr
         self._t_comma = t_comma
 
@@ -362,11 +297,9 @@ class ArgumentList(Node):
         arguments: Optional[List[Argument]],
         t_rparen: Optional[Token],
     ) -> None:
-        super().__init__([
-            t_lparen,
-            *(arguments if arguments is not None else []),
-            t_rparen,
-        ])
+        super().__init__(
+            [t_lparen, *(arguments if arguments is not None else []), t_rparen]
+        )
         self._t_lparen = t_lparen
         self._arguments = arguments
         self._t_rparen = t_rparen
@@ -386,14 +319,9 @@ class ArgumentList(Node):
 
 class FunctionCallExpr(Expr):
     def __init__(
-        self,
-        n_callee: Optional[Expr],
-        n_argument_list: Optional[ArgumentList],
+        self, n_callee: Optional[Expr], n_argument_list: Optional[ArgumentList]
     ) -> None:
-        super().__init__([
-            n_callee,
-            n_argument_list,
-        ])
+        super().__init__([n_callee, n_argument_list])
         self._n_callee = n_callee
         self._n_argument_list = n_argument_list
 

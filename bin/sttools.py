@@ -13,10 +13,7 @@ class NodeType:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, NodeType):
             return False
-        return (
-            self.name == other.name and
-            self.supertype == other.supertype
-        )
+        return self.name == other.name and self.supertype == other.supertype
 
     def __lt__(self, other: object) -> bool:
         assert isinstance(other, NodeType)
@@ -38,30 +35,25 @@ class Child:
     def base_type(self) -> NodeType:
         assert self.type.name.startswith("Optional[")
         assert self.type.name.endswith("]")
-        name = self.type.name[len("Optional["):-len("]")]
+        name = self.type.name[len("Optional[") : -len("]")]
 
         if name.startswith("List["):
-            name = name[len("List["):-len("]")]
+            name = name[len("List[") : -len("]")]
         if name.startswith("Sequence["):
-            name = name[len("Sequence["):-len("]")]
+            name = name[len("Sequence[") : -len("]")]
 
-        return NodeType(
-            name=name,
-            supertype=None,
-        )
+        return NodeType(name=name, supertype=None)
 
     @property
     def is_sequence_type(self) -> bool:
-        return (
-            self.type.name.startswith("List[")
-            or self.type.name.startswith("Sequence[")
+        return self.type.name.startswith("List[") or self.type.name.startswith(
+            "Sequence["
         )
 
     @property
     def is_optional_sequence_type(self) -> bool:
-        return (
-            self.type.name.startswith("Optional[List[")
-            or self.type.name.startswith("Optional[Sequence[")
+        return self.type.name.startswith("Optional[List[") or self.type.name.startswith(
+            "Optional[Sequence["
         )
 
 
@@ -76,10 +68,7 @@ def get_node_type_from_header(header: str) -> NodeType:
 
 def get_child(line: str) -> Child:
     name, child_type = line.split(": ", 1)
-    type = NodeType(
-        name=child_type,
-        supertype=None,
-    )
+    type = NodeType(name=child_type, supertype=None)
     return Child(name=name, type=type)
 
 
@@ -92,8 +81,9 @@ def get_node_types(lines: List[str]) -> Mapping[NodeType, List[Child]]:
 
         if not line.startswith(" "):
             current_node_type = get_node_type_from_header(line)
-            assert current_node_type not in sections, \
-                f"Duplicate node type: {current_node_type.name}"
+            assert (
+                current_node_type not in sections
+            ), f"Duplicate node type: {current_node_type.name}"
             sections[current_node_type] = []
             continue
 
@@ -103,7 +93,8 @@ def get_node_types(lines: List[str]) -> Mapping[NodeType, List[Child]]:
             continue
 
         child = get_child(line)
-        assert current_node_type is not None, \
-            f"Child has no associated node type: {line}"
+        assert (
+            current_node_type is not None
+        ), f"Child has no associated node type: {line}"
         sections[current_node_type].append(child)
     return sections
