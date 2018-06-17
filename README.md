@@ -9,11 +9,11 @@ The Pytch compiler is currently written in Python 3.6.
 To install the development packages, run
 
 ```sh
-$ pip install -r requirements-dev.txt
+$ pipenv install --dev
 ```
 
 To run:
 
 ```sh
-$ python -m pytch <file.pytch
+$ pipenv run pytch run file.pytch
 ```
