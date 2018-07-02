@@ -16,7 +16,8 @@ let foo =
   bar
 """,
     )
-    syntax_tree = get_syntax_tree(file_info)
+    (syntax_tree, errors) = get_syntax_tree(file_info)
+    assert not errors
     bindation = bind(file_info=file_info, syntax_tree=syntax_tree)
     [outer_let, inner_let] = Query(syntax_tree).find_instances(LetExpr)
     [bar_ident] = Query(syntax_tree).find_instances(IdentifierExpr)
@@ -34,7 +35,8 @@ let foo =
   baz
 """,
     )
-    syntax_tree = get_syntax_tree(file_info)
+    (syntax_tree, errors) = get_syntax_tree(file_info)
+    assert not errors
     bindation = bind(file_info=file_info, syntax_tree=syntax_tree)
     assert bindation.errors == [
         Error(

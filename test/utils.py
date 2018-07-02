@@ -1,7 +1,8 @@
 import os.path
-from typing import Any, Callable, Iterator, Optional
+from typing import Any, Callable, Iterator, List, Optional, Tuple
 
 from pytch import FileInfo
+from pytch.errors import Error
 from pytch.lexer import lex
 from pytch.parser import parse
 from pytch.redcst import SyntaxTree
@@ -140,7 +141,9 @@ def generate(
             log(f"file exists, not generating: {test_info.output_filename}")
 
 
-def get_syntax_tree(file_info: FileInfo) -> SyntaxTree:
+def get_syntax_tree(file_info: FileInfo) -> Tuple[SyntaxTree, List[Error]]:
     lexation = lex(file_info=file_info)
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
-    return SyntaxTree(parent=None, origin=parsation.green_cst, offset=0)
+    syntax_tree = SyntaxTree(parent=None, origin=parsation.green_cst, offset=0)
+    errors = lexation.errors + parsation.errors
+    return (syntax_tree, errors)
