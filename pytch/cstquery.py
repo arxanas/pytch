@@ -7,8 +7,8 @@ T_node = TypeVar("T_node", bound=Node)
 
 
 class Query:
-    def __init__(self, red_cst: SyntaxTree) -> None:
-        self._red_cst = red_cst
+    def __init__(self, syntax_tree: SyntaxTree) -> None:
+        self._syntax_tree = syntax_tree
 
     def find_instances(self, node_type: Type[T_node]) -> Iterable[T_node]:
         for node in self._walk_all():
@@ -23,7 +23,7 @@ class Query:
                     yield from self._walk(child)
 
     def _walk_all(self) -> Iterable[Union[Node, Token]]:
-        if self._red_cst.n_expr is not None:
-            yield from self._walk(self._red_cst.n_expr)
-        if self._red_cst.t_eof is not None:
-            yield from self._walk(self._red_cst.t_eof)
+        if self._syntax_tree.n_expr is not None:
+            yield from self._walk(self._syntax_tree.n_expr)
+        if self._syntax_tree.t_eof is not None:
+            yield from self._walk(self._syntax_tree.t_eof)

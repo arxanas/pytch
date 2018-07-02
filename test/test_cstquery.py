@@ -1,4 +1,4 @@
-from utils import get_red_cst
+from utils import get_syntax_tree
 
 from pytch import FileInfo
 from pytch.cstquery import Query
@@ -14,7 +14,7 @@ let foo =
   bar
 """,
     )
-    red_cst = get_red_cst(file_info)
+    syntax_tree = get_syntax_tree(file_info)
 
-    let_exprs = list(Query(red_cst).find_instances(LetExpr))
+    let_exprs = list(Query(syntax_tree).find_instances(LetExpr))
     assert len(let_exprs) == 2

@@ -1,4 +1,4 @@
-from utils import get_red_cst
+from utils import get_syntax_tree
 
 from pytch import FileInfo, Position, Range
 from pytch.binder import bind
@@ -16,10 +16,10 @@ let foo =
   bar
 """,
     )
-    red_cst = get_red_cst(file_info)
-    bindation = bind(file_info=file_info, syntax_tree=red_cst)
-    [outer_let, inner_let] = Query(red_cst).find_instances(LetExpr)
-    [bar_ident] = Query(red_cst).find_instances(IdentifierExpr)
+    syntax_tree = get_syntax_tree(file_info)
+    bindation = bind(file_info=file_info, syntax_tree=syntax_tree)
+    [outer_let, inner_let] = Query(syntax_tree).find_instances(LetExpr)
+    [bar_ident] = Query(syntax_tree).find_instances(IdentifierExpr)
     assert bar_ident.t_identifier is not None
     assert bar_ident.t_identifier.text == "bar"
     assert bindation.get(bar_ident) == [inner_let.n_pattern]
@@ -34,8 +34,8 @@ let foo =
   baz
 """,
     )
-    red_cst = get_red_cst(file_info)
-    bindation = bind(file_info=file_info, syntax_tree=red_cst)
+    syntax_tree = get_syntax_tree(file_info)
+    bindation = bind(file_info=file_info, syntax_tree=syntax_tree)
     assert bindation.errors == [
         Error(
             file_info=file_info,

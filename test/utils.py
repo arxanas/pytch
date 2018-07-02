@@ -140,7 +140,7 @@ def generate(
             log(f"file exists, not generating: {test_info.output_filename}")
 
 
-def get_red_cst(file_info: FileInfo) -> SyntaxTree:
+def get_syntax_tree(file_info: FileInfo) -> SyntaxTree:
     lexation = lex(file_info=file_info)
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
     return SyntaxTree(parent=None, origin=parsation.green_cst, offset=0)

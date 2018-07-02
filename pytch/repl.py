@@ -70,14 +70,14 @@ def compile_file(
     if has_fatal_error(all_errors):
         return (None, all_errors)
 
-    red_cst = RedSyntaxTree(parent=None, origin=parsation.green_cst, offset=0)
+    syntax_tree = RedSyntaxTree(parent=None, origin=parsation.green_cst, offset=0)
 
-    bindation = bind(file_info=file_info, syntax_tree=red_cst)
+    bindation = bind(file_info=file_info, syntax_tree=syntax_tree)
     all_errors.extend(bindation.errors)
     if has_fatal_error(all_errors):
         return (None, all_errors)
 
-    codegenation = codegen(syntax_tree=red_cst, bindation=bindation)
+    codegenation = codegen(syntax_tree=syntax_tree, bindation=bindation)
     all_errors.extend(codegenation.errors)
     if has_fatal_error(all_errors):
         return (None, all_errors)
