@@ -32,6 +32,52 @@ class Node:
         return self._children
 
     @property
+    def leading_text(self) -> str:
+        first_child = self.first_present_child
+        if first_child is None:
+            return ""
+        else:
+            return first_child.leading_text
+
+    @property
+    def text(self) -> str:
+        if len(self._children) == 0:
+            return ""
+        elif len(self._children) == 1:
+            child = self._children[0]
+            if child is None:
+                return ""
+            else:
+                return child.text
+        else:
+            text = ""
+            [first, *middle, last] = self._children
+            if first is not None:
+                text += first.text + first.trailing_text
+            for child in middle:
+                if child is not None:
+                    text += child.full_text
+            if last is not None:
+                text += last.leading_text + last.text
+            return text
+
+    @property
+    def trailing_text(self) -> str:
+        last_child = self.last_present_child
+        if last_child is None:
+            return ""
+        else:
+            return last_child.trailing_text
+
+    @property
+    def full_text(self) -> str:
+        return "".join(
+            child.full_text
+            for child in self._children
+            if child is not None
+        )
+
+    @property
     def first_present_child(self) -> Optional[Union["Node", "Token"]]:
         for child in self.children:
             if child is not None:

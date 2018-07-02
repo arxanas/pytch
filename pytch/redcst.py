@@ -18,6 +18,18 @@ class Node:
         return self._parent
 
     @property
+    def text(self) -> str:
+        raise NotImplementedError(
+            f"class {self.__class__.__name__} should implement `text`"
+        )
+
+    @property
+    def full_text(self) -> str:
+        raise NotImplementedError(
+            f"class {self.__class__.__name__} should implement `full_text`"
+        )
+
+    @property
     def children(self) -> Sequence[Union["Node", Optional["Token"]]]:
         raise NotImplementedError(
             f"class {self.__class__.__name__} should implement `children`"
@@ -67,6 +79,14 @@ class SyntaxTree(Node):
         return self.origin.t_eof
 
     @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
+
+    @property
     def full_width(self) -> int:
         return self.origin.full_width
 
@@ -95,6 +115,14 @@ class VariablePattern(Pattern):
     @property
     def t_identifier(self) -> Optional[Token]:
         return self.origin.t_identifier
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
 
     @property
     def full_width(self) -> int:
@@ -135,6 +163,14 @@ class Parameter(Node):
     @property
     def t_comma(self) -> Optional[Token]:
         return self.origin.t_comma
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
 
     @property
     def full_width(self) -> int:
@@ -182,6 +218,14 @@ class ParameterList(Node):
     @property
     def t_rparen(self) -> Optional[Token]:
         return self.origin.t_rparen
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
 
     @property
     def full_width(self) -> int:
@@ -304,6 +348,14 @@ class LetExpr(Expr):
         return result
 
     @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
+
+    @property
     def full_width(self) -> int:
         return self.origin.full_width
 
@@ -404,6 +456,14 @@ class IfExpr(Expr):
         return self.origin.t_endif
 
     @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
+
+    @property
     def full_width(self) -> int:
         return self.origin.full_width
 
@@ -438,6 +498,14 @@ class IdentifierExpr(Expr):
         return self.origin.t_identifier
 
     @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
+
+    @property
     def full_width(self) -> int:
         return self.origin.full_width
 
@@ -462,6 +530,14 @@ class IntLiteralExpr(Expr):
     @property
     def t_int_literal(self) -> Optional[Token]:
         return self.origin.t_int_literal
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
 
     @property
     def full_width(self) -> int:
@@ -522,6 +598,14 @@ class BinaryExpr(Expr):
         return result
 
     @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
+
+    @property
     def full_width(self) -> int:
         return self.origin.full_width
 
@@ -560,6 +644,14 @@ class Argument(Node):
     @property
     def t_comma(self) -> Optional[Token]:
         return self.origin.t_comma
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
 
     @property
     def full_width(self) -> int:
@@ -607,6 +699,14 @@ class ArgumentList(Node):
     @property
     def t_rparen(self) -> Optional[Token]:
         return self.origin.t_rparen
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
 
     @property
     def full_width(self) -> int:
@@ -663,6 +763,14 @@ class FunctionCallExpr(Expr):
         )
         self._n_argument_list = result
         return result
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
 
     @property
     def full_width(self) -> int:

@@ -151,11 +151,7 @@ class Token:
 
     @property
     def full_text(self) -> str:
-        return (
-            "".join(trivium.text for trivium in self.leading_trivia)
-            + self.text
-            + "".join(trivium.text for trivium in self.trailing_trivia)
-        )
+        return self.leading_text + self.text + self.trailing_text
 
     @property
     def width(self) -> int:
@@ -171,8 +167,16 @@ class Token:
         return sum(trivium.width for trivium in self.leading_trivia)
 
     @property
+    def leading_text(self) -> str:
+        return "".join(trivium.text for trivium in self.leading_trivia)
+
+    @property
     def trailing_width(self) -> int:
         return sum(trivium.width for trivium in self.trailing_trivia)
+
+    @property
+    def trailing_text(self) -> str:
+        return "".join(trivium.text for trivium in self.trailing_trivia)
 
     @property
     def is_followed_by_newline(self) -> bool:

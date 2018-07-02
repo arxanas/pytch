@@ -34,6 +34,18 @@ class Node:
         return self._parent
 
     @property
+    def text(self) -> str:
+        raise NotImplementedError(
+            f"class {self.__class__.__name__} should implement `text`"
+        )
+
+    @property
+    def full_text(self) -> str:
+        raise NotImplementedError(
+            f"class {self.__class__.__name__} should implement `full_text`"
+        )
+
+    @property
     def children(self) -> Sequence[Union["Node", Optional["Token"]]]:
         raise NotImplementedError(
             f"class {self.__class__.__name__} should implement `children`",
@@ -191,7 +203,19 @@ def get_class_def(
 
         class_body += textwrap.indent(property_body, prefix="    ")
 
-    children_prop_body = "\n"
+    children_prop_body = ""
+
+    children_prop_body += "\n"
+    children_prop_body += "@property\n"
+    children_prop_body += "def text(self) -> str:\n"
+    children_prop_body += "    return self.origin.text\n"
+
+    children_prop_body += "\n"
+    children_prop_body += "@property\n"
+    children_prop_body += "def full_text(self) -> str:\n"
+    children_prop_body += "    return self.origin.full_text\n"
+
+    children_prop_body += "\n"
     children_prop_body += "@property\n"
     children_prop_body += "def full_width(self) -> int:\n"
     children_prop_body += "    return self.origin.full_width\n"
