@@ -14,5 +14,10 @@ setup(
     [console_scripts]
     pytch=pytch.__main__:cli
     """,
-    install_requires=["attrs==18.1.0", "click==6.7", "distance==0.1.3"],
+    install_requires=[
+        "attrs==18.1.0",
+        "click==6.7",
+        "distance==0.1.3",
+        "pyrsistent==0.14.2",
+    ],
 )
