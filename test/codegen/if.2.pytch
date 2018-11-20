@@ -1,0 +1,5 @@
+if True
+then print(1)
+
+if False
+then print(2)

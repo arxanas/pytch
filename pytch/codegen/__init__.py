@@ -317,21 +317,44 @@ def compile_if_expr(
         return (env, PyUnavailableExpr("missing if condition"), [])
     (env, py_if_expr, py_if_statements) = compile_expr(env, n_if_expr)
 
-    if target is None:
+    # Check `n_then_expr` here to avoid making a temporary and not using it.
+    if target is None and n_then_expr is not None:
         (env, target_name) = env.make_temporary("_tmp_if")
         target = PyIdentifierExpr(name=target_name)
 
+    # Compile the `then`-clause.
     if n_then_expr is None:
         return (env, PyUnavailableExpr("missing then expression"), [])
-    (env, py_then_statements) = compile_expr_target(
-        env, n_then_expr, target=target, preferred_name="_tmp_if"
-    )
-
-    py_else_statements: PyStmtList
-    if n_else_expr is None:
-        py_else_expr = PyLiteralExpr(value="None")
-        py_else_statements = [PyAssignmentStmt(lhs=target, rhs=py_else_expr)]
+    if n_else_expr is not None:
+        assert target is not None
+        (env, py_then_statements) = compile_expr_target(
+            env, n_then_expr, target=target, preferred_name="_tmp_if"
+        )
     else:
+        # Avoid storing the result of the `then`-clause into anything if there is no corresponding `else`-clause. This makes code like this:
+        #
+        #     if True
+        #     then print(1)
+        #
+        # produce code like this:
+        #
+        #     if True:
+        #         print(1)
+        #
+        # instead of code like this:
+        #
+        #     if True:
+        #         _tmp_if = print(1)
+        #     else:
+        #         _tmp_if = None
+        #     _tmp_if
+        (env, py_body_expr, py_then_statements) = compile_expr(env, n_then_expr)
+        py_then_statements = py_then_statements + [PyExprStmt(expr=py_body_expr)]
+        target = None
+
+    py_else_statements: Optional[PyStmtList] = None
+    if n_else_expr is not None:
+        assert target is not None
         (env, py_else_statements) = compile_expr_target(
             env, n_else_expr, target=target, preferred_name="_tmp_if"
         )
