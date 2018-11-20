@@ -1,0 +1,27 @@
+'if'
+leading whitespace ' '
+identifier 'True'
+trailing newline '\n'
+'then'
+leading whitespace ' '
+identifier 'print'
+'('
+integer literal '1'
+')'
+trailing newline '\n'
+trailing newline '\n'
+the end of an 'if' expression
+the end of a statement
+'if'
+leading whitespace ' '
+identifier 'False'
+trailing newline '\n'
+'then'
+leading whitespace ' '
+identifier 'print'
+'('
+integer literal '2'
+')'
+trailing newline '\n'
+the end of an 'if' expression
+the end of the file

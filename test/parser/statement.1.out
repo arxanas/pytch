@@ -1,0 +1,49 @@
+SyntaxTree
+    BinaryExpr
+        IfExpr
+            Token 'if'
+            IdentifierExpr
+                Leading ' '
+                Token 'True'
+                Trailing '\n'
+            Token 'then'
+            FunctionCallExpr
+                IdentifierExpr
+                    Leading ' '
+                    Token 'print'
+                ArgumentList
+                    Token '('
+                    Argument
+                        IntLiteralExpr
+                            Token '1'
+                        <missing>
+                    Token ')'
+                    Trailing '\n'
+                    Trailing '\n'
+            <missing>
+            <missing>
+            Token DUMMY_ENDIF ''
+        Token DUMMY_SEMICOLON ''
+        IfExpr
+            Token 'if'
+            IdentifierExpr
+                Leading ' '
+                Token 'False'
+                Trailing '\n'
+            Token 'then'
+            FunctionCallExpr
+                IdentifierExpr
+                    Leading ' '
+                    Token 'print'
+                ArgumentList
+                    Token '('
+                    Argument
+                        IntLiteralExpr
+                            Token '2'
+                        <missing>
+                    Token ')'
+                    Trailing '\n'
+            <missing>
+            <missing>
+            Token DUMMY_ENDIF ''
+    Token EOF ''

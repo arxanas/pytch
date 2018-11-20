@@ -449,7 +449,18 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
                 ):
                     return
 
+            can_be_followed_by_new_statement = True
             if top_token.kind == TokenKind.LET:
+                # If we see something of the form
+                #
+                # ```
+                # let foo = bar
+                # baz
+                # ```
+                #
+                # then no matter what, we will treat the following `baz` as the
+                # `let` body, not a new statement.
+                can_be_followed_by_new_statement = False
                 yield make_dummy_token(TokenKind.DUMMY_IN)
             elif (
                 top_token.kind == TokenKind.IF
@@ -457,7 +468,12 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
                 or top_token.kind == TokenKind.ELSE
             ):
                 yield make_dummy_token(TokenKind.DUMMY_ENDIF)
-            elif unwind_statements and indentation_level == top_indentation_level:
+
+            if (
+                unwind_statements
+                and can_be_followed_by_new_statement
+                and indentation_level == top_indentation_level
+            ):
                 yield make_dummy_token(TokenKind.DUMMY_SEMICOLON)
 
             if kind is None and top_indentation_level <= indentation_level:
