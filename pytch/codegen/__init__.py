@@ -33,6 +33,7 @@ from ..redcst import (
     SyntaxTree,
     VariablePattern,
 )
+from ..typesystem import Typeation
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -479,7 +480,9 @@ def compile_int_literal_expr(
         return (env, PY_EXPR_NO_TARGET, statements)
 
 
-def codegen(syntax_tree: SyntaxTree, bindation: Bindation) -> Codegenation:
+def codegen(
+    syntax_tree: SyntaxTree, bindation: Bindation, typeation: Typeation
+) -> Codegenation:
     env = Env(bindation=bindation, scopes=[Scope.empty()])
     if syntax_tree.n_expr is None:
         return Codegenation(statements=[], errors=[])

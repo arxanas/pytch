@@ -5,12 +5,13 @@ import sys
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from . import __version__, FileInfo
-from .binder import bind
+from .binder import bind, GLOBAL_SCOPE as BINDER_GLOBAL_SCOPE
 from .codegen import codegen
 from .errors import Error, get_error_lines, Severity
 from .lexer import lex
 from .parser import parse
 from .redcst import SyntaxTree as RedSyntaxTree
+from .typesystem import GLOBAL_SCOPE as TYPESYSTEM_GLOBAL_SCOPE, typecheck
 
 
 NO_MORE_INPUT_REQUIRED = False
@@ -72,12 +73,25 @@ def compile_file(
 
     syntax_tree = RedSyntaxTree(parent=None, origin=parsation.green_cst, offset=0)
 
-    bindation = bind(file_info=file_info, syntax_tree=syntax_tree)
+    bindation = bind(
+        file_info=file_info, syntax_tree=syntax_tree, global_scope=BINDER_GLOBAL_SCOPE
+    )
     all_errors.extend(bindation.errors)
     if has_fatal_error(all_errors):
         return (None, all_errors)
 
-    codegenation = codegen(syntax_tree=syntax_tree, bindation=bindation)
+    typeation = typecheck(
+        syntax_tree=syntax_tree,
+        bindation=bindation,
+        global_scope=TYPESYSTEM_GLOBAL_SCOPE,
+    )
+    all_errors.extend(typeation.errors)
+    if has_fatal_error(all_errors):
+        return (None, all_errors)
+
+    codegenation = codegen(
+        syntax_tree=syntax_tree, bindation=bindation, typeation=typeation
+    )
     all_errors.extend(codegenation.errors)
     if has_fatal_error(all_errors):
         return (None, all_errors)

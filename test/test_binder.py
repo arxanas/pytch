@@ -1,7 +1,7 @@
 from utils import get_syntax_tree
 
 from pytch import FileInfo, Position, Range
-from pytch.binder import bind
+from pytch.binder import bind, GLOBAL_SCOPE
 from pytch.cstquery import Query
 from pytch.errors import Error, ErrorCode, Note, Severity
 from pytch.redcst import IdentifierExpr, LetExpr
@@ -18,7 +18,9 @@ let foo =
     )
     (syntax_tree, errors) = get_syntax_tree(file_info)
     assert not errors
-    bindation = bind(file_info=file_info, syntax_tree=syntax_tree)
+    bindation = bind(
+        file_info=file_info, syntax_tree=syntax_tree, global_scope=GLOBAL_SCOPE
+    )
     [outer_let, inner_let] = Query(syntax_tree).find_instances(LetExpr)
     [bar_ident] = Query(syntax_tree).find_instances(IdentifierExpr)
     assert bar_ident.t_identifier is not None
@@ -37,7 +39,9 @@ let foo =
     )
     (syntax_tree, errors) = get_syntax_tree(file_info)
     assert not errors
-    bindation = bind(file_info=file_info, syntax_tree=syntax_tree)
+    bindation = bind(
+        file_info=file_info, syntax_tree=syntax_tree, global_scope=GLOBAL_SCOPE
+    )
     assert bindation.errors == [
         Error(
             file_info=file_info,

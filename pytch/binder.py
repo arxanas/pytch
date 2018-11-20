@@ -85,7 +85,11 @@ def get_names_bound_by_pattern(
         assert False, f"Unhandled pattern type: {n_pattern.__class__.__name__}"
 
 
-def bind(file_info: FileInfo, syntax_tree: SyntaxTree) -> Bindation:
+def bind(
+    file_info: FileInfo,
+    syntax_tree: SyntaxTree,
+    global_scope: Mapping[str, List[VariablePattern]],
+) -> Bindation:
     def get_binding_referred_to_by_name(
         node: Node, name: str, names_in_scope: Mapping[str, List[VariablePattern]]
     ) -> Tuple[Optional[List[VariablePattern]], List[Error]]:
@@ -185,5 +189,5 @@ def bind(file_info: FileInfo, syntax_tree: SyntaxTree) -> Bindation:
 
         return (bindings, errors)
 
-    (bindings, errors) = bind_node(node=syntax_tree, names_in_scope=GLOBAL_SCOPE)
+    (bindings, errors) = bind_node(node=syntax_tree, names_in_scope=global_scope)
     return Bindation(bindings=bindings, errors=errors)
