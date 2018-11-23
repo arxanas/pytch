@@ -1,10 +1,10 @@
 from setuptools import find_packages, setup
 
-from pytch import __version__
+version = "0.1"
 
 setup(
     name="pytch",
-    version=__version__,
+    version=version,
     author="Waleed Khan",
     author_email="me@waleedkhan.name",
     description="ML-like language that compiles down to Python.",

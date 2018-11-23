@@ -4,7 +4,7 @@
 
 ### Setup
 
-The Pytch compiler is currently written in Python 3.6.
+The Pytch compiler is currently written in Python 3.7.
 
 To install the development packages, run
 

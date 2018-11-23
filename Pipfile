@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"e1839a8" = {path = ".", editable = true}
 black = "==18.6b2"
 
 [dev-packages]
@@ -20,4 +19,4 @@ typing = "==3.6.4"
 typing-extensions = "==3.6.5"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
