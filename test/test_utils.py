@@ -1,4 +1,4 @@
-from pytch import FileInfo, Position
+from pytch.utils import FileInfo, Position
 
 
 def slower_get_position_for_offset(source_code: str, offset: int) -> Position:

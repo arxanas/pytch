@@ -9,9 +9,9 @@ from typing import Dict, List, Mapping, Optional, Tuple
 import attr
 import distance
 
-from . import FileInfo, Range
 from .errors import Error, ErrorCode, Note, Severity
 from .redcst import IdentifierExpr, LetExpr, Node, Pattern, SyntaxTree, VariablePattern
+from .utils import FileInfo, Range
 
 
 GLOBAL_SCOPE: Mapping[str, List[VariablePattern]] = {

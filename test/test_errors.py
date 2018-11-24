@@ -1,6 +1,5 @@
 from typing import Sequence
 
-from pytch import FileInfo, Position, Range
 from pytch.errors import (
     _DiagnosticContext,
     _get_diagnostic_lines_to_insert,
@@ -15,6 +14,7 @@ from pytch.errors import (
     Note,
     Severity,
 )
+from pytch.utils import FileInfo, Position, Range
 
 
 def lines_to_string(lines: Sequence[str]) -> str:

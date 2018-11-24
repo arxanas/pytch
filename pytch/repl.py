@@ -4,7 +4,7 @@ import readline
 import sys
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from . import __version__, FileInfo
+from . import __version__
 from .binder import bind, GLOBAL_SCOPE as BINDER_GLOBAL_SCOPE
 from .codegen import codegen
 from .errors import Error, get_error_lines, Severity
@@ -12,6 +12,7 @@ from .lexer import lex
 from .parser import parse
 from .redcst import SyntaxTree as RedSyntaxTree
 from .typesystem import GLOBAL_SCOPE as TYPESYSTEM_GLOBAL_SCOPE, typecheck
+from .utils import FileInfo
 
 
 NO_MORE_INPUT_REQUIRED = False

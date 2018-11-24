@@ -3,9 +3,9 @@ from typing import Any, Iterator, List, Optional
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
-from pytch import FileInfo
 from pytch.errors import Error, get_error_lines
 from pytch.lexer import lex, Token
+from pytch.utils import FileInfo
 
 
 def render_token_stream(tokens: List[Token]) -> str:

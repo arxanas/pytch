@@ -1,8 +1,8 @@
 from utils import get_syntax_tree
 
-from pytch import FileInfo
 from pytch.cstquery import Query
 from pytch.redcst import LetExpr
+from pytch.utils import FileInfo
 
 
 def test_cst_query() -> None:

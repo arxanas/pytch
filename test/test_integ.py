@@ -3,8 +3,8 @@ from typing import Any, Iterator, List
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
-from pytch import FileInfo
 from pytch.__main__ import run_file
+from pytch.utils import FileInfo
 
 
 def get_integ_tests() -> Iterator[CaseInfo]:

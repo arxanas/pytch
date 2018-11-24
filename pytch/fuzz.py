@@ -3,8 +3,8 @@ import sys
 
 import afl
 
-from . import FileInfo
 from .__main__ import compile_file
+from .utils import FileInfo
 
 
 def main() -> None:

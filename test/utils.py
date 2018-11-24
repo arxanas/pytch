@@ -1,11 +1,11 @@
 import os.path
 from typing import Any, Callable, Iterator, List, Optional, Tuple
 
-from pytch import FileInfo
 from pytch.errors import Error
 from pytch.lexer import lex
 from pytch.parser import parse
 from pytch.redcst import SyntaxTree
+from pytch.utils import FileInfo
 
 
 # Note that we can't call this `TestCaseInfo` because then it would be

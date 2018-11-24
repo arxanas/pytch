@@ -62,7 +62,7 @@ import attr
 import click
 from typing_extensions import Protocol
 
-from . import FileInfo, Range
+from .utils import FileInfo, Range
 
 T = TypeVar("T")
 

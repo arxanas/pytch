@@ -15,7 +15,6 @@ from typing import Iterator, List, Optional, Tuple, Union
 
 import attr
 
-from . import FileInfo, OffsetRange, Range
 from .errors import Error, ErrorCode, Note, Severity
 from .greencst import (
     Argument,
@@ -43,6 +42,7 @@ from .lexer import (
     Trivium,
     TriviumKind,
 )
+from .utils import FileInfo, OffsetRange, Range
 
 
 def walk_tokens(node: Node) -> Iterator[Token]:

@@ -3,7 +3,6 @@ from typing import Any, Iterator, List, Optional
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate, get_syntax_tree
 
-from pytch import FileInfo
 from pytch.binder import bind, GLOBAL_SCOPE as BINDER_GLOBAL_SCOPE
 from pytch.containers import PVector
 from pytch.cstquery import Query
@@ -17,6 +16,7 @@ from pytch.typesystem import (
     TyVar,
     UniversalTy,
 )
+from pytch.utils import FileInfo
 
 
 BINDER_GLOBAL_SCOPE = dict(BINDER_GLOBAL_SCOPE)

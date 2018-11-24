@@ -18,8 +18,8 @@ Run `bin/generate_syntax_trees.sh` to re-generate. Do not edit!
 from typing import List, Optional, Sequence, Union
 
 import pytch.greencst as greencst
-from . import OffsetRange
 from .lexer import Token
+from .utils import OffsetRange
 
 
 class Node:

@@ -3,10 +3,10 @@ from typing import Any, Iterator, List, Optional
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
-from pytch import FileInfo
 from pytch.errors import Error, get_error_lines
 from pytch.lexer import lex
 from pytch.parser import dump_syntax_tree, parse
+from pytch.utils import FileInfo
 
 
 def get_parser_tests() -> Iterator[CaseInfo]:

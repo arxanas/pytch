@@ -54,8 +54,8 @@ from typing import Iterable, Iterator, List, Mapping, Optional, Pattern, Tuple
 
 import attr
 
-from . import FileInfo, OffsetRange
 from .errors import Error, ErrorCode, Severity
+from .utils import FileInfo, OffsetRange
 
 
 class TriviumKind(Enum):

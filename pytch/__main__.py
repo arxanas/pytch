@@ -3,10 +3,10 @@ from typing import Sequence, TextIO
 
 import click
 
-from . import FileInfo
 from .lexer import lex
 from .parser import dump_syntax_tree, parse
 from .repl import compile_file, interact, print_errors, run_file
+from .utils import FileInfo
 
 
 @click.group()

@@ -3,9 +3,9 @@ from typing import Any, Iterator, List, Optional
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
 
-from pytch import FileInfo
 from pytch.__main__ import compile_file
 from pytch.errors import get_error_lines
+from pytch.utils import FileInfo
 
 
 def get_codegen_tests() -> Iterator[CaseInfo]:
