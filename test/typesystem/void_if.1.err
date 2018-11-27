@@ -1,0 +1,12 @@
+CANNOT_BIND_TO_VOID[3002] in test/typesystem/void_if.1.pytch, line 2, character 3:
+Error: This expression has type <void>, so it cannot be bound to a variable.
+   +-------------------------------------------------------------------------+
+   | test/typesystem/void_if.1.pytch                                         |
+ 1 | let foo =                                                               |
+   |     ^~~ Note: This is the variable it's being bound to.                 |
+ 2 |   if True                                                               |
+   |   ^~~~~~~                                                               |
+ 3 |   then print(1)                                                         |
+   |   ~~~~~~~~~~~~~ Error: This expression has type <void>, so it cannot be |
+   | bound to a variable.                                                    |
+   +-------------------------------------------------------------------------+

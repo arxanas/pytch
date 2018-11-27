@@ -53,6 +53,7 @@ def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResul
     )
 
     typeation = typecheck(
+        file_info=file_info,
         syntax_tree=syntax_tree,
         bindation=bindation,
         global_scope=TYPE_SYSTEM_GLOBAL_SCOPE,

@@ -4,7 +4,7 @@ import attr
 
 from pytch.binder import Bindation
 from pytch.containers import find, PMap, PVector, take_while
-from pytch.errors import Error
+from pytch.errors import Error, ErrorCode, Note, Severity
 from pytch.lexer import TokenKind
 from pytch.redcst import (
     Argument,
@@ -15,11 +15,13 @@ from pytch.redcst import (
     IfExpr,
     IntLiteralExpr,
     LetExpr,
+    Node,
     Parameter,
     SyntaxTree,
     VariablePattern,
 )
-from .builtins import ERR_TY, INT_TY, NONE_TY
+from pytch.utils import FileInfo, Range
+from .builtins import ERR_TY, INT_TY, NONE_TY, OBJECT_TY, TOP_TY, VOID_TY
 from .judgments import (
     DeclareExistentialVarJudgment,
     DeclareVarJudgment,
@@ -32,7 +34,9 @@ from .reason import (
     EqualTysReason,
     InstantiateExistentialReason,
     InvalidSyntaxReason,
+    NoneIsSubtypeOfVoidReason,
     Reason,
+    SubtypeOfObjectReason,
     SubtypeOfUnboundedGenericReason,
     TodoReason,
 )
@@ -41,9 +45,43 @@ from .types import BaseTy, ExistentialTyVar, FunctionTy, MonoTy, Ty, TyVar, Univ
 
 @attr.s(auto_attribs=True, frozen=True)
 class Env:
+    file_info: FileInfo
     bindation: Bindation
     global_scope: PMap[str, Ty]
     errors: PVector[Error]
+
+    def get_range_for_node(self, node: Node) -> Range:
+        """Get the range corresponding to node.
+
+        Note that for `let`-expressions, we don't want to flag the entire
+        range. Instead, we only want to flag the innermost `let`-expression
+        body.
+        """
+        while isinstance(node, LetExpr):
+            n_body = node.n_body
+            if n_body is None:
+                break
+            else:
+                node = n_body
+        return self.file_info.get_range_from_offset_range(node.offset_range)
+
+    def add_error(
+        self,
+        code: ErrorCode,
+        severity: Severity,
+        message: str,
+        notes: List[Note] = None,
+        range: Range = None,
+    ) -> "Env":
+        error = Error(
+            file_info=self.file_info,
+            code=code,
+            severity=severity,
+            message=message,
+            notes=notes if notes is not None else [],
+            range=range,
+        )
+        return attr.evolve(self, errors=self.errors.append(error))
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -53,6 +91,12 @@ class TypingContext:
 
     def add_judgment(self, judgment: TypingJudgment) -> "TypingContext":
         return attr.evolve(self, judgments=self.judgments.append(judgment))
+
+    def ty_to_string(self, ty: Ty) -> str:
+        if isinstance(ty, BaseTy):
+            return ty.name
+        else:
+            raise NotImplementedError(f"ty_to_string not implemented for type: {ty!r}")
 
     def take_until_before_judgment(self, judgment: TypingJudgment) -> "TypingContext":
         judgments = PVector(take_while(self.judgments, lambda x: x != judgment))
@@ -220,11 +264,8 @@ def do_infer(env: Env, ctx: TypingContext, expr: Expr) -> Tuple[Env, TypingConte
         if t_operator.kind == TokenKind.DUMMY_SEMICOLON:
             n_lhs = expr.n_lhs
             if n_lhs is not None:
-                (env, ctx, checks) = check(env, ctx, expr=n_lhs, ty=NONE_TY)
-                if not checks:
-                    raise NotImplementedError(
-                        "TODO: raise error/warning for non-None LHS of binary expression"
-                    )
+                (env, ctx, _reason) = check(env, ctx, expr=n_lhs, ty=TOP_TY)
+
             n_rhs = expr.n_rhs
             if n_rhs is not None:
                 return infer(env, ctx, expr=n_rhs)
@@ -248,23 +289,20 @@ def do_infer(env: Env, ctx: TypingContext, expr: Expr) -> Tuple[Env, TypingConte
                 f"`infer` not yet implemented for binary expression operator kind {t_operator.kind}"
             )
     elif isinstance(expr, IfExpr):
-        # TODO: should we actually mint a new existential type variable, then
-        # infer it against the two clauses?
-        n_else_expr = expr.n_else_expr
-        if n_else_expr is None:
-            result_ty = NONE_TY
-        else:
-            (env, ctx, result_ty) = infer(env, ctx, n_else_expr)
-
         n_then_expr = expr.n_then_expr
         if n_then_expr is None:
             return (env, ctx, ERR_TY)
-        (env, ctx, checks) = check(env, ctx, n_then_expr, result_ty)
-        if not checks:
-            raise NotImplementedError(
-                "TODO: `if`-clause without `else`-clause shouldn't check against None"
-            )
 
+        # TODO: should we actually mint a new existential type variable, then
+        # infer it against the two clauses? We could also mint two existential
+        # type variables, and then produce the union of them.
+        n_else_expr = expr.n_else_expr
+        if n_else_expr is None:
+            result_ty = VOID_TY
+        else:
+            (env, ctx, result_ty) = infer(env, ctx, n_else_expr)
+
+        (env, ctx, _reason) = check(env, ctx, n_then_expr, result_ty)
         return (env, ctx, result_ty)
     else:
         raise NotImplementedError(
@@ -324,9 +362,7 @@ def function_application_infer(
             n_expr = argument.n_expr
             if n_expr is None:
                 raise NotImplementedError("TODO(missing): handle missing argument")
-            (env, ctx, checks) = check(env, ctx, expr=n_expr, ty=argument_ty)
-            if not checks:
-                raise NotImplementedError("TODO: handle argument type mismatch")
+            (env, ctx, _reason) = check(env, ctx, expr=n_expr, ty=argument_ty)
         return (env, ctx, ty.codomain)
 
     elif isinstance(ty, ExistentialTyVar):
@@ -429,6 +465,23 @@ def check(
                     "TODO: patterns other than VariablePattern not supported"
                 )
             ctx = ctx.add_pattern_ty(n_pattern, value_ty)
+            if tys_equal(value_ty, VOID_TY):
+                env = env.add_error(
+                    code=ErrorCode.CANNOT_BIND_TO_VOID,
+                    severity=Severity.ERROR,
+                    message=(
+                        f"This expression has type {ctx.ty_to_string(VOID_TY)}, "
+                        + "so it cannot be bound to a variable."
+                    ),
+                    range=env.get_range_for_node(n_value),
+                    notes=[
+                        Note(
+                            file_info=env.file_info,
+                            message="This is the variable it's being bound to.",
+                            range=env.get_range_for_node(n_pattern),
+                        )
+                    ],
+                )
 
             n_body = expr.n_body
             if n_body is None:
@@ -472,7 +525,16 @@ def check(
         if reason is not None:
             return (env, ctx, reason)
         else:
-            raise NotImplementedError("TODO: report failure to check subtype")
+            env = env.add_error(
+                code=ErrorCode.INCOMPATIBLE_TYPES,
+                severity=Severity.ERROR,
+                message=(
+                    f"I was expecting this expression to have type {ctx.ty_to_string(ty)}, "
+                    + f"but it actually had type {ctx.ty_to_string(actual_ty)}."
+                ),
+                range=env.get_range_for_node(expr),
+            )
+            return (env, ctx, reason)
 
 
 def check_subtype(
@@ -480,19 +542,7 @@ def check_subtype(
 ) -> Tuple[Env, TypingContext, Optional[Reason]]:
     if tys_equal(lhs, rhs):
         return (env, ctx, EqualTysReason(lhs=lhs, rhs=rhs))
-
-    if isinstance(lhs, FunctionTy) or isinstance(rhs, FunctionTy):
-        if not isinstance(lhs, FunctionTy):
-            raise NotImplementedError(
-                f"TODO: handle subtype failure for non-function type {lhs!r} and function type {rhs!r}"
-            )
-        if not isinstance(rhs, FunctionTy):
-            raise NotImplementedError(
-                f"TODO: handle subtype failure for function type {lhs!r} and non-function type {rhs!r}"
-            )
-        raise NotImplementedError("TODO: implement subtype checking for functions")
-
-    if isinstance(lhs, UniversalTy):
+    elif isinstance(lhs, UniversalTy):
         # TODO: implement
         return (env, ctx, TodoReason(todo="UniversalTy"))
     elif isinstance(rhs, UniversalTy):
@@ -513,6 +563,31 @@ def check_subtype(
         return instantiate_rhs_existential(env, ctx, lhs=lhs, rhs=rhs)
     elif isinstance(rhs, TyVar):
         return (env, ctx, SubtypeOfUnboundedGenericReason())
+    elif tys_equal(rhs, VOID_TY):
+        assert lhs != VOID_TY, "should be handled in tys_equal case"
+        (env, ctx, reason) = check_subtype(env, ctx, lhs=lhs, rhs=NONE_TY)
+        if reason is not None:
+            return (env, ctx, NoneIsSubtypeOfVoidReason())
+        else:
+            return (env, ctx, None)
+    elif tys_equal(rhs, OBJECT_TY):
+        if tys_equal(lhs, VOID_TY):
+            return (env, ctx, None)
+        else:
+            return (env, ctx, SubtypeOfObjectReason())
+    elif isinstance(lhs, BaseTy) and isinstance(rhs, BaseTy):
+        assert not tys_equal(lhs, rhs), "should have been handled in tys_equal case"
+        return (env, ctx, None)
+    elif isinstance(lhs, FunctionTy) or isinstance(rhs, FunctionTy):
+        if not isinstance(lhs, FunctionTy):
+            raise NotImplementedError(
+                f"TODO: handle subtype failure for non-function type {lhs!r} and function type {rhs!r}"
+            )
+        if not isinstance(rhs, FunctionTy):
+            raise NotImplementedError(
+                f"TODO: handle subtype failure for function type {lhs!r} and non-function type {rhs!r}"
+            )
+        raise NotImplementedError("TODO: implement subtype checking for functions")
 
     # TODO: implement the rest of the subtyping from Figure 9.
     raise NotImplementedError(
@@ -545,14 +620,21 @@ def instantiate_rhs_existential(
 
 
 def typecheck(
-    syntax_tree: SyntaxTree, bindation: Bindation, global_scope: PMap[str, Ty]
+    file_info: FileInfo,
+    syntax_tree: SyntaxTree,
+    bindation: Bindation,
+    global_scope: PMap[str, Ty],
 ) -> Typeation:
     ctx = TypingContext(judgments=PVector(), inferred_tys=PMap())
     if syntax_tree.n_expr is None:
         return Typeation(ctx, errors=[])
 
-    env = Env(bindation=bindation, global_scope=global_scope, errors=PVector())
-    (env, ctx, checks) = check(env, ctx, expr=syntax_tree.n_expr, ty=NONE_TY)
-    if not checks:
-        raise NotImplementedError("TODO: handle module body not checking against None")
+    env = Env(
+        file_info=file_info,
+        bindation=bindation,
+        global_scope=global_scope,
+        errors=PVector(),
+    )
+    (env, ctx, checks) = check(env, ctx, expr=syntax_tree.n_expr, ty=TOP_TY)
+    assert checks, "The program should always check against the top type"
     return Typeation(ctx=ctx, errors=list(env.errors))

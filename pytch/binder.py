@@ -20,6 +20,7 @@ GLOBAL_SCOPE: Mapping[str, List[VariablePattern]] = {
     "print": [],
     "True": [],
     "False": [],
+    "None": [],
 }
 
 

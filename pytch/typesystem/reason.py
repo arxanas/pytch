@@ -55,6 +55,18 @@ class InstantiateExistentialReason(Reason):
 
 
 @attr.s(auto_attribs=True, frozen=True)
+class SubtypeOfObjectReason(Reason):
+    def __str__(self) -> str:
+        return "all types are subtypes of object"
+
+
+@attr.s(auto_attribs=True, frozen=True)
 class SubtypeOfUnboundedGenericReason(Reason):
     def __str__(self) -> str:
         return "it was checked to be the subtype of an generic type parameter"
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class NoneIsSubtypeOfVoidReason(Reason):
+    def __str__(self) -> str:
+        return "None is the only value that can be used where no value is expected"

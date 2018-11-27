@@ -10,10 +10,11 @@ Produced when there is a typechecking error, in order to prevent cascading
 failure messages.
 """
 
-
 NONE_TY = BaseTy(name="None", reason=BuiltinReason(name="None"))
 """None type, corresponding to Python's `None` value."""
 
+OBJECT_TY = BaseTy(name="object", reason=BuiltinReason(name="object"))
+"""Object type. This is the top type since everything is an object."""
 
 VOID_TY = BaseTy(name="<void>", reason=BuiltinReason(name="<void>"))
 """Void type.
@@ -32,24 +33,27 @@ let foo =
 ```
 """
 
-
 INT_TY = BaseTy(name="int", reason=BuiltinReason(name="int"))
 """Integer type, corresponding to Python's `int` type."""
+
+top_ty_reason = BuiltinReason(name="<any type>")
+top_ty_var = TyVar(name="top_ty", reason=top_ty_reason)
+TOP_TY = UniversalTy(quantifier_ty=top_ty_var, ty=top_ty_var, reason=top_ty_reason)
+"""The top type.
+
+All types are a subtype of this type, including void. You likely want to use
+the `object` type instead.
+"""
 
 
 def _make_print() -> FunctionTy:
     print_reason = BuiltinReason(name="print")
-    quantifier_ty = TyVar(name="T", reason=print_reason)
-    domain: PVector[Ty] = PVector(
-        [
-            UniversalTy(
-                quantifier_ty=quantifier_ty, ty=quantifier_ty, reason=print_reason
-            )
-        ]
-    )
+    # TODO: this may have to be some kind of `ArgumentTy` instead, so that it
+    # can have its own reason, and so that it can take on a label.
+    domain: PVector[Ty] = PVector([OBJECT_TY])
     codomain = NONE_TY
     return FunctionTy(domain=domain, codomain=codomain, reason=print_reason)
 
 
 # TODO: add the Python builtins to the global scope.
-GLOBAL_SCOPE: PMap[str, Ty] = PMap({"print": _make_print()})
+GLOBAL_SCOPE: PMap[str, Ty] = PMap({"None": NONE_TY, "print": _make_print()})

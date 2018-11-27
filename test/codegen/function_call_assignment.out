@@ -1,0 +1,4 @@
+def id(x):
+    return x
+foo = id(1)
+print(foo)

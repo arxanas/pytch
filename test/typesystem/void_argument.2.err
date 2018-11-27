@@ -1,0 +1,17 @@
+INCOMPATIBLE_TYPES[3000] in test/typesystem/void_argument.2.pytch, line 2, character 3:
+Error: I was expecting this expression to have type object, but it actually had
+type <void>.
+   +--------------------------------------------------------------------------+
+   | test/typesystem/void_argument.2.pytch                                    |
+ 1 | print(                                                                   |
+ 2 |   if True                                                                |
+   |   ^~~~~~~                                                                |
+ 3 |   then                                                                   |
+   |   ~~~~                                                                   |
+ 4 |     1                                                                    |
+   |     ~                                                                    |
+ 5 |     None                                                                 |
+   |     ~~~~ Error: I was expecting this expression to have type object, but |
+   | it actually had type <void>.                                             |
+ 6 | )                                                                        |
+   +--------------------------------------------------------------------------+

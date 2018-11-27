@@ -1,0 +1,11 @@
+INCOMPATIBLE_TYPES[3000] in test/typesystem/void_if.2.pytch, line 5, character 6:
+Error: I was expecting this expression to have type <void>, but it actually had
+type int.
+   +------------------------------------------------------------------------+
+   | test/typesystem/void_if.2.pytch                                        |
+ 4 | if True                                                                |
+ 5 | then 1                                                                 |
+   |      ^ Error: I was expecting this expression to have type <void>, but |
+   | it actually had type int.                                              |
+ 6 |                                                                        |
+   +------------------------------------------------------------------------+

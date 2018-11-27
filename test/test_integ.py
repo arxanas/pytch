@@ -27,5 +27,5 @@ def test_integ(capsys: Any, test_case_info: CaseInfo) -> None:
 
 
 @pytest.mark.generate
-def test_generate_parser_tests(capsys: Any) -> None:
+def test_generate_integ_tests(capsys: Any) -> None:
     generate(get_integ_tests(), make_result, capsys=capsys)

@@ -78,6 +78,7 @@ def compile_file(file_info: FileInfo) -> Tuple[Optional[str], List[Error]]:
         return (None, all_errors)
 
     typeation = typecheck(
+        file_info=file_info,
         syntax_tree=syntax_tree,
         bindation=bindation,
         global_scope=TYPESYSTEM_GLOBAL_SCOPE,

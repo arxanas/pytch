@@ -41,5 +41,5 @@ def test_codegen(test_case_info: CaseInfo) -> None:
 
 
 @pytest.mark.generate
-def test_generate_parser_tests() -> None:
+def test_generate_codegen_tests() -> None:
     generate(get_codegen_tests(), make_result, capsys=None)

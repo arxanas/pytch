@@ -1,0 +1,10 @@
+if True
+then print(1)
+
+if True
+then 1
+
+if True
+then
+  let _ = 1
+  None

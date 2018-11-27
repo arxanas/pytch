@@ -1,0 +1,1 @@
+line 2: FunctionTy(reason=TodoReason(todo='infer_lambda'), domain=PVector([ExistentialTyVar(reason=TodoReason(todo='parameter ty'), name='param_0')]), codomain=ExistentialTyVar(reason=TodoReason(todo='return ty'), name='return'))

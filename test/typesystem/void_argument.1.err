@@ -1,0 +1,18 @@
+INCOMPATIBLE_TYPES[3000] in test/typesystem/void_argument.1.pytch, line 1, character 20:
+Error: I was expecting this expression to have type <void>, but it actually had
+type int.
+   +--------------------------------------------------------------------------+
+   | test/typesystem/void_argument.1.pytch                                    |
+ 1 | print(if True then 1)                                                    |
+   |                    ^ Error: I was expecting this expression to have type |
+   | <void>, but it actually had type int.                                    |
+   +--------------------------------------------------------------------------+
+INCOMPATIBLE_TYPES[3000] in test/typesystem/void_argument.1.pytch, line 1, character 7:
+Error: I was expecting this expression to have type object, but it actually had
+type <void>.
+   +--------------------------------------------------------------------------+
+   | test/typesystem/void_argument.1.pytch                                    |
+ 1 | print(if True then 1)                                                    |
+   |       ^~~~~~~~~~~~~~ Error: I was expecting this expression to have type |
+   | object, but it actually had type <void>.                                 |
+   +--------------------------------------------------------------------------+

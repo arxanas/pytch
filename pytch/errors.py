@@ -83,6 +83,10 @@ class ErrorCode(Enum):
 
     UNBOUND_NAME = 2000
 
+    INCOMPATIBLE_TYPES = 3000
+    EXPECTED_VOID = 3001
+    CANNOT_BIND_TO_VOID = 3002
+
     PARSED_LENGTH_MISMATCH = 9000
     NOT_A_REAL_ERROR = 9001
     """Not a real error code, just for testing purposes."""
