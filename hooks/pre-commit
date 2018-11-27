@@ -3,9 +3,6 @@ set -e
 pipenv run ./bin/generate_syntax_trees.sh
 git add pytch/{greencst,redcst}.py
 pipenv run black .
-pipenv run mypy bin pytch test \
-    --ignore-missing-imports \
-    --follow-imports=silent \
-    --strict-optional
+pipenv run mypy bin pytch test
 pipenv run py.test
 pipenv run flake8 bin pytch test

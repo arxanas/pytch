@@ -24,10 +24,7 @@ Tv_out = TypeVar("Tv_out")
 
 class PSet(AbstractSet[Tk]):
     def __init__(self, iterable: Iterable[Tk] = None) -> None:
-        if iterable is not None:
-            self._container: p.PSet = pset(iterable)
-        else:
-            self._container: p.PSet = pset()
+        self._container: p.PSet[Tk] = pset(iterable or [])
 
     # TODO: tighten up `__contains__` to only accept `Tk`.
     def __contains__(self, key: object) -> bool:
@@ -44,15 +41,12 @@ class PSet(AbstractSet[Tk]):
         return f"PSet([{elements}])"
 
     def add(self, key: Tk) -> "PSet[Tk]":
-        return self._container.add(key)
+        return PSet(self._container.add(key))
 
 
 class PVector(Sequence[Tv]):
     def __init__(self, iterable: Iterable[Tv] = None) -> None:
-        if iterable is not None:
-            self._container: p.PVector = pvector(iterable)
-        else:
-            self._container: p.PVector = pvector()
+        self._container: p.PVector = pvector(iterable or [])
 
     @overload
     def __getitem__(self, item: int) -> Tv:
@@ -83,16 +77,12 @@ class PVector(Sequence[Tv]):
 
 class PMap(Mapping[Tk, Tv]):
     def __init__(self, mapping: Mapping[Tk, Tv] = None) -> None:
-        if mapping is not None:
-            self._container: p.PMap = pmap(mapping.items())
-        else:
-            self._container: p.PMap = pmap()
+        self._container: p.PMap[Tk, Tv] = pmap(mapping or {})
 
     @classmethod
     def of_entries(cls, iterable: Iterable[Tuple[Tk, Tv]] = None) -> "PMap[Tk, Tv]":
-        container: PMap[Tk, Tv] = cls()
-        container._container = pmap(iterable)
-        return container
+        mapping = dict(iterable or [])
+        return cls(mapping)
 
     def __getitem__(self, index: Tk) -> Tv:
         return self._container[index]

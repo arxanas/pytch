@@ -850,7 +850,7 @@ class Parser:
         state: State,
         possible_token_kinds: List[TokenKind],
         *,
-        notes: List[Note] = [],
+        notes: List[Note] = None,
         error: Error = None,
     ) -> Tuple[State, Optional[Token]]:
         token = state.get_current_token()
