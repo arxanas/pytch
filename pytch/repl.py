@@ -17,7 +17,7 @@ from .utils import FileInfo
 
 NO_MORE_INPUT_REQUIRED = False
 MORE_INPUT_REQUIRED = True
-LEADING_WHITESPACE_RE = re.compile("^\s*")
+LEADING_WHITESPACE_RE = re.compile(r"^\s*")
 
 
 class PytchRepl(InteractiveConsole):
