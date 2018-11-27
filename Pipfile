@@ -4,19 +4,25 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-black = "==18.6b2"
+attrs = "*"
+typing = "*"
+typing-extensions = "*"
+click = "*"
+distance = "*"
+pyrsistent = "*"
 
 [dev-packages]
-attrs = "==18.1.0"
-"flake8" = "==3.5.0"
-"flake8-bugbear" = "==18.2.0"
-"flake8-import-order" = "==0.17.1"
-mypy = "==0.610"
-pycodestyle = "==2.3.1"
-pytest = "==3.6.1"
-pytest-pythonpath = "==0.7.2"
-typing = "==3.6.4"
-typing-extensions = "==3.6.5"
+black = "*"
+"flake8" = "*"
+"flake8-bugbear" = "*"
+"flake8-import-order" = "*"
+mypy = "*"
+pycodestyle = "*"
+pytest = "*"
+pytest-pythonpath = "*"
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
