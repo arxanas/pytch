@@ -1,12 +1,12 @@
 import attr
 
 from pytch.containers import PVector
-from .reason import Reason
+import pytch.typesystem.reason
 
 
 @attr.s(auto_attribs=True, frozen=True)
 class Ty:
-    reason: Reason
+    reason: "pytch.typesystem.reason.Reason"
 
     def __eq__(self, other: object) -> bool:
         # TODO: does this work? Do we need to assign types unique IDs instead?

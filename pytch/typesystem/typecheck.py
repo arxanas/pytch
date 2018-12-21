@@ -28,7 +28,14 @@ from .judgments import (
     PatternHasTyJudgment,
     TypingJudgment,
 )
-from .reason import NoneReason, TodoReason
+from .reason import (
+    EqualTysReason,
+    InstantiateExistentialReason,
+    InvalidSyntaxReason,
+    Reason,
+    SubtypeOfUnboundedGenericReason,
+    TodoReason,
+)
 from .types import BaseTy, ExistentialTyVar, FunctionTy, MonoTy, Ty, TyVar, UniversalTy
 
 
@@ -83,12 +90,12 @@ class TypingContext:
         elif isinstance(ty, FunctionTy):
             domain = ty.domain.map(self.apply_as_substitution)
             codomain = self.apply_as_substitution(ty.codomain)
-            return FunctionTy(domain=domain, codomain=codomain, reason=NoneReason())
+            return FunctionTy(domain=domain, codomain=codomain, reason=ty.reason)
         elif isinstance(ty, UniversalTy):
             return UniversalTy(
                 quantifier_ty=ty.quantifier_ty,
                 ty=self.apply_as_substitution(ty),
-                reason=NoneReason(),
+                reason=ty.reason,
             )
         else:
             assert (
@@ -368,7 +375,9 @@ def infer_lambda(
             raise NotImplementedError(
                 "TODO: patterns other than VariablePattern not supported"
             )
-        parameter_ty = ExistentialTyVar(name=f"param_{i}", reason=NoneReason())
+        parameter_ty = ExistentialTyVar(
+            name=f"param_{i}", reason=TodoReason(todo="parameter ty")
+        )
         parameter_tys.append(parameter_ty)
         judgment = DeclareExistentialVarJudgment(existential_ty_var=parameter_ty)
         ctx = ctx.add_judgment(judgment)
@@ -377,7 +386,7 @@ def infer_lambda(
         if until_judgment is None:
             until_judgment = judgment
 
-    return_ty = ExistentialTyVar(name="return", reason=NoneReason())
+    return_ty = ExistentialTyVar(name="return", reason=TodoReason(todo="return ty"))
     return_judgment = DeclareExistentialVarJudgment(existential_ty_var=return_ty)
     if until_judgment is None:
         until_judgment = return_judgment
@@ -396,7 +405,7 @@ def infer_lambda(
 
 def check(
     env: Env, ctx: TypingContext, expr: Expr, ty: Ty
-) -> Tuple[Env, TypingContext, bool]:
+) -> Tuple[Env, TypingContext, Optional[Reason]]:
     if isinstance(expr, LetExpr):
         # The typing rule for let-bindings is
         #
@@ -408,12 +417,12 @@ def check(
         # using the rule for typing lambdas.
         n_pattern = expr.n_pattern
         if n_pattern is None:
-            return (env, ctx, True)
+            return (env, ctx, InvalidSyntaxReason())
 
         if expr.n_parameter_list is None:
             n_value = expr.n_value
             if n_value is None:
-                return (env, ctx, True)
+                return (env, ctx, InvalidSyntaxReason())
             (env, ctx, value_ty) = infer(env, ctx, n_value)
             if not isinstance(n_pattern, VariablePattern):
                 raise NotImplementedError(
@@ -423,7 +432,7 @@ def check(
 
             n_body = expr.n_body
             if n_body is None:
-                return (env, ctx, True)
+                return (env, ctx, InvalidSyntaxReason())
 
             return check(env, ctx, expr=n_body, ty=ty)
         else:
@@ -459,14 +468,18 @@ def check(
             return check(env, ctx, expr=n_body, ty=ty)
     else:
         (env, ctx, actual_ty) = infer(env, ctx, expr=expr)
-        return check_subtype(env, ctx, lhs=actual_ty, rhs=ty)
+        (env, ctx, reason) = check_subtype(env, ctx, lhs=actual_ty, rhs=ty)
+        if reason is not None:
+            return (env, ctx, reason)
+        else:
+            raise NotImplementedError("TODO: report failure to check subtype")
 
 
 def check_subtype(
     env: Env, ctx: TypingContext, lhs: Ty, rhs: Ty
-) -> Tuple[Env, TypingContext, bool]:
+) -> Tuple[Env, TypingContext, Optional[Reason]]:
     if tys_equal(lhs, rhs):
-        return (env, ctx, True)
+        return (env, ctx, EqualTysReason(lhs=lhs, rhs=rhs))
 
     if isinstance(lhs, FunctionTy) or isinstance(rhs, FunctionTy):
         if not isinstance(lhs, FunctionTy):
@@ -481,7 +494,7 @@ def check_subtype(
 
     if isinstance(lhs, UniversalTy):
         # TODO: implement
-        return (env, ctx, True)
+        return (env, ctx, TodoReason(todo="UniversalTy"))
     elif isinstance(rhs, UniversalTy):
         judgment = DeclareVarJudgment(variable=rhs.quantifier_ty)
         ctx = ctx.add_judgment(judgment)
@@ -499,7 +512,7 @@ def check_subtype(
         # free variables of the right-hand side.
         return instantiate_rhs_existential(env, ctx, lhs=lhs, rhs=rhs)
     elif isinstance(rhs, TyVar):
-        return (env, ctx, True)
+        return (env, ctx, SubtypeOfUnboundedGenericReason())
 
     # TODO: implement the rest of the subtyping from Figure 9.
     raise NotImplementedError(
@@ -509,10 +522,10 @@ def check_subtype(
 
 def instantiate_lhs_existential(
     env: Env, ctx: TypingContext, lhs: ExistentialTyVar, rhs: Ty
-) -> Tuple[Env, TypingContext, bool]:
+) -> Tuple[Env, TypingContext, Reason]:
     if isinstance(rhs, (MonoTy, ExistentialTyVar)):
         ctx = ctx.instantiate_existential(existential_ty_var=lhs, to=rhs)
-        return (env, ctx, True)
+        return (env, ctx, InstantiateExistentialReason(existential_ty_var=lhs, to=rhs))
 
     raise NotImplementedError(
         f"TODO: LHS existential instantiation for lhs {lhs!r} and rhs {rhs!r} not implemented"
@@ -521,10 +534,10 @@ def instantiate_lhs_existential(
 
 def instantiate_rhs_existential(
     env: Env, ctx: TypingContext, lhs: Ty, rhs: ExistentialTyVar
-) -> Tuple[Env, TypingContext, bool]:
+) -> Tuple[Env, TypingContext, Reason]:
     if isinstance(lhs, MonoTy):
         ctx = ctx.instantiate_existential(existential_ty_var=rhs, to=lhs)
-        return (env, ctx, True)
+        return (env, ctx, InstantiateExistentialReason(existential_ty_var=rhs, to=lhs))
 
     raise NotImplementedError(
         f"TODO: RHS existential instantiation for lhs {lhs!r} and rhs {rhs!r} not implemented"
