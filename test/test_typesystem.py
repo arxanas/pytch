@@ -16,16 +16,27 @@ from pytch.typesystem.builtins import (
     TyVar,
     UniversalTy,
 )
+from pytch.typesystem.reason import BuiltinReason
 from pytch.utils import FileInfo
 
 
 BINDER_GLOBAL_SCOPE = dict(BINDER_GLOBAL_SCOPE)
 BINDER_GLOBAL_SCOPE.update({"show_type": []})
 
-show_type_ty_var = TyVar(name="T")
+show_type_reason = BuiltinReason(name="show_type")
+show_type_ty_var = TyVar(name="T", reason=show_type_reason)
 show_type_ty = FunctionTy(
-    domain=PVector([UniversalTy(quantifier_ty=show_type_ty_var, ty=show_type_ty_var)]),
+    domain=PVector(
+        [
+            UniversalTy(
+                quantifier_ty=show_type_ty_var,
+                ty=show_type_ty_var,
+                reason=show_type_reason,
+            )
+        ]
+    ),
     codomain=NONE_TY,
+    reason=show_type_reason,
 )
 TYPE_SYSTEM_GLOBAL_SCOPE = TYPE_SYSTEM_GLOBAL_SCOPE.set("show_type", show_type_ty)
 

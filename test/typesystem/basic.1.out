@@ -1,1 +1,1 @@
-line 2: BaseTy(name='int')
+line 2: BaseTy(reason=BuiltinReason(name='int'), name='int')

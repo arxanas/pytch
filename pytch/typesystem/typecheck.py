@@ -28,6 +28,7 @@ from .judgments import (
     PatternHasTyJudgment,
     TypingJudgment,
 )
+from .reason import NoneReason, TodoReason
 from .types import BaseTy, ExistentialTyVar, FunctionTy, MonoTy, Ty, TyVar, UniversalTy
 
 
@@ -82,10 +83,12 @@ class TypingContext:
         elif isinstance(ty, FunctionTy):
             domain = ty.domain.map(self.apply_as_substitution)
             codomain = self.apply_as_substitution(ty.codomain)
-            return FunctionTy(domain=domain, codomain=codomain)
+            return FunctionTy(domain=domain, codomain=codomain, reason=NoneReason())
         elif isinstance(ty, UniversalTy):
             return UniversalTy(
-                quantifier_ty=ty.quantifier_ty, ty=self.apply_as_substitution(ty)
+                quantifier_ty=ty.quantifier_ty,
+                ty=self.apply_as_substitution(ty),
+                reason=NoneReason(),
             )
         else:
             assert (
@@ -365,7 +368,7 @@ def infer_lambda(
             raise NotImplementedError(
                 "TODO: patterns other than VariablePattern not supported"
             )
-        parameter_ty = ExistentialTyVar(name=f"param_{i}")
+        parameter_ty = ExistentialTyVar(name=f"param_{i}", reason=NoneReason())
         parameter_tys.append(parameter_ty)
         judgment = DeclareExistentialVarJudgment(existential_ty_var=parameter_ty)
         ctx = ctx.add_judgment(judgment)
@@ -374,7 +377,7 @@ def infer_lambda(
         if until_judgment is None:
             until_judgment = judgment
 
-    return_ty = ExistentialTyVar(name="return")
+    return_ty = ExistentialTyVar(name="return", reason=NoneReason())
     return_judgment = DeclareExistentialVarJudgment(existential_ty_var=return_ty)
     if until_judgment is None:
         until_judgment = return_judgment
@@ -383,7 +386,11 @@ def infer_lambda(
     env, ctx, checks = check(env, ctx=ctx, expr=body, ty=return_ty)
     ctx = ctx.take_until_before_judgment(judgment=until_judgment)
 
-    function_ty = FunctionTy(domain=PVector(parameter_tys), codomain=return_ty)
+    function_ty = FunctionTy(
+        domain=PVector(parameter_tys),
+        codomain=return_ty,
+        reason=TodoReason(todo="infer_lambda"),
+    )
     return (env, ctx, function_ty)
 
 
