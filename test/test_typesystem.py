@@ -8,11 +8,11 @@ from pytch.containers import PVector
 from pytch.cstquery import Query
 from pytch.errors import Error, get_error_lines
 from pytch.redcst import Expr, FunctionCallExpr
-from pytch.typesystem import (
+from pytch.typesystem import typecheck
+from pytch.typesystem.builtins import (
     FunctionTy,
     GLOBAL_SCOPE as TYPE_SYSTEM_GLOBAL_SCOPE,
     NONE_TY,
-    typecheck,
     TyVar,
     UniversalTy,
 )

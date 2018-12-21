@@ -1,33 +1,12 @@
-"""Type inference and typechecking.
-
-The Pytch type system is a bidirectional typechecking system, based off of
-the system described in [Dunfield 2013] (see Figures 9-11 for the algorithmic
-typing rules for the system). A standard Hindley-Milner type system would be
-difficult to reconcile in the presence of subtyping, which will naturally
-occur when interfacing with Python code.
-
-  [Dunfield 2013]: https://www.cl.cam.ac.uk/~nk480/bidir.pdf
-
-Terminology used in this file:
-
-  * `ty`: "type".
-  * `ctx`: "context".
-  * `env`: "environment". This only refers to the usual sort of global
-  configuration that's passed around, rather than a typing environment (Γ),
-  which is called a "context" instead.
-  * `var`: "variable", specifically a type variable of some sort.
-  * The spelling "judgment" is preferred over "judgement".
-
-"""
 from typing import List, Optional, Tuple
 
 import attr
 
-from .binder import Bindation
-from .containers import find, PMap, PVector, take_while
-from .errors import Error
-from .lexer import TokenKind
-from .redcst import (
+from pytch.binder import Bindation
+from pytch.containers import find, PMap, PVector, take_while
+from pytch.errors import Error
+from pytch.lexer import TokenKind
+from pytch.redcst import (
     Argument,
     BinaryExpr,
     Expr,
@@ -37,114 +16,19 @@ from .redcst import (
     IntLiteralExpr,
     LetExpr,
     Parameter,
-    Pattern,
     SyntaxTree,
     VariablePattern,
 )
-
-
-class Ty:
-    def __eq__(self, other: object) -> bool:
-        # TODO: does this work? Do we need to assign types unique IDs instead?
-        return self is other
-
-    def __neq__(self, other: object) -> bool:
-        return not (self == other)
-
-
-class MonoTy(Ty):
-    pass
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class BaseTy(MonoTy):
-    name: str
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class FunctionTy(MonoTy):
-    domain: PVector[Ty]
-    codomain: Ty
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class TyVar(MonoTy):
-    """Type variable.
-
-    This represents an indeterminate type which is to be symbolically
-    manipulated, such as in a universally-quantified type. We don't
-    instantiate it to a concrete type during typechecking.
-
-    Usually type variables are denoted by Greek letters, such as "α" rather
-    than "a".
-    """
-
-    name: str
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class UniversalTy(Ty):
-    """Universally-quantified type.
-
-    For example, the type
-
-        ∀α. α → unit
-
-    is a function type which takes a value of any type and returns the unit
-    value.
-    """
-
-    quantifier_ty: TyVar
-    ty: Ty
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class ExistentialTyVar(Ty):
-    """Existential type variable.
-
-    This represents an unsolved type that should be solved during type
-    inference. The rules for doing so are covered in Dunfield 2013 Figure 10.
-    """
-
-    name: str
-
-
-class TypingJudgment:
-    """Abstract base class for typing judgments.
-
-    See Dunfield 2013 Figure 6 for the list of possible judgments.
-    """
-
-    pass
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class DeclareVarJudgment(TypingJudgment):
-    variable: TyVar
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class PatternHasTyJudgment(TypingJudgment):
-    pattern: Pattern
-    ty: Ty
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class DeclareExistentialVarJudgment(TypingJudgment):
-    existential_ty_var: ExistentialTyVar
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class ExistentialVariableHasTy(TypingJudgment):
-    existential_ty_var: ExistentialTyVar
-    ty: Ty
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class ExistentialVariableMarkerJudgment(TypingJudgment):
-    """Creates a new 'scope' in which to solve existential type variables."""
-
-    existential_ty_var: ExistentialTyVar
+from .builtins import ERR_TY, INT_TY, NONE_TY
+from .judgments import (
+    DeclareExistentialVarJudgment,
+    DeclareVarJudgment,
+    ExistentialVariableHasTyJudgment,
+    ExistentialVariableMarkerJudgment,
+    PatternHasTyJudgment,
+    TypingJudgment,
+)
+from .types import BaseTy, ExistentialTyVar, FunctionTy, MonoTy, Ty, TyVar, UniversalTy
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -180,7 +64,7 @@ class TypingContext:
             def is_substitution_for_existential_ty_variable(
                 judgment: TypingJudgment
             ) -> bool:
-                if isinstance(judgment, ExistentialVariableHasTy):
+                if isinstance(judgment, ExistentialVariableHasTyJudgment):
                     return judgment.existential_ty_var == ty
                 else:
                     return False
@@ -214,7 +98,7 @@ class TypingContext:
         def f(x: TypingJudgment) -> TypingJudgment:
             if isinstance(x, DeclareExistentialVarJudgment):
                 if x.existential_ty_var == existential_ty_var:
-                    return ExistentialVariableHasTy(
+                    return ExistentialVariableHasTyJudgment(
                         existential_ty_var=existential_ty_var, ty=to
                     )
             return x
@@ -260,55 +144,8 @@ class Typeation:
     errors: List[Error]
 
 
-ERR_TY = BaseTy(name="<error>")
-"""Error type.
-
-Produced when there is a typechecking error, in order to prevent cascading
-failure messages.
-"""
-
-
-NONE_TY = BaseTy(name="None")
-"""None type, corresponding to Python's `None` value."""
-
-
-VOID_TY = BaseTy(name="<void>")
-"""Void type.
-
-Denotes the lack of a value. The Python runtime has no concept of "void":
-functions which don't `return` anything implicitly return `None`.
-
-However, there are some cases where it would be dangerous to allow the user
-to return `None` implicitly. For example, implicitly assigning `None` to
-`foo` here was probably not intended:
-
-```
-let foo =
-  if cond()
-  then "some value"
-```
-"""
-
-
-INT_TY = BaseTy(name="int")
-"""Integer type, corresponding to Python's `int` type."""
-
-
 def tys_equal(lhs: Ty, rhs: Ty) -> bool:
     return lhs == rhs
-
-
-def _make_print() -> FunctionTy:
-    quantifier_ty = TyVar(name="T")
-    domain: PVector[Ty] = PVector(
-        [UniversalTy(quantifier_ty=quantifier_ty, ty=quantifier_ty)]
-    )
-    codomain = NONE_TY
-    return FunctionTy(domain=domain, codomain=codomain)
-
-
-# TODO: add the Python builtins to the global scope.
-GLOBAL_SCOPE: PMap[str, Ty] = PMap({"print": _make_print()})
 
 
 def do_infer(env: Env, ctx: TypingContext, expr: Expr) -> Tuple[Env, TypingContext, Ty]:

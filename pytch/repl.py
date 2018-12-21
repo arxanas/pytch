@@ -11,7 +11,8 @@ from .errors import Error, get_error_lines, Severity
 from .lexer import lex
 from .parser import parse
 from .redcst import SyntaxTree as RedSyntaxTree
-from .typesystem import GLOBAL_SCOPE as TYPESYSTEM_GLOBAL_SCOPE, typecheck
+from .typesystem import typecheck
+from .typesystem.builtins import GLOBAL_SCOPE as TYPESYSTEM_GLOBAL_SCOPE
 from .utils import FileInfo
 
 
