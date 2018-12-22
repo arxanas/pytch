@@ -24,12 +24,8 @@ def render_token_stream(tokens: List[Token]) -> str:
     return "".join(line + "\n" for line in output_lines)
 
 
-def get_lexer_tests() -> Iterator[CaseInfo]:
+def get_lexer_tests() -> Iterator["pytest.mark.structures.ParameterSet[CaseInfo]"]:
     return find_tests("lexer", input_extension=".pytch", error_extension=".err")
-
-
-def get_lexer_test_ids() -> List[str]:
-    return [test.name for test in get_lexer_tests()]
 
 
 def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResult:
@@ -51,7 +47,7 @@ def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResul
     return CaseResult(output=output, error=error)
 
 
-@pytest.mark.parametrize("test_case_info", get_lexer_tests(), ids=get_lexer_test_ids())
+@pytest.mark.parametrize("test_case_info", get_lexer_tests())
 def test_lexer(test_case_info: CaseInfo) -> None:
     result = make_result(
         input_filename=test_case_info.input_filename,

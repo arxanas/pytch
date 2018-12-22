@@ -1,4 +1,4 @@
-from typing import Any, Iterator, List
+from typing import Any, Iterator
 
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
@@ -7,12 +7,8 @@ from pytch.__main__ import run_file
 from pytch.utils import FileInfo
 
 
-def get_integ_tests() -> Iterator[CaseInfo]:
+def get_integ_tests() -> Iterator["pytest.mark.structures.ParameterSet[CaseInfo]"]:
     return find_tests("integ", input_extension=".pytch", error_extension=".err")
-
-
-def get_integ_test_ids() -> List[str]:
-    return [test.name for test in get_integ_tests()]
 
 
 def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResult:
@@ -23,7 +19,7 @@ def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResul
     return CaseResult(output=output, error=error)
 
 
-@pytest.mark.parametrize("test_case_info", get_integ_tests(), ids=get_integ_test_ids())
+@pytest.mark.parametrize("test_case_info", get_integ_tests())
 def test_integ(capsys: Any, test_case_info: CaseInfo) -> None:
     result = make_result(test_case_info.input_filename, test_case_info.input, capsys)
     assert test_case_info.error == result.error

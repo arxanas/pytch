@@ -9,12 +9,8 @@ from pytch.parser import dump_syntax_tree, parse
 from pytch.utils import FileInfo
 
 
-def get_parser_tests() -> Iterator[CaseInfo]:
+def get_parser_tests() -> Iterator["pytest.mark.structures.ParameterSet[CaseInfo]"]:
     return find_tests("parser", input_extension=".pytch", error_extension=".err")
-
-
-def get_parser_test_ids() -> List[str]:
-    return [test.name for test in get_parser_tests()]
 
 
 def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResult:
@@ -38,9 +34,7 @@ def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResul
     return CaseResult(output=output, error=error)
 
 
-@pytest.mark.parametrize(
-    "test_case_info", get_parser_tests(), ids=get_parser_test_ids()
-)
+@pytest.mark.parametrize("test_case_info", get_parser_tests())
 def test_parser(test_case_info: CaseInfo) -> None:
     result = make_result(
         input_filename=test_case_info.input_filename,

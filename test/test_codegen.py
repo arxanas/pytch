@@ -1,4 +1,4 @@
-from typing import Any, Iterator, List, Optional
+from typing import Any, Iterator, Optional
 
 import pytest
 from utils import CaseInfo, CaseResult, find_tests, generate
@@ -8,12 +8,8 @@ from pytch.errors import get_error_lines
 from pytch.utils import FileInfo
 
 
-def get_codegen_tests() -> Iterator[CaseInfo]:
+def get_codegen_tests() -> Iterator["pytest.mark.structures.ParameterSet[CaseInfo]"]:
     return find_tests("codegen", input_extension=".pytch", error_extension=".err")
-
-
-def get_codegen_test_ids() -> List[str]:
-    return [test.name for test in get_codegen_tests()]
 
 
 def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResult:
@@ -37,9 +33,7 @@ def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResul
     return CaseResult(output=compiled_output, error=error)
 
 
-@pytest.mark.parametrize(
-    "test_case_info", get_codegen_tests(), ids=get_codegen_test_ids()
-)
+@pytest.mark.parametrize("test_case_info", get_codegen_tests())
 def test_codegen(test_case_info: CaseInfo) -> None:
     result = make_result(test_case_info.input_filename, test_case_info.input, None)
     assert test_case_info.error == result.error

@@ -30,12 +30,8 @@ show_type_ty = FunctionTy(
 TYPE_SYSTEM_GLOBAL_SCOPE = TYPE_SYSTEM_GLOBAL_SCOPE.set("show_type", show_type_ty)
 
 
-def get_typesystem_tests() -> Iterator[CaseInfo]:
+def get_typesystem_tests() -> Iterator["pytest.mark.structures.ParameterSet[CaseInfo]"]:
     return find_tests("typesystem", input_extension=".pytch", error_extension=".err")
-
-
-def get_typesystem_test_ids() -> List[str]:
-    return [test.name for test in get_typesystem_tests()]
 
 
 def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResult:
@@ -96,9 +92,7 @@ def make_result(input_filename: str, source_code: str, capsys: Any) -> CaseResul
     return CaseResult(output=output, error=error)
 
 
-@pytest.mark.parametrize(
-    "test_case_info", get_typesystem_tests(), ids=get_typesystem_test_ids()
-)
+@pytest.mark.parametrize("test_case_info", get_typesystem_tests())
 def test_typesystem(test_case_info: CaseInfo) -> None:
     result = make_result(
         input_filename=test_case_info.input_filename,
