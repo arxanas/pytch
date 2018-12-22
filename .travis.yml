@@ -10,8 +10,6 @@ install:
   - pip install pipenv
   - pipenv install --dev --three
   - pipenv install -e .
-  - pipenv run black --check
 
 script:
-  - pipenv run py.test
-  - pipenv run flake8 pytch test
+  - ./hooks/pre-commit
