@@ -20,6 +20,7 @@ mypy = "*"
 pycodestyle = "*"
 pytest = "*"
 pytest-pythonpath = "*"
+rope = "*"
 
 [requires]
 python_version = "3.7"
