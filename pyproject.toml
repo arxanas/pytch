@@ -33,6 +33,7 @@ mypy = "^0.650.0"
 pytest = "^4.0"
 pytest-pythonpath = "^0.7.3"
 rope = "^0.11.0"
+sphinx = "^1.8"
 
 [tool.poetry.extras]
 fuzz = ["cython", "python-afl"]
