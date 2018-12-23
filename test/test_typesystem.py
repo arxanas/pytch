@@ -1,7 +1,6 @@
 from typing import Any, Iterator, List, Optional
 
 import pytest
-from utils import CaseInfo, CaseResult, find_tests, generate, get_syntax_tree
 
 from pytch.binder import bind, GLOBAL_SCOPE as BINDER_GLOBAL_SCOPE
 from pytch.containers import PVector
@@ -18,6 +17,7 @@ from pytch.typesystem.builtins import (
 )
 from pytch.typesystem.reason import BuiltinReason
 from pytch.utils import FileInfo
+from .utils import CaseInfo, CaseResult, find_tests, generate, get_syntax_tree
 
 
 BINDER_GLOBAL_SCOPE = dict(BINDER_GLOBAL_SCOPE)

@@ -1,10 +1,10 @@
 from typing import Any, Iterator
 
 import pytest
-from utils import CaseInfo, CaseResult, find_tests, generate
 
 from pytch.__main__ import run_file
 from pytch.utils import FileInfo
+from .utils import CaseInfo, CaseResult, find_tests, generate
 
 
 def get_integ_tests() -> Iterator["pytest.mark.structures.ParameterSet[CaseInfo]"]:

@@ -1,10 +1,9 @@
-from utils import get_syntax_tree
-
 from pytch.binder import bind, GLOBAL_SCOPE
 from pytch.cstquery import Query
 from pytch.errors import Error, ErrorCode, Note, Severity
 from pytch.redcst import IdentifierExpr, LetExpr
 from pytch.utils import FileInfo, Position, Range
+from .utils import get_syntax_tree
 
 
 def test_binder() -> None:

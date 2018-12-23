@@ -1,11 +1,11 @@
 from typing import Any, Iterator, Optional
 
 import pytest
-from utils import CaseInfo, CaseResult, find_tests, generate
 
 from pytch.__main__ import compile_file
 from pytch.errors import get_error_lines
 from pytch.utils import FileInfo
+from .utils import CaseInfo, CaseResult, find_tests, generate
 
 
 def get_codegen_tests() -> Iterator["pytest.mark.structures.ParameterSet[CaseInfo]"]:
