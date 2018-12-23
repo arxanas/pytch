@@ -7,9 +7,8 @@ dist: xenial
 sudo: true
 
 install:
-  - pip install pipenv
-  - pipenv install --dev --three
-  - pipenv install -e .
+  - pip install poetry
+  - poetry install
 
 script:
   - ./hooks/pre-commit

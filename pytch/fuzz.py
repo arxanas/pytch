@@ -3,8 +3,16 @@ import sys
 
 import afl
 
-from .__main__ import compile_file
-from .utils import FileInfo
+from pytch.lexer import lex
+from pytch.parser import parse
+from pytch.utils import FileInfo
+
+
+def check_for_buggy_parse(file_info: FileInfo) -> None:
+    lexation = lex(file_info=file_info)
+    parsation = parse(file_info=file_info, tokens=lexation.tokens)
+    if parsation.is_buggy:
+        raise ValueError("found buggy parse")
 
 
 def main() -> None:
@@ -18,7 +26,7 @@ def main() -> None:
         except UnicodeDecodeError:
             pass
         else:
-            compile_file(file_info, fuzz=True)
+            check_for_buggy_parse(file_info)
     os._exit(0)
 
 

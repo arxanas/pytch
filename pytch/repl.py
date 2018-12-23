@@ -58,17 +58,12 @@ def run_file(file_info: FileInfo) -> None:
         exec(compiled_output)
 
 
-def compile_file(
-    file_info: FileInfo, fuzz: bool = False
-) -> Tuple[Optional[str], List[Error]]:
+def compile_file(file_info: FileInfo) -> Tuple[Optional[str], List[Error]]:
     all_errors = []
     lexation = lex(file_info=file_info)
     all_errors.extend(lexation.errors)
     parsation = parse(file_info=file_info, tokens=lexation.tokens)
     all_errors.extend(parsation.errors)
-
-    if fuzz and parsation.is_buggy:
-        sys.exit(1)
 
     if has_fatal_error(all_errors):
         return (None, all_errors)

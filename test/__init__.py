@@ -8,7 +8,7 @@ registered anywhere.
 To re-generate the expected output and error files, delete the respective
 `.out` and `.err` files, then run:
 
-    pipenv run py.test -G
+    poetry run py.test -G
 
 They will be populated by running the compiler on the input files and writing
 its output to those files. This can be useful in some cases, such as when the

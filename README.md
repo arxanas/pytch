@@ -6,14 +6,14 @@
 
 The Pytch compiler is currently written in Python 3.7.
 
-To install the development packages, run
+To install the development environment, run
 
 ```sh
-$ pipenv install --dev
+$ poetry install
 ```
 
 To run:
 
 ```sh
-$ pipenv run pytch run file.pytch
+$ poetry run pytch run file.pytch
 ```
