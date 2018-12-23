@@ -1,20 +1,24 @@
-.. Pytch documentation master file, created by
-   sphinx-quickstart on Sun Dec 23 17:05:52 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Pytch --- tooling-focused Python
+================================
 
-Welcome to Pytch's documentation!
-=================================
+Pytch is an expression-oriented, tooling-focused language that compiles down
+to Python.
+
+Why Pytch?
+----------
+
+Python is a great language for prototyping, but development speed can start
+to slow down as your project grows in size. You can incrementally adopt Pytch
+into your existing Python projects to start getting high-quality IDE support.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
 
+   Repository <https://github.com/arxanas/pytch>
+   usage/getting-started
 
+Status
+------
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Pytch is not currently usable. You can follow development at `the issue
+tracker <https://github.com/arxanas/pytch/projects>`_.
