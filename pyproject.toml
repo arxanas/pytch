@@ -20,6 +20,10 @@ pyrsistent = "^0.14.8"
 typing = "^3.6"
 typing-extensions = "^3.6"
 
+# Not real dependencies, see https://github.com/sdispater/poetry/issues/759
+cython = {version = "^0.29.2",optional = true}
+python-afl = {version = "^0.7.1",optional = true}
+
 [tool.poetry.dev-dependencies]
 black = {version = "^18.3-alpha.0",allows-prereleases = true}
 flake8 = "^3.6"
@@ -29,6 +33,9 @@ mypy = "^0.650.0"
 pytest = "^4.0"
 pytest-pythonpath = "^0.7.3"
 rope = "^0.11.0"
+
+[tool.poetry.extras]
+fuzz = ["cython", "python-afl"]
 
 [build-system]
 requires = ["poetry>=0.12"]

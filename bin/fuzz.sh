@@ -6,7 +6,7 @@ main() {
     cp test/{lexer,parser}/*.pytch fuzz/initial
 
     cd fuzz
-    py-afl-fuzz -m 400 -i initial -o results -- python -m pytch.fuzz @@
+    poetry run py-afl-fuzz -m 400 -i initial -o results -- python -m pytch.fuzz @@
 }
 
 main
