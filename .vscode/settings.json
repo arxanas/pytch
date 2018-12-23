@@ -1,0 +1,19 @@
+{
+  "files.exclude": {
+    ".mypy_cache": true,
+    ".pytest_cache": true,
+    "fuzz": true,
+    "pytch.egg-info": true
+  },
+  "python.jediEnabled": false,
+  "restructuredtext.confPath": "${workspaceFolder}/website",
+  "python.linting.pylintEnabled": false,
+  "python.linting.mypyEnabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.formatting.provider": "black",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveTimeout": 5000,
+  "python.unitTest.pyTestArgs": [],
+  "python.unitTest.pyTestEnabled": true,
+  "python.pythonPath": ".venv/bin/python",
+}
