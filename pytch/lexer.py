@@ -54,7 +54,8 @@ from typing import Iterable, Iterator, List, Mapping, Optional, Pattern, Tuple
 
 import attr
 
-from .errors import Error, ErrorCode, Severity
+from .containers import PVector
+from .errors import Error, ErrorCode, Note, Severity
 from .utils import FileInfo, OffsetRange
 
 
@@ -67,6 +68,8 @@ class TriviumKind(Enum):
 
 class TokenKind(Enum):
     IDENTIFIER = "identifier"
+    STRING_LITERAL = "string literal"
+
     LET = "'let'"
     COMMA = "','"
     INT_LITERAL = "integer literal"
@@ -189,6 +192,7 @@ class Token:
 class State:
     file_info: FileInfo
     offset: int
+    errors: PVector[Error]
 
     def update(self, **kwargs):
         return attr.evolve(self, **kwargs)
@@ -196,6 +200,18 @@ class State:
     def advance_offset(self, offset_delta: int) -> "State":
         assert offset_delta >= 0
         return self.update(offset=self.offset + offset_delta)
+
+    def current_char(self) -> Optional[str]:
+        if 0 <= self.offset < len(self.file_info.source_code):
+            return self.file_info.source_code[self.offset]
+        else:
+            return None
+
+    def text_from(self, start_offset: int) -> str:
+        return self.file_info.source_code[start_offset : self.offset]
+
+    def add_error(self, error: Error) -> "State":
+        return self.update(errors=self.errors.append(error))
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -230,15 +246,14 @@ UNKNOWN_TOKEN_RE = re.compile(r"[^ \n\t\ra-zA-Z0-9]+")
 
 class Lexer:
     def lex(self, file_info: FileInfo) -> Lexation:
-        state = State(file_info=file_info, offset=0)
-        errors = []
+        state = State(file_info=file_info, offset=0, errors=PVector())
         tokens = []
         while True:
             last_offset = state.offset
             (state, token) = self.lex_token(state)
             tokens.append(token)
             if token.kind == TokenKind.ERROR:
-                errors.append(
+                state = state.add_error(
                     Error(
                         file_info=file_info,
                         code=ErrorCode.INVALID_TOKEN,
@@ -258,7 +273,7 @@ class Lexer:
                 break
             assert state.offset >= last_offset, "No progress made in lexing"
 
-        return Lexation(tokens=tokens, errors=errors)
+        return Lexation(tokens=tokens, errors=list(state.errors))
 
     def lex_leading_trivia(self, state: State) -> Tuple[State, List[Trivium]]:
         leading_trivia = self.lex_next_trivia_by_patterns(
@@ -317,6 +332,11 @@ class Lexer:
     def lex_token(self, state: State) -> Tuple[State, Token]:
         (state, leading_trivia) = self.lex_leading_trivia(state)
         token_info = None
+
+        if token_info is None:
+            (maybe_state, token_info) = self.lex_string(state)
+            if token_info is not None:
+                state = maybe_state
 
         if token_info is None:
             (maybe_state, token_info) = self.lex_next_token_by_patterns(
@@ -383,6 +403,63 @@ class Lexer:
         token_text = match.group()
         state = state.advance_offset(len(token_text))
         return (state, (kind, token_text))
+
+    def lex_string(self, state: State) -> Tuple[State, Optional[Tuple[TokenKind, str]]]:
+        (state, leading_trivia) = self.lex_leading_trivia(state)
+        start_offset = state.offset
+        quote_char = state.current_char()
+        if not (quote_char == "'" or quote_char == '"'):
+            return (state, None)
+
+        state = state.advance_offset(1)
+        current_char = state.current_char()
+        last_char_was_backslash = current_char == "\\"
+        while (
+            current_char is not None
+            # Can't have a literal newline in the middle of a string -- just
+            # terminate it at that point. We could also consider backtracking
+            # to just the first word for error-recovery purposes, under the
+            # assumption that most strings are one word long.
+            and current_char != "\n"
+        ):
+            state = state.advance_offset(1)
+            current_char = state.current_char()
+
+            if current_char == quote_char and not last_char_was_backslash:
+                state = state.advance_offset(1)
+                break
+
+            last_char_was_backslash = current_char == "\\"
+
+        # No closing quote character found on this line, so emit an error.
+        else:
+            # Note that we advanced the state's offset by one to continue
+            # lexing, so the error location is immediately previous to the
+            # current offset.
+            end_offset = state.offset - 1
+            state = state.add_error(
+                Error(
+                    file_info=state.file_info,
+                    code=ErrorCode.EXPECTED_END_OF_STRING,
+                    severity=Severity.ERROR,
+                    message=f"I was expecting a {quote_char} to end this string.",
+                    range=state.file_info.get_range_from_offset_range(
+                        OffsetRange(start=end_offset, end=end_offset + 1)
+                    ),
+                    notes=[
+                        Note(
+                            file_info=state.file_info,
+                            message="This is the beginning of the string.",
+                            range=state.file_info.get_range_from_offset_range(
+                                OffsetRange(start=start_offset, end=start_offset + 1)
+                            ),
+                        )
+                    ],
+                )
+            )
+
+        token_text = state.text_from(start_offset=start_offset)
+        return (state, (TokenKind.STRING_LITERAL, token_text))
 
 
 def with_indentation_levels(tokens: Iterable[Token],) -> Iterator[Tuple[int, Token]]:

@@ -1,0 +1,3 @@
+string literal '"foo\\\\\\"bar"'
+trailing newline '\n'
+the end of the file

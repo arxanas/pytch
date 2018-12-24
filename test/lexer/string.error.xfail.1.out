@@ -1,0 +1,6 @@
+string literal '\'foo"'
+trailing newline '\n'
+the end of a statement
+string literal '"bar\''
+trailing newline '\n'
+the end of the file
