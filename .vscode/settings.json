@@ -5,7 +5,6 @@
     "fuzz": true,
     "pytch.egg-info": true
   },
-  "python.jediEnabled": false,
   "restructuredtext.confPath": "${workspaceFolder}/website",
   "python.linting.pylintEnabled": false,
   "python.linting.mypyEnabled": true,
