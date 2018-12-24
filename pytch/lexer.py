@@ -317,54 +317,60 @@ class Lexer:
             offset += trivium.width
 
     def lex_token(self, state: State) -> Tuple[State, Token]:
-        (maybe_state, token) = self.lex_next_token_by_patterns(
-            state,
-            {
-                TokenKind.INT_LITERAL: INT_LITERAL_RE,
-                TokenKind.EQUALS: EQUALS_RE,
-                TokenKind.LET: LET_RE,
-                TokenKind.COMMA: COMMA_RE,
-                TokenKind.LPAREN: LPAREN_RE,
-                TokenKind.RPAREN: RPAREN_RE,
-                TokenKind.IF: IF_RE,
-                TokenKind.THEN: THEN_RE,
-                TokenKind.ELSE: ELSE_RE,
-                TokenKind.PLUS: PLUS_RE,
-                TokenKind.MINUS: MINUS_RE,
-                TokenKind.OR: OR_RE,
-                TokenKind.AND: AND_RE,
-                TokenKind.IDENTIFIER: IDENTIFIER_RE,
-            },
-        )
+        (state, leading_trivia) = self.lex_leading_trivia(state)
+        token_info = None
 
-        if token is not None:
-            state = maybe_state
-        else:
-            (maybe_state, token) = self.lex_next_token_by_patterns(
+        if token_info is None:
+            (maybe_state, token_info) = self.lex_next_token_by_patterns(
+                state,
+                {
+                    TokenKind.INT_LITERAL: INT_LITERAL_RE,
+                    TokenKind.EQUALS: EQUALS_RE,
+                    TokenKind.LET: LET_RE,
+                    TokenKind.COMMA: COMMA_RE,
+                    TokenKind.LPAREN: LPAREN_RE,
+                    TokenKind.RPAREN: RPAREN_RE,
+                    TokenKind.IF: IF_RE,
+                    TokenKind.THEN: THEN_RE,
+                    TokenKind.ELSE: ELSE_RE,
+                    TokenKind.PLUS: PLUS_RE,
+                    TokenKind.MINUS: MINUS_RE,
+                    TokenKind.OR: OR_RE,
+                    TokenKind.AND: AND_RE,
+                    TokenKind.IDENTIFIER: IDENTIFIER_RE,
+                },
+            )
+            if token_info is not None:
+                state = maybe_state
+
+        if token_info is None:
+            (maybe_state, token_info) = self.lex_next_token_by_patterns(
                 state, {TokenKind.ERROR: UNKNOWN_TOKEN_RE}
             )
+            if token_info is not None:
+                state = maybe_state
 
-        if token is not None:
-            state = maybe_state
-        else:
+        if token_info is None:
             # We can't find any match at all? Then there must be only
             # trivia remaining in the stream, so just produce the EOF
             # token.
-            (state, leading_trivia) = self.lex_leading_trivia(state)
-            (state, trailing_trivia) = self.lex_trailing_trivia(state)
-            token = Token(
-                kind=TokenKind.EOF,
-                text="",
+            token_info = (TokenKind.EOF, "")
+
+        (state, trailing_trivia) = self.lex_trailing_trivia(state)
+        (token_kind, token_text) = token_info
+        return (
+            state,
+            Token(
+                kind=token_kind,
+                text=token_text,
                 leading_trivia=leading_trivia,
                 trailing_trivia=trailing_trivia,
-            )
-
-        return (state, token)
+            ),
+        )
 
     def lex_next_token_by_patterns(
         self, state: State, token_patterns: Mapping[TokenKind, Pattern]
-    ) -> Tuple[State, Optional[Token]]:
-        (state, leading_trivia) = self.lex_leading_trivia(state)
+    ) -> Tuple[State, Optional[Tuple[TokenKind, str]]]:
         matches = [
             (token_kind, regex.match(state.file_info.source_code, pos=state.offset))
             for token_kind, regex in token_patterns.items()
@@ -378,14 +384,7 @@ class Lexer:
         (kind, match) = max(filtered_matches, key=lambda x: len(x[1].group()))
         token_text = match.group()
         state = state.advance_offset(len(token_text))
-        (state, trailing_trivia) = self.lex_trailing_trivia(state)
-        token = Token(
-            kind=kind,
-            text=token_text,
-            leading_trivia=leading_trivia,
-            trailing_trivia=trailing_trivia,
-        )
-        return (state, token)
+        return (state, (kind, token_text))
 
 
 def with_indentation_levels(tokens: Iterable[Token],) -> Iterator[Tuple[int, Token]]:
