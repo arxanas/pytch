@@ -21,7 +21,7 @@ def lines_to_string(lines: Sequence[str]) -> str:
     return "".join(line + "\n" for line in lines)
 
 
-def test_print_error():
+def test_print_error() -> None:
     file_info = FileInfo(
         file_path="dummy.pytch",
         source_code="""line1
@@ -70,7 +70,7 @@ Error: Look into this
     )
 
 
-def test_error_at_single_point():
+def test_error_at_single_point() -> None:
     file_info = FileInfo(
         file_path="dummy.pytch",
         source_code="""line1
@@ -261,7 +261,7 @@ Error: I couldn't find a binding...
     )
 
 
-def test_wrap_message():
+def test_wrap_message() -> None:
     file_info = FileInfo(
         file_path="dummy.pytch",
         source_code="""line1
