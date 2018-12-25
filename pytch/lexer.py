@@ -232,14 +232,12 @@ class Lexer:
     def lex(self, file_info: FileInfo) -> Lexation:
         state = State(file_info=file_info, offset=0)
         errors = []
-        error_tokens = []
         tokens = []
         while True:
             last_offset = state.offset
             (state, token) = self.lex_token(state)
             tokens.append(token)
             if token.kind == TokenKind.ERROR:
-                error_tokens.append(token)
                 errors.append(
                     Error(
                         file_info=file_info,
