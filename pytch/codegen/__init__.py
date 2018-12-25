@@ -30,6 +30,7 @@ from ..redcst import (
     IntLiteralExpr,
     LetExpr,
     Pattern,
+    StringLiteralExpr,
     SyntaxTree,
     VariablePattern,
 )
@@ -165,8 +166,10 @@ def compile_expr(
         return compile_identifier_expr(env, expr)
     elif isinstance(expr, IntLiteralExpr):
         return compile_int_literal_expr(env, expr)
+    elif isinstance(expr, StringLiteralExpr):
+        return compile_string_literal_expr(env, expr)
     else:
-        assert False, f"Unhandled expr type {expr.__class__.__name__}"
+        raise NotImplementedError(f"Unhandled expr type {expr.__class__.__name__}")
 
 
 PY_EXPR_NO_TARGET = PyUnavailableExpr("should have been directly stored already")
@@ -496,6 +499,21 @@ def compile_int_literal_expr(
 
     value = t_int_literal.text
     py_expr = PyLiteralExpr(value=str(value))
+    if target is None:
+        return (env, py_expr, [])
+    else:
+        statements: PyStmtList = [PyAssignmentStmt(lhs=target, rhs=py_expr)]
+        return (env, PY_EXPR_NO_TARGET, statements)
+
+
+def compile_string_literal_expr(
+    env: Env, string_literal_expr: StringLiteralExpr, target: PyIdentifierExpr = None
+) -> Tuple[Env, PyExpr, PyStmtList]:
+    t_string_literal = string_literal_expr.t_string_literal
+    if t_string_literal is None:
+        return (env, PyUnavailableExpr("missing string literal"), [])
+
+    py_expr = PyLiteralExpr(value=t_string_literal.text)
     if target is None:
         return (env, py_expr, [])
     else:
