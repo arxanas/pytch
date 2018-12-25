@@ -16,6 +16,7 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+from pytch import __version__ as pytch_version
 
 # -- Project information -----------------------------------------------------
 
@@ -26,7 +27,7 @@ author = "Waleed Khan"
 # The short X.Y version
 version = ""
 # The full version, including alpha/beta/rc tags
-release = "0.1"
+release = pytch_version
 
 
 # -- General configuration ---------------------------------------------------
@@ -43,6 +44,9 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
+    "website.ext.designnote",
+    "website.ext.ebnflexer",
+    "website.ext.pytchlexer",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -84,7 +88,11 @@ html_theme = "alabaster"
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    "head_font_family": "'Garamond', 'Georgia', serif",
+    "font_family": "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    "logo": "logo.png",
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

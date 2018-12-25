@@ -1,0 +1,262 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>3. Expressions &#8212; Pytch 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="2. Lexical Analysis" href="lexical-analysis.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="expressions">
+<h1>3. Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline">¶</a></h1>
+<p>Pytch is an <a class="reference external" href="https://en.wikipedia.org/wiki/Expression-oriented_programming_language"><em>expression-oriented</em></a> language, so nearly all syntactic elements
+are expressions or parts of expressions.</p>
+<p>Some tokens are inserted by the preparser. These tokens are denoted with a
+leading <code class="docutils literal notranslate"><span class="pre">$</span></code>, such as <code class="docutils literal notranslate"><span class="pre">$semicolon</span></code>.</p>
+<p>These are the possible expressions:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">binary-expr</span><span class="w"></span>
+<span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="k">function-call-expr</span><span class="w"></span>
+<span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="k">if-expr</span><span class="w"></span>
+<span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="k">let-expr</span><span class="w"></span>
+<span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="k">literal-expr</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="section" id="binary-expressions">
+<h2>3.1. Binary expressions<a class="headerlink" href="#binary-expressions" title="Permalink to this headline">¶</a></h2>
+<p>Binary expressions consist of two operands separated by an operator:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">binary-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="k">operator</span><span class="w"> </span><span class="k">expr</span><span class="w"></span>
+<span class="k">operator</span><span class="w">    </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;+&#39;</span><span class="w"></span>
+<span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="s">&#39;-&#39;</span><span class="w"></span>
+<span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="s">&quot;and&quot;</span><span class="w"></span>
+<span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="s">&quot;or&quot;</span><span class="w"></span>
+<span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="k">$semicolon</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The result of a binary expression is the result of evaluating the left-hand
+operand, then the right-hand operand, then applying the operator to both.</p>
+<p>The meanings of the operators are as follows:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">$semicolon</span></code>: Discard left-hand operand and return right-hand operand. Due
+to its sequencing behavior, the <code class="docutils literal notranslate"><span class="pre">$semicolon</span></code> operator may be considered
+to introduce a <em>statement expression</em>.</li>
+<li>All others: same as in Python.</li>
+</ul>
+<div class="section" id="operator-precedence">
+<h3>3.1.1. Operator precedence<a class="headerlink" href="#operator-precedence" title="Permalink to this headline">¶</a></h3>
+<p>The operators have the following <a class="reference external" href="https://en.wikipedia.org/wiki/Order_of_operations">precedences</a> and <a class="reference external" href="https://en.wikipedia.org/wiki/Operator_associativity">associativities</a>, indicated from
+lowest precedence (least binding) to highest precedence (most binding):</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="52%" />
+<col width="48%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Operator</th>
+<th class="head">Associativity</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">$semicolon</span></code></td>
+<td>Right</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">or</span></code></td>
+<td>Left</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">and</span></code></td>
+<td>Left</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code></td>
+<td>Left</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="function-call-expressions">
+<h2>3.2. Function call expressions<a class="headerlink" href="#function-call-expressions" title="Permalink to this headline">¶</a></h2>
+<p>Function calls consist of a callee and any number of arguments:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">function-call-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="s">&#39;(&#39;</span><span class="w"> </span><span class="k">argument-list</span><span class="w"> </span><span class="s">&#39;)&#39;</span><span class="w"></span>
+<span class="k">argument-list</span><span class="w">      </span><span class="o">::=</span><span class="w"> </span><span class="k">argument</span><span class="w"> </span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="w"> </span><span class="k">argument</span><span class="p">)</span><span class="o">*</span><span class="w"> </span><span class="p">[</span><span class="s">&#39;,&#39;</span><span class="p">]</span><span class="w"></span>
+<span class="k">argument</span><span class="w">           </span><span class="o">::=</span><span class="w"> </span><span class="k">expr</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The result of a function call expression is the result of evaluating the
+callee expression, then evaluating each argument expression from left to
+right, and then calling the callee expression with the given arguments.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Implement keyword arguments and splats.</p>
+</div>
+</div>
+<div class="section" id="if-expressions">
+<h2>3.3. <code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions<a class="headerlink" href="#if-expressions" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions consist of a condition, a <code class="docutils literal notranslate"><span class="pre">then</span></code>-clause, and optionally
+an <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">if-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&quot;if&quot;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="s">&quot;then&quot;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;else&quot;</span><span class="w"> </span><span class="k">expr</span><span class="p">]</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The result of an <code class="docutils literal notranslate"><span class="pre">if</span></code>-expression is the result of evaluating the condition;
+then, if the condition is truthy, evaluating en``-clause and
+returning the result, or otherwise evaluating the <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause and
+returning the result.</p>
+<p>Exactly one of the clauses will be evaluated.</p>
+<p>In the event that the <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause is absent, the <code class="docutils literal notranslate"><span class="pre">if</span></code>-expression is
+considered to return a “void” result, the value of which is indeterminate. It
+should be used with the statement expression, so that the resulting value is
+thrown away.</p>
+</div>
+<div class="section" id="let-expressions">
+<h2>3.4. <code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions<a class="headerlink" href="#let-expressions" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions consist of a pattern, a value, and sometimes a body.</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">let-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&quot;let&quot;</span><span class="w"> </span><span class="k">pattern</span><span class="w"> </span><span class="s">&#39;=&#39;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="p">[</span><span class="k">$in</span><span class="w"> </span><span class="k">expr</span><span class="p">]</span><span class="w"></span>
+<span class="k">pattern</span><span class="w">  </span><span class="o">::=</span><span class="w"> </span><span class="k">identifier</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The result of a <code class="docutils literal notranslate"><span class="pre">let</span></code>-expression is determined by evaluating the value
+expression and binding it to the pattern. Variables bound this way are then
+available for use in the body expression. The result of the
+<code class="docutils literal notranslate"><span class="pre">let</span></code>-expression is the result of evaluating the body with the new bindings
+now in scope.</p>
+<p>The body of the <code class="docutils literal notranslate"><span class="pre">let</span></code>-expression is required, except for at the top-level
+of a module, in which case it is optional. In that case, the pattern is bound
+and made available as an export of the module.</p>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">Implement support for patterns other than identifier patterns.</p>
+</div>
+</div>
+<div class="section" id="literal-expressions">
+<h2>3.5. Literal expressions<a class="headerlink" href="#literal-expressions" title="Permalink to this headline">¶</a></h2>
+<p>Literal expressions consist directly of a lexed <a class="reference internal" href="lexical-analysis.html#lexical-analysis-literals"><span class="std std-ref">literal</span></a>:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">literal-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">integer-literal</span><span class="w"></span>
+<span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="k">string-literal</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Their values correspond to the value written in the source code.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language-reference.html">Language Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../language-reference.html#table-of-contents">Table of contents</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="notation.html">1. Notation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="lexical-analysis.html">2. Lexical Analysis</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">3. Expressions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#binary-expressions">3.1. Binary expressions</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#operator-precedence">3.1.1. Operator precedence</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#function-call-expressions">3.2. Function call expressions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#if-expressions">3.3. <code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#let-expressions">3.4. <code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#literal-expressions">3.5. Literal expressions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/arxanas/pytch">Repository</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../language-reference.html">Language Reference</a><ul>
+      <li>Previous: <a href="lexical-analysis.html" title="previous chapter">2. Lexical Analysis</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Waleed Khan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/language-reference/expressions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

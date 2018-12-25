@@ -19,5 +19,5 @@ $(DOCS): $(DOCS_SOURCE) $(DOCS_SOURCE)/* $(DOCS_SOURCE)/**/*
 	touch $(DOCS)
 
 clean:
-	rm $(SYNTAX_TREES)
+	-rm $(SYNTAX_TREES)
 	rm -rf $(DOCS)

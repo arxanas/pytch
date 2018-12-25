@@ -6,16 +6,18 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Getting Started &#8212; Pytch 0.1 documentation</title>
+    <title>1. Notation &#8212; Pytch 0.0.1 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="Pytch: tooling-focused Python" href="../index.html" />
+    <link rel="next" title="2. Lexical Analysis" href="lexical-analysis.html" />
+    <link rel="prev" title="Language Reference" href="../language-reference.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -32,16 +34,14 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="getting-started">
-<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<p>Pytch is currently written in Python 3.7. To install Pytch, run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">pytch</span>
-</pre></div>
-</div>
-<p>Then, to compile a single file, run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytch</span> <span class="nb">compile</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">file</span><span class="o">.</span><span class="n">pytch</span>
-</pre></div>
-</div>
+  <div class="section" id="notation">
+<h1>1. Notation<a class="headerlink" href="#notation" title="Permalink to this headline">¶</a></h1>
+<p>The notation used in the language reference is the same as <a class="reference external" href="https://docs.python.org/3/reference/introduction.html#notation">Python 3’s EBNF
+notation</a>.</p>
+<p>In <a class="reference internal" href="lexical-analysis.html"><span class="doc">Lexical Analysis</span></a>, EBNF is used indicate sequences of characters,
+while in the remainder of the documentation, EBNF is used to indicate
+sequences of tokens.</p>
+<p>Whitespace is typically implicit in these EBNF descriptions.</p>
 </div>
 
 
@@ -51,7 +51,12 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">Pytch</a></h1>
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
 
 
 
@@ -62,15 +67,28 @@
 
 <h3>Navigation</h3>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language-reference.html">Language Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../language-reference.html#table-of-contents">Table of contents</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">1. Notation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="lexical-analysis.html">2. Lexical Analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="expressions.html">3. Expressions</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/arxanas/pytch">Repository</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="../index.html" title="previous chapter">Pytch: tooling-focused Python</a></li>
+  <li><a href="../language-reference.html">Language Reference</a><ul>
+      <li>Previous: <a href="../language-reference.html" title="previous chapter">Language Reference</a></li>
+      <li>Next: <a href="lexical-analysis.html" title="next chapter">2. Lexical Analysis</a></li>
+  </ul></li>
   </ul></li>
 </ul>
 </div>
@@ -106,7 +124,7 @@
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
-      <a href="../_sources/usage/getting-started.rst.txt"
+      <a href="../_sources/language-reference/notation.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 

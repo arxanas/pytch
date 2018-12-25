@@ -1,0 +1,401 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>2. Lexical Analysis &#8212; Pytch 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3. Expressions" href="expressions.html" />
+    <link rel="prev" title="1. Notation" href="notation.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="lexical-analysis">
+<h1>2. Lexical Analysis<a class="headerlink" href="#lexical-analysis" title="Permalink to this headline">¶</a></h1>
+<p>Pytch source files are encoded in UTF-8.</p>
+<p>The compiler takes the source file as input and runs these steps:</p>
+<ul class="simple">
+<li>Runs the <a class="reference external" href="https://en.wikipedia.org/wiki/Lexical_analysis"><em>lexer</em></a> to turn the source file into a sequence of <a class="reference external" href="https://en.wikipedia.org/wiki/Lexical_analysis#Token"><em>tokens</em></a>.</li>
+<li>Runs the <em>preparser</em> to insert dummy tokens which indicate structure inferred
+from the source file’s indentation (see <a class="reference internal" href="#indentation">Indentation</a>).</li>
+<li>Runs the <a class="reference external" href="https://en.wikipedia.org/wiki/Parsing#Computer_languages"><em>parser</em></a> to convert the sequence of tokens into a <a class="reference external" href="https://en.wikipedia.org/wiki/Abstract_syntax_tree"><em>syntax tree</em></a>.
+This representation is then passed to the rest of the compiler for
+processing.</li>
+</ul>
+<div class="section" id="maximal-munch">
+<h2>2.1. Maximal munch<a class="headerlink" href="#maximal-munch" title="Permalink to this headline">¶</a></h2>
+<p>In the case of ambiguity about the lexing of a token or other lexical
+element, the interpretation which greedily maximizes the length of that
+lexical element is preferred, unless otherwise noted.</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">foobar</span></code> is interpreted as a single <a class="reference internal" href="#identifiers">identifier</a>, rather than as the identifier <code class="docutils literal notranslate"><span class="pre">foo</span></code> followed by the
+identifier <code class="docutils literal notranslate"><span class="pre">bar</span></code> (or any other partitioning of this identifier).</p>
+</div>
+<div class="section" id="whitespace">
+<h2>2.2. Whitespace<a class="headerlink" href="#whitespace" title="Permalink to this headline">¶</a></h2>
+<p><em>Whitespace</em> is a non-token lexical element used for two purposes:</p>
+<ol class="arabic simple">
+<li>When present at the beginning of a line, to indicate the structure of the
+code by means of <a class="reference internal" href="#indentation">indentation</a>.</li>
+<li>Elsewhere, to separate tokens for legibility purposes. When used this way,
+multiple consecutive whitespace characters are logically equivalent to a
+single whitespace character.</li>
+</ol>
+<p>Whitespace may be either a space character or a newline:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">whitespace-char</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39; &#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s">&#39;\n&#39;</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Note that other whitespace characters, such as tabs, are not permitted in
+Pytch files.</p>
+<div class="admonition" id="design-note-0">
+<p class="first admonition-title">Design note</p>
+<p class="last">For more discussion on why tabs are prohibited, see <a class="reference external" href="https://github.com/arxanas/pytch/commit/69972bd7d4703e5b0685997bd02baca908584d80">this commit message</a>.</p>
+</div>
+</div>
+<div class="section" id="comments">
+<h2>2.3. Comments<a class="headerlink" href="#comments" title="Permalink to this headline">¶</a></h2>
+<p><em>Comments</em> are non-token lexical elements which are strictly for the
+programmer’s benefit, and do not affect the generated code. Usually they are
+used to document or explain the following piece of code. They can also be
+used to temporarily remove a section of code.</p>
+<p>They are indicated with a <code class="docutils literal notranslate"><span class="pre">#</span></code>, which cause the compiler to ignore it and
+the rest of the line:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">comment</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;#&#39;</span><span class="w"> </span>&lt;any<span class="w"> </span>character<span class="w"> </span>but<span class="w"> </span><span class="s">&#39;\n&#39;</span>&gt;<span class="o">*</span><span class="w"></span>
+</pre></div>
+</div>
+<p>This is the same as <a class="reference external" href="https://docs.python.org/3/reference/lexical_analysis.html#comments">in Python</a>.</p>
+<p>Example:</p>
+<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span># This is a comment.
+this_is_a_function_call_not_a_comment()  # This is a trailing comment.
+</pre></div>
+</div>
+</div>
+<div class="section" id="keywords">
+<h2>2.4. Keywords<a class="headerlink" href="#keywords" title="Permalink to this headline">¶</a></h2>
+<p><em>Keywords</em> are words in the source code which have special meaning to the
+parser.</p>
+<p>This is the current list of keywords in Pytch:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">and</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">else</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">if</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">let</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">or</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">then</span></code></li>
+</ul>
+</div>
+<div class="section" id="identifiers">
+<h2>2.5. Identifiers<a class="headerlink" href="#identifiers" title="Permalink to this headline">¶</a></h2>
+<p><em>Identifiers</em> are tokens in the source code which logically refer to the name
+of a binding. They adhere to the following grammar, with the additional
+restriction that they are not a <a class="reference internal" href="#keywords">keyword</a>:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">head-char</span><span class="w">  </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;a&#39;</span><span class="o">...</span><span class="s">&#39;z&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s">&#39;A&#39;</span><span class="o">...</span><span class="s">&#39;Z&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s">&#39;_&#39;</span><span class="w"></span>
+<span class="k">tail-char</span><span class="w">  </span><span class="o">::=</span><span class="w"> </span><span class="k">head-char</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s">&#39;0&#39;</span><span class="o">...</span><span class="s">&#39;9&#39;</span><span class="w"></span>
+<span class="k">identifier</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">head-char</span><span class="w"> </span><span class="k">tail-char</span><span class="o">*</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Identifiers are case-sensitive.</p>
+<p>Examples of legal identifiers:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">foo</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">FooBar123</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">__foo__</span></code></li>
+</ul>
+<p>Examples of illegal identifiers:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">1foo</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">foo_😊</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">プログラミング言語</span></code></li>
+</ul>
+<div class="admonition" id="design-note-1">
+<p class="first admonition-title">Design note</p>
+<p class="last">The set of legal identifiers in Pytch is more restrictive than <a class="reference external" href="https://docs.python.org/3/reference/lexical_analysis.html#identifiers">in Python</a>
+for now, due to the implementation difficulty. Unicode support for
+identifiers may be implemented in the future.</p>
+</div>
+</div>
+<div class="section" id="indentation">
+<h2>2.6. Indentation<a class="headerlink" href="#indentation" title="Permalink to this headline">¶</a></h2>
+<p>Pytch is indentation-sensitive, but in a different way than Python. Pytch is
+<a class="reference external" href="https://en.wikipedia.org/wiki/Expression-oriented_programming_language"><em>expression-oriented</em></a>, and a consequence is that expressions may implicitly
+span many lines. As a result, the rules for determining the ends of
+expressions are different.</p>
+<p>The <em>preparser</em> is responsible for converting Pytch source code into an
+indentation-insensitive version of the language, which is then processed by
+the parser.</p>
+<div class="admonition" id="design-note-2">
+<p class="first admonition-title">Design note</p>
+<p>Pytch’s preparser is similar in spirit to F#’s preparser. See the <a class="reference external" href="https://fsharp.org/specs/language-spec/">F# 4.1
+specification</a>, section 15.1
+<em>Lightweight Syntax</em> for more details.</p>
+<p class="last">F#’s preparser is more strict than Pytch’s, as it emits warnings about
+unexpected indentation. The idea in Pytch is to rely on the autoformatter
+to expose unexpected indentation, while allowing the user to write their
+code in a relatively free-form manner (such as by copying and pasting it).</p>
+</div>
+<div class="section" id="dummy-tokens">
+<h3>2.6.1. Dummy tokens<a class="headerlink" href="#dummy-tokens" title="Permalink to this headline">¶</a></h3>
+<p>Consider the following code:</p>
+<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span>let foo =
+  print(&quot;calculating foo&quot;)
+  &quot;foo&quot;
+print(&quot;the value of foo is &quot; + foo)
+</pre></div>
+</div>
+<p>The first <code class="docutils literal notranslate"><span class="pre">print</span></code> call and the <code class="docutils literal notranslate"><span class="pre">&quot;foo&quot;</span></code> string literal are part of the
+<code class="docutils literal notranslate"><span class="pre">let</span></code>-binding’s expression, and the second <code class="docutils literal notranslate"><span class="pre">print</span></code> call is the body of
+the <code class="docutils literal notranslate"><span class="pre">let</span></code>-expression. During preparsing, the compiler desugars the above by
+inserting <em>dummy tokens</em>, here denoted as beginning with the <code class="docutils literal notranslate"><span class="pre">$</span></code> character:</p>
+<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span>let foo =
+  print(&quot;calculating foo&quot;) $semicolon
+  &quot;foo&quot;
+$in
+print(&quot;the value of foo is &quot; + foo)
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">$semicolon</span></code> binary operator introduces a “statement” expression, in
+which the left-hand operand is evaluated and discarded and the right-hand
+operand is evaluated and returned. The <code class="docutils literal notranslate"><span class="pre">$in</span></code> token is used to separate the
+definition of <code class="docutils literal notranslate"><span class="pre">foo</span></code> from the expression that uses <code class="docutils literal notranslate"><span class="pre">foo</span></code>.</p>
+<p>Dummy tokens may not be written explicitly by the user.</p>
+</div>
+<div class="section" id="indentation-stack">
+<h3>2.6.2. Indentation stack<a class="headerlink" href="#indentation-stack" title="Permalink to this headline">¶</a></h3>
+<p>The <em>indentation level</em> of a token is the number of spaces at the beginning
+of the first line containing that token.</p>
+<p>The preparser maintains a <em>indentation stack</em> whose elements contain the
+following information:</p>
+<ul class="simple">
+<li>A token kind.</li>
+<li>The indentation level of that token.</li>
+<li>The line number of that token.</li>
+</ul>
+<p>The preparser processes tokens sequentially, sometimes pushing token
+information onto the above stack or popping entries off, depending on the
+details of the token.</p>
+</div>
+<div class="section" id="unwinding">
+<h3>2.6.3. Unwinding<a class="headerlink" href="#unwinding" title="Permalink to this headline">¶</a></h3>
+<p>The preparser may trigger <em>unwinding</em> when encountering certain tokens. To
+unwind, it pops entries off of the indentation stack until the top-most token
+meets some condition.</p>
+<p>For example, when the preparser encounters a dedented token, it may trigger
+unwinding until the top-most token has a lesser or equal indentation level,
+or when it encounters a <code class="docutils literal notranslate"><span class="pre">)</span></code>, it may trigger unwinding until a <code class="docutils literal notranslate"><span class="pre">(</span></code> token
+popped off.</p>
+<p>Certain tokens will emit dummy tokens when popped off of the indentation
+stack. For example, <code class="docutils literal notranslate"><span class="pre">let</span></code> will emit <code class="docutils literal notranslate"><span class="pre">$in</span></code> and <code class="docutils literal notranslate"><span class="pre">if</span></code> will emit
+<code class="docutils literal notranslate"><span class="pre">$endif</span></code>.</p>
+</div>
+<div class="section" id="let-expressions">
+<h3>2.6.4. <code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions<a class="headerlink" href="#let-expressions" title="Permalink to this headline">¶</a></h3>
+<p>When encountering a <code class="docutils literal notranslate"><span class="pre">let</span></code> token, it is pushed onto the indentation stack.
+Once a token with</p>
+<ul class="simple">
+<li>the same or lesser indentation level as the <code class="docutils literal notranslate"><span class="pre">let</span></code></li>
+<li>and a later line number than the <code class="docutils literal notranslate"><span class="pre">let</span></code></li>
+</ul>
+<p>is reached, the <code class="docutils literal notranslate"><span class="pre">$in</span></code> dummy token is inserted before it to indicate the end
+of the <code class="docutils literal notranslate"><span class="pre">let</span></code>-expression’s binding.</p>
+</div>
+<div class="section" id="statement-expressions">
+<h3>2.6.5. Statement-expressions<a class="headerlink" href="#statement-expressions" title="Permalink to this headline">¶</a></h3>
+<p>When the preparser encounters a new token, if there are no entries on the
+indentation stack, or if the top entry</p>
+<ul class="simple">
+<li>is on an earlier line</li>
+<li>and has the same indentation level</li>
+</ul>
+<p>then the preparser pops the top entry off of the indentation stack and pushes
+the current entry.</p>
+</div>
+<div class="section" id="brackets">
+<h3>2.6.6. Brackets<a class="headerlink" href="#brackets" title="Permalink to this headline">¶</a></h3>
+<p>When the preparser encounters an opening bracket token (such as <code class="docutils literal notranslate"><span class="pre">(</span></code>), it
+pushes an entry on the stack for that token, but with indentation level
+<code class="docutils literal notranslate"><span class="pre">0</span></code>. (This ensures that the preparser doesn’t unwind it when a token inside
+the brackets has a lesser indentation level.)</p>
+<p>When the preparser encounters a closing bracket token (such as <code class="docutils literal notranslate"><span class="pre">)</span></code>), it
+unwinds to the nearest corresponding opening bracket token and pops it off.</p>
+</div>
+</div>
+<div class="section" id="literals">
+<span id="lexical-analysis-literals"></span><h2>2.7. Literals<a class="headerlink" href="#literals" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="integer-literals">
+<h3>2.7.1. Integer literals<a class="headerlink" href="#integer-literals" title="Permalink to this headline">¶</a></h3>
+<p><em>Integer literals</em> denote integral values of the <code class="docutils literal notranslate"><span class="pre">int</span></code> type:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">digit</span><span class="w">           </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;0&#39;</span><span class="o">...</span><span class="s">&#39;9&#39;</span><span class="w"></span>
+<span class="k">integer-literal</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">digit</span><span class="o">+</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Integers in Pytch are arbitrary-precision, so integer literals can be any
+length.</p>
+</div>
+<div class="section" id="floating-point-literals">
+<h3>2.7.2. Floating-point literals<a class="headerlink" href="#floating-point-literals" title="Permalink to this headline">¶</a></h3>
+<p><em>Floating-point literals</em> denote <a class="reference external" href="https://en.wikipedia.org/wiki/Floating-point_arithmetic">floating-point numbers</a>.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Implement floating-point literals. Tracked in
+<a class="reference external" href="https://github.com/pytch-lang/pytch/issues/27">https://github.com/pytch-lang/pytch/issues/27</a>.</p>
+</div>
+</div>
+<div class="section" id="string-literals">
+<h3>2.7.3. String literals<a class="headerlink" href="#string-literals" title="Permalink to this headline">¶</a></h3>
+<p><em>String literals</em> denote <a class="reference external" href="https://en.wikipedia.org/wiki/String_(computer_science)">string values</a>.</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="c"># In this definition, string-literal-item* does not obey</span><span class="w"></span>
+<span class="c"># the maximal munch rule. Instead, it matches the shortest</span><span class="w"></span>
+<span class="c"># possible value.</span><span class="w"></span>
+<span class="k">string-literal</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&quot;&#39;&quot;</span><span class="w"> </span><span class="k">string-literal-item</span><span class="o">*</span><span class="w"> </span><span class="s">&quot;&#39;&quot;</span><span class="w"></span>
+<span class="w">                 </span><span class="o">|</span><span class="w"> </span><span class="s">&#39;&quot;&#39;</span><span class="w"> </span><span class="k">string-literal-item</span><span class="o">*</span><span class="w"> </span><span class="s">&#39;&quot;&#39;</span><span class="w"></span>
+
+<span class="k">string-literal-item</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">string-literal-char</span><span class="w"></span>
+<span class="w">                      </span><span class="o">|</span><span class="w"> </span><span class="k">escape-sequence</span><span class="w"></span>
+<span class="k">string-literal-char</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span>&lt;any<span class="w"> </span>character<span class="w"> </span>but<span class="w"> </span><span class="s">&#39;\&#39;</span><span class="w"> </span>or<span class="w"> </span><span class="s">&#39;\n&#39;</span>&gt;<span class="w"></span>
+<span class="k">escape-sequence</span><span class="w">     </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;\&#39;</span><span class="w"> </span>&lt;any<span class="w"> </span>character<span class="w"> </span>but<span class="w"> </span><span class="s">&#39;\n&#39;</span>&gt;<span class="w"></span>
+</pre></div>
+</div>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">&quot;hello</span> <span class="pre">world&quot;</span></code> is a string literal.</p>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">Implement richer types of string literals, such as triple-quoted strings,
+raw strings, or byte-strings.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language-reference.html">Language Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../language-reference.html#table-of-contents">Table of contents</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="notation.html">1. Notation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">2. Lexical Analysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#maximal-munch">2.1. Maximal munch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#whitespace">2.2. Whitespace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#comments">2.3. Comments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#keywords">2.4. Keywords</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#identifiers">2.5. Identifiers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indentation">2.6. Indentation</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#dummy-tokens">2.6.1. Dummy tokens</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#indentation-stack">2.6.2. Indentation stack</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#unwinding">2.6.3. Unwinding</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#let-expressions">2.6.4. <code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#statement-expressions">2.6.5. Statement-expressions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#brackets">2.6.6. Brackets</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#literals">2.7. Literals</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#integer-literals">2.7.1. Integer literals</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#floating-point-literals">2.7.2. Floating-point literals</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#string-literals">2.7.3. String literals</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="expressions.html">3. Expressions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/arxanas/pytch">Repository</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../language-reference.html">Language Reference</a><ul>
+      <li>Previous: <a href="notation.html" title="previous chapter">1. Notation</a></li>
+      <li>Next: <a href="expressions.html" title="next chapter">3. Expressions</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Waleed Khan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/language-reference/lexical-analysis.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

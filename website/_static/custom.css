@@ -1,4 +1,17 @@
+/* 
+ * Explicit `div` selectors are needed to get enough specificity to override the
+ * built-in styles, which also use `div` selectors.
+ */
+
+body, div.body {
+    background-color: #fcfcfc;
+}
+
 div.body {
     min-width: auto;
     max-width: auto;
+}
+
+div.admonition {
+    padding: 20px 30px 20px 30px;
 }

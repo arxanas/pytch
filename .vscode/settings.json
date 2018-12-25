@@ -7,7 +7,6 @@
     "htmlcov": true,
     "pytch.egg-info": true,
   },
-  "restructuredtext.confPath": "${workspaceFolder}/website",
   "python.linting.pylintEnabled": false,
   "python.linting.mypyEnabled": true,
   "python.linting.flake8Enabled": true,
@@ -17,4 +16,5 @@
   "python.unitTest.pyTestArgs": [],
   "python.unitTest.pyTestEnabled": true,
   "python.pythonPath": ".venv/bin/python",
+  "restructuredtext.confPath": "${workspaceFolder}/website",
 }

@@ -6,17 +6,18 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Pytch: tooling-focused Python &#8212; Pytch 0.0.1 documentation</title>
+    <title>About &#8212; Pytch 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="author" title="About these documents" href="#" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="About" href="about.html" />
+    <link rel="next" title="Getting Started" href="getting-started.html" />
+    <link rel="prev" title="Pytch: tooling-focused Python" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -33,27 +34,16 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="pytch-tooling-focused-python">
-<h1>Pytch: tooling-focused Python<a class="headerlink" href="#pytch-tooling-focused-python" title="Permalink to this headline">¶</a></h1>
-<p>Pytch is an expression-oriented, tooling-focused language that compiles down
-to Python. It’s a little bit like <a class="reference external" href="http://www.typescriptlang.org/">TypeScript</a>, but for Python.</p>
-<div class="section" id="why-pytch">
-<h2>Why Pytch?<a class="headerlink" href="#why-pytch" title="Permalink to this headline">¶</a></h2>
-<p>Python is a great general-purpose language, but its dynamic nature can make
-it hard to get reliable IDE support (such as autocomplete or
-go-to-definition) as your project grows.</p>
-<p>Pytch is a new programming language designed from the ground up to provide
-high-quality IDE support. You can incrementally adopt it into your projects
-and start getting better IDE support today.</p>
-<p>Pytch also features a <a class="reference external" href="https://en.wikipedia.org/wiki/Type_inference">type inference</a> engine, which can help you
-catch bugs without writing mounds of tedious type annotations.</p>
-</div>
-<div class="section" id="status">
-<h2>Status<a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
-<p>Unfortunately, Pytch isn’t yet usable. You can follow development at <a class="reference external" href="https://github.com/arxanas/pytch/projects">the
-issue tracker</a>.</p>
-<div class="toctree-wrapper compound">
-</div>
+  <div class="section" id="about">
+<h1>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="how-does-pytch-work">
+<h2>How does Pytch work?<a class="headerlink" href="#how-does-pytch-work" title="Permalink to this headline">¶</a></h2>
+<p>Pytch is a compiler that runs on <code class="docutils literal notranslate"><span class="pre">.pytch</span></code> files in your project directory.</p>
+<p>Each individual Pytch module is compiled down to a single Python module in
+the same directory. These Python files are then available to the rest of your
+project, just as if you had written the module in Python to begin with.</p>
+<p>If you decide that you don’t want to use Pytch anymore, then you can just
+delete the source Pytch files and keep the produced Python files!</p>
 </div>
 </div>
 
@@ -65,7 +55,7 @@ issue tracker</a>.</p>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
 <p class="logo">
-  <a href="#">
+  <a href="index.html">
     <img class="logo" src="_static/logo.png" alt="Logo"/>
     
   </a>
@@ -79,8 +69,11 @@ issue tracker</a>.</p>
 
 
 <h3>Navigation</h3>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">About</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#how-does-pytch-work">How does Pytch work?</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="language-reference.html">Language Reference</a></li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/arxanas/pytch">Repository</a></li>
@@ -89,8 +82,9 @@ issue tracker</a>.</p>
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
-  <li><a href="#">Documentation overview</a><ul>
-      <li>Next: <a href="about.html" title="next chapter">About</a></li>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Pytch: tooling-focused Python</a></li>
+      <li>Next: <a href="getting-started.html" title="next chapter">Getting Started</a></li>
   </ul></li>
 </ul>
 </div>
@@ -126,7 +120,7 @@ issue tracker</a>.</p>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
-      <a href="_sources/index.rst.txt"
+      <a href="_sources/about.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
