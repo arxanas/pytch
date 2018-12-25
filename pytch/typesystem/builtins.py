@@ -46,6 +46,10 @@ the `object` type instead.
 """
 
 
+STR_TY = BaseTy(name="str", reason=BuiltinReason(name="str"))
+"""String type, corresponding to Python's `str` type."""
+
+
 def _make_print() -> FunctionTy:
     print_reason = BuiltinReason(name="print")
     # TODO: this may have to be some kind of `ArgumentTy` instead, so that it

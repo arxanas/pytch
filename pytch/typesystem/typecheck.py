@@ -17,11 +17,12 @@ from pytch.redcst import (
     LetExpr,
     Node,
     Parameter,
+    StringLiteralExpr,
     SyntaxTree,
     VariablePattern,
 )
 from pytch.utils import FileInfo, Range
-from .builtins import ERR_TY, INT_TY, NONE_TY, OBJECT_TY, TOP_TY, VOID_TY
+from .builtins import ERR_TY, INT_TY, NONE_TY, OBJECT_TY, STR_TY, TOP_TY, VOID_TY
 from .judgments import (
     DeclareExistentialVarJudgment,
     DeclareVarJudgment,
@@ -205,6 +206,8 @@ def tys_equal(lhs: Ty, rhs: Ty) -> bool:
 def do_infer(env: Env, ctx: TypingContext, expr: Expr) -> Tuple[Env, TypingContext, Ty]:
     if isinstance(expr, IntLiteralExpr):
         return (env, ctx, INT_TY)
+    elif isinstance(expr, StringLiteralExpr):
+        return (env, ctx, STR_TY)
     elif isinstance(expr, LetExpr):
         raise ValueError("should not be trying to infer the type of a let-expr (?)")
     elif isinstance(expr, FunctionCallExpr):
