@@ -1,0 +1,13 @@
+SyntaxTree
+    FunctionCallExpr
+        IdentifierExpr
+            Token 'print'
+        ArgumentList
+            Token '('
+            Argument
+                StringLiteralExpr
+                    Token '"foo"'
+                <missing>
+            Token ')'
+            Trailing '\n'
+    Token EOF ''

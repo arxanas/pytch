@@ -553,6 +553,40 @@ class IntLiteralExpr(Expr):
         return [self.t_int_literal]
 
 
+class StringLiteralExpr(Expr):
+    def __init__(
+        self, parent: Optional[Node], origin: greencst.StringLiteralExpr, offset: int
+    ) -> None:
+        super().__init__(parent)
+        self.origin = origin
+        self.offset = offset
+
+    @property
+    def t_string_literal(self) -> Optional[Token]:
+        return self.origin.t_string_literal
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(start=start, end=start + self.origin.width)
+
+    @property
+    def children(self) -> List[Optional[Union[Token, Node]]]:
+        return [self.t_string_literal]
+
+
 class BinaryExpr(Expr):
     def __init__(
         self, parent: Optional[Node], origin: greencst.BinaryExpr, offset: int
@@ -797,6 +831,7 @@ GREEN_TO_RED_NODE_MAP = {
     greencst.IfExpr: IfExpr,
     greencst.IdentifierExpr: IdentifierExpr,
     greencst.IntLiteralExpr: IntLiteralExpr,
+    greencst.StringLiteralExpr: StringLiteralExpr,
     greencst.BinaryExpr: BinaryExpr,
     greencst.Argument: Argument,
     greencst.ArgumentList: ArgumentList,

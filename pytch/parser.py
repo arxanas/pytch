@@ -30,6 +30,7 @@ from .greencst import (
     Parameter,
     ParameterList,
     Pattern,
+    StringLiteralExpr,
     SyntaxTree,
     VariablePattern,
 )
@@ -603,6 +604,8 @@ class Parser:
             return self.parse_identifier_expr(state)
         elif token.kind == TokenKind.INT_LITERAL:
             return self.parse_int_literal(state)
+        elif token.kind == TokenKind.STRING_LITERAL:
+            return self.parse_string_literal(state)
         elif token.kind == TokenKind.LET:
             return self.parse_let_expr(state, allow_naked_lets=allow_naked_lets)
         elif token.kind == TokenKind.IF:
@@ -844,6 +847,14 @@ class Parser:
         if t_int_literal is None:
             return (state, None)
         return (state, IntLiteralExpr(t_int_literal=t_int_literal))
+
+    def parse_string_literal(
+        self, state: State
+    ) -> Tuple[State, Optional[StringLiteralExpr]]:
+        (state, t_string_literal) = self.expect_token(state, [TokenKind.STRING_LITERAL])
+        if t_string_literal is None:
+            return (state, None)
+        return (state, StringLiteralExpr(t_string_literal=t_string_literal))
 
     def expect_token(
         self,

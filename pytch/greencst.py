@@ -309,6 +309,16 @@ class IntLiteralExpr(Expr):
         return self._t_int_literal
 
 
+class StringLiteralExpr(Expr):
+    def __init__(self, t_string_literal: Optional[Token]) -> None:
+        super().__init__([t_string_literal])
+        self._t_string_literal = t_string_literal
+
+    @property
+    def t_string_literal(self) -> Optional[Token]:
+        return self._t_string_literal
+
+
 class BinaryExpr(Expr):
     def __init__(
         self, n_lhs: Optional[Expr], t_operator: Optional[Token], n_rhs: Optional[Expr]

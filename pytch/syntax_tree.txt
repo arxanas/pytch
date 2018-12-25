@@ -49,6 +49,9 @@ IdentifierExpr(Expr)
 IntLiteralExpr(Expr)
     t_int_literal: Optional[Token]
 
+StringLiteralExpr(Expr)
+    t_string_literal: Optional[Token]
+
 BinaryExpr(Expr)
     n_lhs: Optional[Expr]
     t_operator: Optional[Token]
