@@ -1,5 +1,9 @@
 fuzz
 
+# Sphinx binary files that we don't want to check in:
+docs/.doctrees/environment.pickle
+docs/objects.inv
+
 # Created by https://www.gitignore.io/api/python,visualstudiocode
 
 ### Python ###
