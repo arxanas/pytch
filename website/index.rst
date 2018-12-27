@@ -1,5 +1,5 @@
-Pytch --- tooling-focused Python
-================================
+Pytch: tooling-focused Python
+=============================
 
 Pytch is an expression-oriented, tooling-focused language that compiles down
 to Python.
