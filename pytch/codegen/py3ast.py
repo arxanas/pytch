@@ -2,6 +2,8 @@ from typing import List, Optional
 
 import attr
 
+from pytch import ISSUE_TRACKER_URL
+
 
 CompiledOutput = List[str]
 
@@ -20,7 +22,11 @@ class PyUnavailableExpr(PyExpr):
     reason: str
 
     def compile(self) -> str:
-        return f'"<pytch unavailable expr: {self.reason}>"'
+        return (
+            f'"<Bug in Pytch compilation -- '
+            + f"please report it at {ISSUE_TRACKER_URL} ! "
+            + f'Message: unavailable expr: {self.reason}>"'
+        )
 
 
 @attr.s(auto_attribs=True, frozen=True)
