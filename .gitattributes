@@ -1,3 +1,4 @@
+poetry.lock linguist-generated=true
 pytch/greencst.py linguist-generated=true
 pytch/redcst.py linguist-generated=true
 docs/** linguist-generated=true
