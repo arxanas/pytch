@@ -1,17 +1,21 @@
 .PHONY: all clean
 
 SYNTAX_TREES = pytch/greencst.py pytch/redcst.py
+SYNTAX_TREE_SPEC = pytch/syntax_tree.txt
+
 DOCS = docs
+DOCS_SOURCE = website
 
 all: $(SYNTAX_TREES) $(DOCS)
 
-$(SYNTAX_TREES): pytch/syntax_tree.txt bin/generate_greencst.py bin/generate_redcst.py bin/generate_syntax_trees.sh
-	./bin/generate_syntax_trees.sh
+pytch/%cst.py: bin/generate_%cst.py $(SYNTAX_TREE_SPEC)
+	$< <$(SYNTAX_TREE_SPEC) >$@
+	poetry run black $@
 
 # Note: Sphinx will not pick up core changes (e.g. to CSS), so `make clean` has
 # to be run manually in that case.
-$(DOCS): website website/* website/**/*
-	./bin/generate-docs.sh
+$(DOCS): $(DOCS_SOURCE) $(DOCS_SOURCE)/* $(DOCS_SOURCE)/**/*
+	poetry run sphinx-build -b html $(DOCS_SOURCE) $(DOCS)
 	touch $(DOCS)
 
 clean:
