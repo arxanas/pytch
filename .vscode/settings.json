@@ -2,8 +2,10 @@
   "files.exclude": {
     ".mypy_cache": true,
     ".pytest_cache": true,
+    ".coverage": true,
     "fuzz": true,
-    "pytch.egg-info": true
+    "htmlcov": true,
+    "pytch.egg-info": true,
   },
   "restructuredtext.confPath": "${workspaceFolder}/website",
   "python.linting.pylintEnabled": false,
