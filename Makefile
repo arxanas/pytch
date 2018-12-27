@@ -1,9 +1,19 @@
-.PHONY: all
+.PHONY: all clean
 
-all: pytch/greencst.py pytch/redcst.py docs
+SYNTAX_TREES = pytch/greencst.py pytch/redcst.py
+DOCS = docs
 
-pytch/greencst.py pytch/redcst.py: pytch/syntax_tree.txt
+all: $(SYNTAX_TREES) $(DOCS)
+
+$(SYNTAX_TREES): pytch/syntax_tree.txt
 	./bin/generate_syntax_trees.sh
 
-docs: website/conf.py website/*.rst website/**/*.rst
+# Note: Sphinx will not pick up core changes (e.g. to CSS), so `make clean` has
+# to be run manually in that case.
+$(DOCS): website website/* website/**/*
 	./bin/generate-docs.sh
+	touch $(DOCS)
+
+clean:
+	rm $(SYNTAX_TREES)
+	rm -rf $(DOCS)
