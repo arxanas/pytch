@@ -1,4 +1,4 @@
-from pytch.utils import FileInfo, Position
+from pytch.utils import FileInfo, OffsetRange, Position, Range
 
 
 def slower_get_position_for_offset(source_code: str, offset: int) -> Position:
@@ -57,3 +57,17 @@ qux
     actual_position = file_info.get_position_for_offset(len(source_code))
     assert actual_position.line == expected_position.line
     assert actual_position.character == expected_position.character
+
+
+def test_fileinfo_get_range_from_offset_range():
+    source_code = """foo
+barbaz
+qux
+"""
+    file_info = FileInfo(file_path="dummy", source_code=source_code)
+
+    offset_range = OffsetRange(start=0, end=len(source_code))
+    range = file_info.get_range_from_offset_range(offset_range)
+    assert range == Range(
+        start=Position(line=0, character=0), end=Position(line=3, character=0)
+    )

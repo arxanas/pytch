@@ -80,15 +80,29 @@ class Node:
     @property
     def first_present_child(self) -> Optional[Union["Node", "Token"]]:
         for child in self.children:
-            if child is not None:
-                return child
+            if child is None:
+                continue
+            if isinstance(child, Token):
+                if not child.is_dummy:
+                    return child
+            else:
+                child_first_present_child = child.first_present_child
+                if child_first_present_child is not None:
+                    return child_first_present_child
         return None
 
     @property
     def last_present_child(self) -> Optional[Union["Node", "Token"]]:
         for child in reversed(self.children):
-            if child is not None:
-                return child
+            if child is None:
+                continue
+            if isinstance(child, Token):
+                if not child.is_dummy:
+                    return child
+            else:
+                child_last_present_child = child.last_present_child
+                if child_last_present_child is not None:
+                    return child_last_present_child
         return None
 
     @property

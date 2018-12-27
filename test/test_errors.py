@@ -209,7 +209,7 @@ Error: Look into this
     )
 
 
-def test_note_with_no_range_regression1() -> None:
+def test_regression1_note_with_no_range() -> None:
     file_info = FileInfo(
         file_path="dummy.pytch",
         source_code="""\
@@ -257,6 +257,50 @@ Error: I couldn't find a binding...
    +---------------------------------------------------+
    | Note: Did you mean 'map' (a builtin)?             |
    +---------------------------------------------------+
+"""
+    )
+
+
+def test_regression2() -> None:
+    file_info = FileInfo(
+        file_path="test/typesystem/statement.warning.pytch",
+        source_code="""\
+if True
+then
+  1
+  None
+""",
+    )
+    error = Error(
+        file_info=file_info,
+        code=ErrorCode.NOT_A_REAL_ERROR,
+        severity=Severity.WARNING,
+        message="The value of this expression is being thrown away, which might indicate a bug.",
+        range=Range(
+            start=Position(line=0, character=0), end=Position(line=3, character=6)
+        ),
+        notes=[],
+    )
+    lines = lines_to_string(get_error_lines(error, ascii=True))
+    print(lines)
+    assert (
+        lines
+        == """\
+NOT_A_REAL_ERROR[9001] in test/typesystem/statement.warning.pytch, line 1, character 1:
+Warning: The value of this expression is being thrown away, which might
+indicate a bug.
+   +--------------------------------------------------------------------------+
+   | test/typesystem/statement.warning.pytch                                  |
+ 1 | if True                                                                  |
+   | ^~~~~~~                                                                  |
+ 2 | then                                                                     |
+   | ~~~~                                                                     |
+ 3 |   1                                                                      |
+   |   ~                                                                      |
+ 4 |   None                                                                   |
+   |   ~~~~ Warning: The value of this expression is being thrown away, which |
+   | might indicate a bug.                                                    |
+   +--------------------------------------------------------------------------+
 """
     )
 

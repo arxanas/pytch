@@ -761,10 +761,7 @@ def underline_lines(
                 elif has_underline_end:
                     underline = glyphs.underline_end_character
                 else:
-                    assert False, (
-                        "Underline with width 1 "
-                        + "didn't have an endpoint on this line."
-                    )
+                    underline = glyphs.underline_character
             else:
                 underline = glyphs.underline_character * (
                     underline_end - underline_start - 2
