@@ -11,4 +11,4 @@ install:
   - poetry install
 
 script:
-  - ./hooks/pre-commit
+  - SERIAL=1 ./hooks/pre-commit
