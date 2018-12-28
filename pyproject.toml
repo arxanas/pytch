@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytch"
-version = "0.1.0"
+version = "0.0.1"
 description = "An expression-oriented, tooling-focused language that compiles down to Python."
 authors = ["Waleed Khan <me@waleedkhan.name>"]
 license = "MIT"
