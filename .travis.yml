@@ -11,4 +11,5 @@ install:
   - poetry install
 
 script:
+  - ./bin/check-for-unbuilt-changes.sh
   - SERIAL=1 ./hooks/pre-commit
