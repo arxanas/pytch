@@ -1,6 +1,6 @@
-"""NOTE: This file auto-generated from ast.txt.
+"""NOTE: This file is auto-generated from `pytch/syntax_tree.txt`.
 
-Run `bin/generate_syntax_trees.sh` to re-generate. Do not edit!
+Run `make` to re-generate. Do not edit!
 """
 from typing import List, Optional, Sequence, Union
 
