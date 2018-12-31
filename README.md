@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/arxanas/pytch.svg?branch=master)](https://travis-ci.org/arxanas/pytch)
+[![Build Status](https://travis-ci.org/pytch-lang/pytch.svg?branch=master)](https://travis-ci.org/pytch-lang/pytch)
 
 ## Development
 
