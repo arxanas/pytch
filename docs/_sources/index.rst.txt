@@ -2,8 +2,10 @@ Pytch: tooling-focused Python
 =============================
 
 Pytch is an expression-oriented, tooling-focused language that compiles down
-to Python. It's a little bit like `TypeScript
-<http://www.typescriptlang.org/>`__, but for Python.
+to Python. It's a little bit like Kotlin_ or TypeScript_, but for Python.
+
+.. _TypeScript: http://www.typescriptlang.org/
+.. _Kotlin: https://kotlinlang.org/
 
 Why Pytch?
 ----------
@@ -18,7 +20,9 @@ and start getting better IDE support today.
 
 Pytch also features a `type inference
 <https://en.wikipedia.org/wiki/Type_inference>`__ engine, which can help you
-catch bugs without writing mounds of tedious type annotations.
+catch bugs without writing mounds of tedious type annotations. For example,
+it can automatically track where a variable may be ``None`` and warn you if
+you didn't handle that case.
 
 Status
 ------
