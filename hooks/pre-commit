@@ -18,10 +18,18 @@ run_in_parallel() {
     poetry run flake8 bin pytch test &
     readonly FLAKE8_PID=$!
 
-    wait $PYTEST_PID
-    wait $MYPY_PID
-    wait $BLACK_PID
-    wait $FLAKE8_PID
+    if ! wait $PYTEST_PID; then
+        return 1
+    fi
+    if ! wait $MYPY_PID; then
+        return 1
+    fi
+    if ! wait $BLACK_PID; then
+        return 1
+    fi
+    if ! wait $FLAKE8_PID; then
+        return 1
+    fi
 }
 
 if [[ "$SERIAL" = 1 ]]; then
