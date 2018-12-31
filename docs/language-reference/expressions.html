@@ -37,8 +37,8 @@
 <h1>3. Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline">¶</a></h1>
 <p>Pytch is an <a class="reference external" href="https://en.wikipedia.org/wiki/Expression-oriented_programming_language"><em>expression-oriented</em></a> language, so nearly all syntactic elements
 are expressions or parts of expressions.</p>
-<p>Some tokens are inserted by the preparser. These tokens are denoted with a
-leading <code class="docutils literal notranslate"><span class="pre">$</span></code>, such as <code class="docutils literal notranslate"><span class="pre">$semicolon</span></code>.</p>
+<p>Some tokens are inserted by the preparser. These tokens are denoted in
+all-caps, such as <code class="docutils literal notranslate"><span class="pre">SEMICOLON</span></code>.</p>
 <p>These are the possible expressions:</p>
 <div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">binary-expr</span><span class="w"></span>
 <span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="k">function-call-expr</span><span class="w"></span>
@@ -49,21 +49,17 @@ leading <code class="docutils literal notranslate"><span class="pre">$</span></c
 </div>
 <div class="section" id="binary-expressions">
 <h2>3.1. Binary expressions<a class="headerlink" href="#binary-expressions" title="Permalink to this headline">¶</a></h2>
-<p>Binary expressions consist of two operands separated by an operator:</p>
-<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">binary-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="k">operator</span><span class="w"> </span><span class="k">expr</span><span class="w"></span>
-<span class="k">operator</span><span class="w">    </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;+&#39;</span><span class="w"></span>
-<span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="s">&#39;-&#39;</span><span class="w"></span>
-<span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="s">&quot;and&quot;</span><span class="w"></span>
-<span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="s">&quot;or&quot;</span><span class="w"></span>
-<span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="k">$semicolon</span><span class="w"></span>
+<p>Binary expressions consist of two operands separated by a <a class="reference internal" href="lexical-analysis.html#lexical-analysis-binary-operators"><span class="std std-ref">binary
+operator</span></a>:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">binary-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="k">binary-operator</span><span class="w"> </span><span class="k">expr</span><span class="w"></span>
 </pre></div>
 </div>
 <p>The result of a binary expression is the result of evaluating the left-hand
 operand, then the right-hand operand, then applying the operator to both.</p>
 <p>The meanings of the operators are as follows:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">$semicolon</span></code>: Discard left-hand operand and return right-hand operand. Due
-to its sequencing behavior, the <code class="docutils literal notranslate"><span class="pre">$semicolon</span></code> operator may be considered
+<li><code class="docutils literal notranslate"><span class="pre">SEMICOLON</span></code>: Discard left-hand operand and return right-hand operand. Due
+to its sequencing behavior, the <code class="docutils literal notranslate"><span class="pre">SEMICOLON</span></code> operator may be considered
 to introduce a <em>statement expression</em>.</li>
 <li>All others: same as in Python.</li>
 </ul>
@@ -82,7 +78,7 @@ lowest precedence (least binding) to highest precedence (most binding):</p>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">$semicolon</span></code></td>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">SEMICOLON</span></code></td>
 <td>Right</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">or</span></code></td>
@@ -134,7 +130,7 @@ thrown away.</p>
 <div class="section" id="let-expressions">
 <h2>3.4. <code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions<a class="headerlink" href="#let-expressions" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions consist of a pattern, a value, and sometimes a body.</p>
-<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">let-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&quot;let&quot;</span><span class="w"> </span><span class="k">pattern</span><span class="w"> </span><span class="s">&#39;=&#39;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="p">[</span><span class="k">$in</span><span class="w"> </span><span class="k">expr</span><span class="p">]</span><span class="w"></span>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">let-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&quot;let&quot;</span><span class="w"> </span><span class="k">pattern</span><span class="w"> </span><span class="s">&#39;=&#39;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="p">[</span><span class="k">IN</span><span class="w"> </span><span class="k">expr</span><span class="p">]</span><span class="w"></span>
 <span class="k">pattern</span><span class="w">  </span><span class="o">::=</span><span class="w"> </span><span class="k">identifier</span><span class="w"></span>
 </pre></div>
 </div>

@@ -7,8 +7,8 @@ are expressions or parts of expressions.
 .. _`expression-oriented`: https://en.wikipedia.org/wiki/Expression-oriented_programming_language
 .. |expression-oriented| replace:: *expression-oriented*
 
-Some tokens are inserted by the preparser. These tokens are denoted with a
-leading ``$``, such as ``$semicolon``.
+Some tokens are inserted by the preparser. These tokens are denoted in
+all-caps, such as ``SEMICOLON``.
 
 These are the possible expressions:
 
@@ -23,24 +23,20 @@ These are the possible expressions:
 Binary expressions
 ------------------
 
-Binary expressions consist of two operands separated by an operator:
+Binary expressions consist of two operands separated by a :ref:`binary
+operator <lexical-analysis-binary-operators>`:
 
 .. code-block:: ebnf
 
-   binary-expr ::= expr operator expr
-   operator    ::= '+'
-                 | '-'
-                 | "and"
-                 | "or"
-                 | $semicolon
+   binary-expr ::= expr binary-operator expr
 
 The result of a binary expression is the result of evaluating the left-hand
 operand, then the right-hand operand, then applying the operator to both.
 
 The meanings of the operators are as follows:
 
-* ``$semicolon``: Discard left-hand operand and return right-hand operand. Due
-  to its sequencing behavior, the ``$semicolon`` operator may be considered
+* ``SEMICOLON``: Discard left-hand operand and return right-hand operand. Due
+  to its sequencing behavior, the ``SEMICOLON`` operator may be considered
   to introduce a *statement expression*.
 * All others: same as in Python.
 
@@ -55,7 +51,7 @@ lowest precedence (least binding) to highest precedence (most binding):
 +----------------+---------------+
 | Operator       | Associativity |
 +================+===============+
-| ``$semicolon`` | Right         |
+| ``SEMICOLON``  | Right         |
 +----------------+---------------+
 | ``or``         | Left          |
 +----------------+---------------+
@@ -112,7 +108,7 @@ thrown away.
 
 .. code-block:: ebnf
 
-   let-expr ::= "let" pattern '=' expr [$in expr]
+   let-expr ::= "let" pattern '=' expr [IN expr]
    pattern  ::= identifier
 
 The result of a ``let``-expression is determined by evaluating the value

@@ -177,19 +177,19 @@ Consider the following code:
 The first ``print`` call and the ``"foo"`` string literal are part of the
 ``let``-binding's expression, and the second ``print`` call is the body of
 the ``let``-expression. During preparsing, the compiler desugars the above by
-inserting *dummy tokens*, here denoted as beginning with the ``$`` character:
+inserting *dummy tokens*, here denoted in all-caps:
 
 .. code-block:: pytch
 
    let foo =
-     print("calculating foo") $semicolon
+     print("calculating foo") SEMICOLON
      "foo"
-   $in
+   IN
    print("the value of foo is " + foo)
 
-The ``$semicolon`` binary operator introduces a "statement" expression, in
+The ``SEMICOLON`` binary operator introduces a "statement" expression, in
 which the left-hand operand is evaluated and discarded and the right-hand
-operand is evaluated and returned. The ``$in`` token is used to separate the
+operand is evaluated and returned. The ``IN`` token is used to separate the
 definition of ``foo`` from the expression that uses ``foo``.
 
 Dummy tokens may not be written explicitly by the user.
@@ -224,7 +224,7 @@ or when it encounters a ``)``, it may trigger unwinding until a ``(`` token
 popped off.
 
 Certain tokens will emit dummy tokens when popped off of the indentation
-stack. For example, ``let`` will emit ``$in`` and ``if`` will emit
+stack. For example, ``let`` will emit ``IN`` and ``if`` will emit
 ``$endif``.
 
 ``let``-expressions
@@ -236,7 +236,7 @@ Once a token with
 * the same or lesser indentation level as the ``let``
 * and a later line number than the ``let``
 
-is reached, the ``$in`` dummy token is inserted before it to indicate the end
+is reached, the ``IN`` dummy token is inserted before it to indicate the end
 of the ``let``-expression's binding.
 
 Statement-expressions
@@ -316,3 +316,21 @@ For example, ``"hello world"`` is a string literal.
 
    Implement richer types of string literals, such as triple-quoted strings,
    raw strings, or byte-strings.
+
+Operators
+---------
+
+.. _lexical-analysis-binary-operators:
+
+Binary operators
+~~~~~~~~~~~~~~~~
+
+*Binary operators* are operators that take two expressions as operands:
+
+.. code-block:: ebnf
+
+   binary-operator ::= '+'
+                     | '-'
+                     | "and"
+                     | "or"
+                     | SEMICOLON

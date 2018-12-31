@@ -168,17 +168,17 @@ print(&quot;the value of foo is &quot; + foo)
 <p>The first <code class="docutils literal notranslate"><span class="pre">print</span></code> call and the <code class="docutils literal notranslate"><span class="pre">&quot;foo&quot;</span></code> string literal are part of the
 <code class="docutils literal notranslate"><span class="pre">let</span></code>-binding’s expression, and the second <code class="docutils literal notranslate"><span class="pre">print</span></code> call is the body of
 the <code class="docutils literal notranslate"><span class="pre">let</span></code>-expression. During preparsing, the compiler desugars the above by
-inserting <em>dummy tokens</em>, here denoted as beginning with the <code class="docutils literal notranslate"><span class="pre">$</span></code> character:</p>
+inserting <em>dummy tokens</em>, here denoted in all-caps:</p>
 <div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span>let foo =
-  print(&quot;calculating foo&quot;) $semicolon
+  print(&quot;calculating foo&quot;) SEMICOLON
   &quot;foo&quot;
-$in
+IN
 print(&quot;the value of foo is &quot; + foo)
 </pre></div>
 </div>
-<p>The <code class="docutils literal notranslate"><span class="pre">$semicolon</span></code> binary operator introduces a “statement” expression, in
+<p>The <code class="docutils literal notranslate"><span class="pre">SEMICOLON</span></code> binary operator introduces a “statement” expression, in
 which the left-hand operand is evaluated and discarded and the right-hand
-operand is evaluated and returned. The <code class="docutils literal notranslate"><span class="pre">$in</span></code> token is used to separate the
+operand is evaluated and returned. The <code class="docutils literal notranslate"><span class="pre">IN</span></code> token is used to separate the
 definition of <code class="docutils literal notranslate"><span class="pre">foo</span></code> from the expression that uses <code class="docutils literal notranslate"><span class="pre">foo</span></code>.</p>
 <p>Dummy tokens may not be written explicitly by the user.</p>
 </div>
@@ -207,7 +207,7 @@ unwinding until the top-most token has a lesser or equal indentation level,
 or when it encounters a <code class="docutils literal notranslate"><span class="pre">)</span></code>, it may trigger unwinding until a <code class="docutils literal notranslate"><span class="pre">(</span></code> token
 popped off.</p>
 <p>Certain tokens will emit dummy tokens when popped off of the indentation
-stack. For example, <code class="docutils literal notranslate"><span class="pre">let</span></code> will emit <code class="docutils literal notranslate"><span class="pre">$in</span></code> and <code class="docutils literal notranslate"><span class="pre">if</span></code> will emit
+stack. For example, <code class="docutils literal notranslate"><span class="pre">let</span></code> will emit <code class="docutils literal notranslate"><span class="pre">IN</span></code> and <code class="docutils literal notranslate"><span class="pre">if</span></code> will emit
 <code class="docutils literal notranslate"><span class="pre">$endif</span></code>.</p>
 </div>
 <div class="section" id="let-expressions">
@@ -218,7 +218,7 @@ Once a token with</p>
 <li>the same or lesser indentation level as the <code class="docutils literal notranslate"><span class="pre">let</span></code></li>
 <li>and a later line number than the <code class="docutils literal notranslate"><span class="pre">let</span></code></li>
 </ul>
-<p>is reached, the <code class="docutils literal notranslate"><span class="pre">$in</span></code> dummy token is inserted before it to indicate the end
+<p>is reached, the <code class="docutils literal notranslate"><span class="pre">IN</span></code> dummy token is inserted before it to indicate the end
 of the <code class="docutils literal notranslate"><span class="pre">let</span></code>-expression’s binding.</p>
 </div>
 <div class="section" id="statement-expressions">
@@ -286,6 +286,20 @@ raw strings, or byte-strings.</p>
 </div>
 </div>
 </div>
+<div class="section" id="operators">
+<h2>2.8. Operators<a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="binary-operators">
+<span id="lexical-analysis-binary-operators"></span><h3>2.8.1. Binary operators<a class="headerlink" href="#binary-operators" title="Permalink to this headline">¶</a></h3>
+<p><em>Binary operators</em> are operators that take two expressions as operands:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">binary-operator</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;+&#39;</span><span class="w"></span>
+<span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="s">&#39;-&#39;</span><span class="w"></span>
+<span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="s">&quot;and&quot;</span><span class="w"></span>
+<span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="s">&quot;or&quot;</span><span class="w"></span>
+<span class="w">                  </span><span class="o">|</span><span class="w"> </span><span class="k">SEMICOLON</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</div>
 </div>
 
 
@@ -335,6 +349,10 @@ raw strings, or byte-strings.</p>
 <li class="toctree-l5"><a class="reference internal" href="#integer-literals">2.7.1. Integer literals</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#floating-point-literals">2.7.2. Floating-point literals</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#string-literals">2.7.3. String literals</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#operators">2.8. Operators</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#binary-operators">2.8.1. Binary operators</a></li>
 </ul>
 </li>
 </ul>
