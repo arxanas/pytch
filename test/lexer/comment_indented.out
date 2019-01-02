@@ -1,0 +1,13 @@
+'let'
+leading whitespace ' '
+identifier 'foo'
+leading whitespace ' '
+'='
+trailing newline '\n'
+leading whitespace '  '
+leading comment '# Comment with an indent.\n'
+leading whitespace '  '
+identifier 'bar'
+trailing newline '\n'
+the end of a 'let' binding
+the end of the file

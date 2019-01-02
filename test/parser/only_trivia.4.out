@@ -1,7 +1,7 @@
 SyntaxTree
     <missing>
     Leading ' '
+    Leading '\n'
+    Leading ' '
+    Leading '\n'
     Token EOF ''
-    Trailing '\n'
-    Trailing ' '
-    Trailing '\n'

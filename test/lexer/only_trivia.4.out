@@ -1,5 +1,5 @@
 leading whitespace ' '
+leading newline '\n'
+leading whitespace ' '
+leading newline '\n'
 the end of the file
-trailing newline '\n'
-trailing whitespace ' '
-trailing newline '\n'

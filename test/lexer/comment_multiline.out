@@ -1,0 +1,5 @@
+leading comment '# foo\n'
+leading comment '# bar\n'
+identifier 'baz'
+trailing newline '\n'
+the end of the file

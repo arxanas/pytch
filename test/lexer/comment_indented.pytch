@@ -1,0 +1,3 @@
+let foo =
+  # Comment with an indent.
+  bar

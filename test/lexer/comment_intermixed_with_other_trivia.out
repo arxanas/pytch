@@ -1,0 +1,4 @@
+leading comment '# This is a comment followed by a newline.\n'
+leading newline '\n'
+leading comment '# And then another comment.\n'
+the end of the file

@@ -226,6 +226,7 @@ class Lexation:
 
 WHITESPACE_RE = re.compile(r"[ \t]+")
 NEWLINE_RE = re.compile(r"\n")
+COMMENT_RE = re.compile(r"#[^\n]*\n")
 IDENTIFIER_RE = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*")
 INT_LITERAL_RE = re.compile(r"[0-9]+")
 EQUALS_RE = re.compile(r"=")
@@ -277,7 +278,12 @@ class Lexer:
 
     def lex_leading_trivia(self, state: State) -> Tuple[State, List[Trivium]]:
         leading_trivia = self.lex_next_trivia_by_patterns(
-            state, {TriviumKind.WHITESPACE: WHITESPACE_RE}
+            state,
+            {
+                TriviumKind.WHITESPACE: WHITESPACE_RE,
+                TriviumKind.NEWLINE: NEWLINE_RE,
+                TriviumKind.COMMENT: COMMENT_RE,
+            },
         )
         state = state.advance_offset(sum(trivium.width for trivium in leading_trivia))
         return (state, leading_trivia)
@@ -285,7 +291,11 @@ class Lexer:
     def lex_trailing_trivia(self, state: State) -> Tuple[State, List[Trivium]]:
         trailing_trivia = self.lex_next_trivia_by_patterns(
             state,
-            {TriviumKind.WHITESPACE: WHITESPACE_RE, TriviumKind.NEWLINE: NEWLINE_RE},
+            {
+                TriviumKind.WHITESPACE: WHITESPACE_RE,
+                TriviumKind.NEWLINE: NEWLINE_RE,
+                TriviumKind.COMMENT: COMMENT_RE,
+            },
         )
         newline_indices = [
             i

@@ -1,0 +1,7 @@
+leading comment '# This is a comment.\n'
+identifier 'foo'
+trailing whitespace ' '
+trailing comment '# This is a trailing comment.\n'
+trailing newline '\n'
+leading comment '# This comment is at the end of the file.\n'
+the end of the file
