@@ -36,6 +36,7 @@ rope = "^0.11.0"
 sphinx = "^1.8"
 pytest-cov = "^2.6"
 sphinx_sitemap = "^0.3.1"
+pyyaml = "^3.13"
 
 [tool.poetry.extras]
 fuzz = ["cython", "python-afl"]

@@ -1,15 +1,26 @@
-from pygments import token
 from pygments.lexer import RegexLexer
-from sphinx.highlighting import lexers
+import pygments.token as token
 
 
-# From https://stackoverflow.com/a/16470058
-# Mostly just until we have a real syntax highlighter in place.
 class PytchLexer(RegexLexer):
     name = "pytch"
+    filenames = ["*.pytch"]
 
-    tokens = {"root": [(r".+", token.Text)]}
+    tokens = {
+        "root__0": [('\\"', token.String, "#pop"), (".", token.String)],
+        "root": [
+            ("\\s+", token.Whitespace),
+            ("\\#[^\\n]*", token.Comment),
+            ("and|else|if|let|or|then", token.Keyword),
+            ("[a-zA-Z_][a-zA-Z0-9_]*", token.Name),
+            ("[0-9]+", token.Number),
+            ("=|,|\\+|\\-|\\(|\\)", token.Punctuation),
+            (".", token.String, "root__0"),
+        ],
+    }
 
 
 def setup(app) -> None:
+    from sphinx.highlighting import lexers
+
     lexers["pytch"] = PytchLexer()

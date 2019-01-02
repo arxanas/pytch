@@ -1,0 +1,72 @@
+name: pytch
+file_extensions: ["pytch"]
+
+scopes:
+  comment:
+    textmate: "comment"
+    pygments: "Comment"
+
+  whitespace:
+    textmate: "TODO"
+    pygments: "Whitespace"
+
+  keyword:
+    textmate: "keyword"
+    pygments: "Keyword"
+
+  identifier:
+    textmate: "entity.name"
+    pygments: "Name"
+
+  numeric:
+    textmate: "constant.numeric"
+    pygments: "Number"
+
+  punctuation:
+    textmate: "punctuation"
+    pygments: "Punctuation"
+
+  text:
+    textmate: "text"
+    pygments: "String"
+
+contexts:
+  root:
+    - scope: whitespace
+      regex: \s+
+
+    - scope: comment
+      regex: \#[^\n]*
+
+    - scope: keyword
+      regex: |-
+        and
+        | else
+        | if
+        | let
+        | or
+        | then
+
+    - scope: identifier
+      regex: "[a-zA-Z_][a-zA-Z0-9_]*"
+
+    - scope: numeric
+      regex: "[0-9]+"
+
+    - scope: punctuation
+      regex: |-
+        =  |
+        ,  |
+        \+ |
+        \- |
+        \( |
+        \)
+
+    - scope: text
+      regex: .
+      begin:
+        regex: \"
+        scope: text
+      end:
+        regex: \"
+        scope: text

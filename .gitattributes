@@ -2,3 +2,5 @@ poetry.lock linguist-generated=true
 pytch/greencst.py linguist-generated=true
 pytch/redcst.py linguist-generated=true
 docs/** linguist-generated=true
+resources/syntax-highlighting/pytch.tmLanguage.json linguist-generated=true
+website/ext/pytchlexer.py linguist-generated=true

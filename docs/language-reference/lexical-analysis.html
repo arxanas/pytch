@@ -88,8 +88,8 @@ the rest of the line:</p>
 </div>
 <p>This is the same as <a class="reference external" href="https://docs.python.org/3/reference/lexical_analysis.html#comments">in Python</a>.</p>
 <p>Example:</p>
-<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span># This is a comment.
-this_is_a_function_call_not_a_comment()  # This is a trailing comment.
+<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span><span class="c"># This is a comment.</span><span class="w"></span>
+<span class="n">this_is_a_function_call_not_a_comment</span><span class="p">()</span><span class="w">  </span><span class="c"># This is a trailing comment.</span><span class="w"></span>
 </pre></div>
 </div>
 </div>
@@ -159,21 +159,21 @@ code in a relatively free-form manner (such as by copying and pasting it).</p>
 <div class="section" id="dummy-tokens">
 <h3>2.6.1. Dummy tokens<a class="headerlink" href="#dummy-tokens" title="Permalink to this headline">¶</a></h3>
 <p>Consider the following code:</p>
-<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span>let foo =
-  print(&quot;calculating foo&quot;)
-  &quot;foo&quot;
-print(&quot;the value of foo is &quot; + foo)
+<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span><span class="k">let</span><span class="w"> </span><span class="n">foo</span><span class="w"> </span><span class="p">=</span><span class="w"></span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s">&quot;calculating foo&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;foo&quot;</span><span class="w"></span>
+<span class="n">print</span><span class="p">(</span><span class="s">&quot;the value of foo is &quot;</span><span class="w"> </span><span class="p">+</span><span class="w"> </span><span class="n">foo</span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
 <p>The first <code class="docutils literal notranslate"><span class="pre">print</span></code> call and the <code class="docutils literal notranslate"><span class="pre">&quot;foo&quot;</span></code> string literal are part of the
 <code class="docutils literal notranslate"><span class="pre">let</span></code>-binding’s expression, and the second <code class="docutils literal notranslate"><span class="pre">print</span></code> call is the body of
 the <code class="docutils literal notranslate"><span class="pre">let</span></code>-expression. During preparsing, the compiler desugars the above by
 inserting <em>dummy tokens</em>, here denoted in all-caps:</p>
-<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span>let foo =
-  print(&quot;calculating foo&quot;) SEMICOLON
-  &quot;foo&quot;
-IN
-print(&quot;the value of foo is &quot; + foo)
+<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span><span class="k">let</span><span class="w"> </span><span class="n">foo</span><span class="w"> </span><span class="p">=</span><span class="w"></span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s">&quot;calculating foo&quot;</span><span class="p">)</span><span class="w"> </span><span class="n">SEMICOLON</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;foo&quot;</span><span class="w"></span>
+<span class="n">IN</span><span class="w"></span>
+<span class="n">print</span><span class="p">(</span><span class="s">&quot;the value of foo is &quot;</span><span class="w"> </span><span class="p">+</span><span class="w"> </span><span class="n">foo</span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">SEMICOLON</span></code> binary operator introduces a “statement” expression, in
