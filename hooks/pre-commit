@@ -1,21 +1,23 @@
 #!/bin/bash
 set -e
 
+readonly SOURCE_DIRS=(bin pytch test resources/syntax-highlighting/piro)
+
 run_in_serial() {
     poetry run py.test
-    poetry run mypy bin pytch test
+    poetry run mypy "${SOURCE_DIRS[@]}"
     poetry run black --check .
-    poetry run flake8 bin pytch test
+    poetry run flake8 "${SOURCE_DIRS[@]}"
 }
 
 run_in_parallel() {
     poetry run py.test &
     readonly PYTEST_PID=$!
-    poetry run mypy bin pytch test &
+    poetry run mypy "${SOURCE_DIRS[@]}" &
     readonly MYPY_PID=$!
     poetry run black --check . &
     readonly BLACK_PID=$!
-    poetry run flake8 bin pytch test &
+    poetry run flake8 "${SOURCE_DIRS[@]}" &
     readonly FLAKE8_PID=$!
 
     if ! wait $PYTEST_PID; then
