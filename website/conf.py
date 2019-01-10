@@ -46,6 +46,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "website.ext.designnote",
     "website.ext.ebnflexer",
+    "website.ext.githubpagescname",
     "website.ext.pytchlexer",
 ]
 
@@ -100,6 +101,9 @@ html_theme_options = {
 html_static_path = ["_static"]
 
 # -- Extension configuration -------------------------------------------------
+
+# -- Options for githubpagescname extension ----------------------------------
+github_pages_cname = "pytch-lang.org"
 
 # -- Options for todo extension ----------------------------------------------
 
