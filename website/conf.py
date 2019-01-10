@@ -41,9 +41,10 @@ release = pytch_version
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.githubpages",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
-    "sphinx.ext.githubpages",
+    "sphinx_sitemap",
     "website.ext.designnote",
     "website.ext.ebnflexer",
     "website.ext.githubpagescname",
@@ -104,6 +105,9 @@ html_static_path = ["_static"]
 
 # -- Options for githubpagescname extension ----------------------------------
 github_pages_cname = "pytch-lang.org"
+
+# -- Options for sphinx_sitemap extension ------------------------------------
+site_url = "https://pytch-lang.org/"
 
 # -- Options for todo extension ----------------------------------------------
 
