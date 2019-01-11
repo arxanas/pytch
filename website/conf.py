@@ -91,6 +91,7 @@ html_theme = "alabaster"
 # documentation.
 #
 html_theme_options = {
+    "analytics_id": "UA-132268135-1",
     "head_font_family": "'Garamond', 'Georgia', serif",
     "font_family": "'Helvetica Neue', Helvetica, Arial, sans-serif",
     "logo": "logo.png",
