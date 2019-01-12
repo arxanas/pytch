@@ -26,6 +26,20 @@ To execute a file as a Pytch script:
 $ poetry run pytch run file.pytch
 ```
 
+### Changes checklist
+
+When making a change to the language, make sure that all of the following areas of the codebase have been updated:
+
+  - [ ] Lexer
+  - [ ] Parser
+  - [ ] Binder
+  - [ ] Codegen
+  - [ ] Typechecker
+  - [ ] Syntax highlighters
+  - [ ] Refactorings
+  - [ ] Documentation
+  - [ ] Changelog
+
 ### Updating the syntax trees
 
 To modify the syntax tree node types, update `pytch/syntax_tree.txt`, then run
