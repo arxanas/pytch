@@ -3,6 +3,7 @@
     ".mypy_cache": true,
     ".pytest_cache": true,
     ".coverage": true,
+    "dist": true,
     "fuzz": true,
     "htmlcov": true,
     "pytch.egg-info": true,
