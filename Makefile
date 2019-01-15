@@ -9,6 +9,7 @@ DOCS_SOURCE = website
 HIGHLIGHTER_SOURCE = resources/syntax-highlighting/pytch-grammar.yaml
 HIGHLIGHTER_PYGMENTS_DRIVER = resources/syntax-highlighting/pytchlexer.py.inc
 HIGHLIGHTER_PYGMENTS = website/ext/pytchlexer.py
+HIGHLIGHTER_VSCODE = resources/syntax-highlighting/pytch.tmLanguage.json
 
 all: $(SYNTAX_TREES) $(DOCS) $(HIGHLIGHTER_PYGMENTS)
 
@@ -36,7 +37,15 @@ $(HIGHLIGHTER_PYGMENTS): $(HIGHLIGHTER_SOURCE) $(HIGHLIGHTER_PYGMENTS_DRIVER)
 	mv $@.tmp $@
 	poetry run black $@
 
+$(HIGHLIGHTER_VSCODE): $(HIGHLIGHTER_SOURCE)
+	PYTHONPATH=./resources/syntax-highlighting \
+	    python -m piro $(HIGHLIGHTER_SOURCE) -o vscode >$@.tmp
+
+	# Make sure not to generate the syntax highlighter if generation fails.
+	mv $@.tmp $@
+
 clean:
 	-rm $(SYNTAX_TREES)
 	-rm $(HIGHLIGHTER_PYGMENTS) $(HIGHLIGHTER_PYGMENTS).tmp
+	-rm $(HIGHLIGHTER_VSCODE) $(HIGHLIGHTER_VSCODE).tmp
 	-rm -r $(DOCS)

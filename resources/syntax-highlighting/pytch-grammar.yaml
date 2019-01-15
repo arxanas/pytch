@@ -3,31 +3,31 @@ file_extensions: ["pytch"]
 
 scopes:
   comment:
-    textmate: "comment"
+    vscode: "comment"
     pygments: "Comment"
 
   whitespace:
-    textmate: "TODO"
+    vscode: "TODO"
     pygments: "Whitespace"
 
   keyword:
-    textmate: "keyword"
+    vscode: "keyword"
     pygments: "Keyword"
 
   identifier:
-    textmate: "entity.name"
+    vscode: "entity.name"
     pygments: "Name"
 
   numeric:
-    textmate: "constant.numeric"
+    vscode: "constant.numeric"
     pygments: "Number"
 
   punctuation:
-    textmate: "punctuation"
+    vscode: "punctuation"
     pygments: "Punctuation"
 
   text:
-    textmate: "text"
+    vscode: "text"
     pygments: "String"
 
 contexts:

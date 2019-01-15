@@ -12,7 +12,7 @@ class Metadata:
 
 @attr.s(auto_attribs=True, frozen=True)
 class Scope:
-    textmate: str
+    vscode: str
     pygments: str
 
 
@@ -59,9 +59,9 @@ def parse_metadata(input_data: InputData) -> Metadata:
 def parse_scopes(input_data: InputData) -> Mapping[str, Scope]:
     scopes = {}
     for scope_name, scope_data in input_data.get("scopes", {}).items():
-        textmate_scope = scope_data["textmate"]
+        vscode_scope = scope_data["vscode"]
         pygments_scope = scope_data["pygments"]
-        scopes[scope_name] = Scope(textmate=textmate_scope, pygments=pygments_scope)
+        scopes[scope_name] = Scope(vscode=vscode_scope, pygments=pygments_scope)
     return scopes
 
 

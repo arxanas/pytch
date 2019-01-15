@@ -1,0 +1,49 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "pytch",
+    "scopeName": "source.pytch",
+    "fileTypes": [
+        "pytch"
+    ],
+    "patterns": [
+        {
+            "include": "#root"
+        }
+    ],
+    "repository": {
+        "root": {
+            "patterns": [
+                {
+                    "match": "\\s+",
+                    "name": "TODO.pytch"
+                },
+                {
+                    "match": "\\#[^\\n]*",
+                    "name": "comment.pytch"
+                },
+                {
+                    "match": "and|else|if|let|or|then",
+                    "name": "keyword.pytch"
+                },
+                {
+                    "match": "[a-zA-Z_][a-zA-Z0-9_]*",
+                    "name": "entity.name.pytch"
+                },
+                {
+                    "match": "[0-9]+",
+                    "name": "constant.numeric.pytch"
+                },
+                {
+                    "match": "=|,|\\+|\\-|\\(|\\)",
+                    "name": "punctuation.pytch"
+                },
+                {
+                    "match": ".",
+                    "name": "text.pytch",
+                    "begin": "\\\"",
+                    "end": "\\\""
+                }
+            ]
+        }
+    }
+}
