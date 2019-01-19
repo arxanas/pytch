@@ -94,16 +94,16 @@ def get_pygments_context_rules(
                 end_rule.scope_name, context_name=context_name
             )
 
-            subcontext_name = f"{context_name}__{temp_context_num}"
+            subcontext_name = f"{rule.scope_name}__{temp_context_num}"
             temp_context_num += 1
             assert subcontext_name not in result
 
             pygments_context_rules.append(
-                (rule.regex, get_pygments_scope_name(scope), subcontext_name)
+                (begin_rule.regex, get_pygments_scope_name(scope), subcontext_name)
             )
             result[subcontext_name] = [
+                (rule.regex, get_pygments_scope_name(inner_scope)),
                 (end_rule.regex, get_pygments_scope_name(end_rule_scope), "#pop"),
-                (r".", get_pygments_scope_name(inner_scope)),
             ]
     result[context_name] = pygments_context_rules
     return result

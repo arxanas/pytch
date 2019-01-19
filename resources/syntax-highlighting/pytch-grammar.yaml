@@ -7,7 +7,8 @@ scopes:
     pygments: "Comment"
 
   whitespace:
-    vscode: "TODO"
+    # No direct equivalent in VS Code, so just use "punctuation".
+    vscode: "punctuation"
     pygments: "Whitespace"
 
   keyword:
@@ -26,9 +27,13 @@ scopes:
     vscode: "punctuation"
     pygments: "Punctuation"
 
-  text:
+  single-quoted-string:
     vscode: "text"
-    pygments: "String"
+    pygments: "String.Single"
+
+  double-quoted-string:
+    vscode: "text"
+    pygments: "String.Double"
 
 contexts:
   root:
@@ -62,11 +67,22 @@ contexts:
         \( |
         \)
 
-    - scope: text
-      regex: .
+    - scope: single-quoted-string
+      regex: |-
+         (\\'|[^'])
       begin:
-        regex: \"
-        scope: text
+        regex: "'"
+        scope: single-quoted-string
       end:
-        regex: \"
-        scope: text
+        regex: "'"
+        scope: single-quoted-string
+
+    - scope: double-quoted-string
+      regex: |-
+         (\\"|[^"])
+      begin:
+        regex: '"'
+        scope: double-quoted-string
+      end:
+        regex: '"'
+        scope: double-quoted-string

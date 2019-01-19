@@ -7,7 +7,14 @@ class PytchLexer(RegexLexer):
     filenames = ["*.pytch"]
 
     tokens = {
-        "root__0": [('\\"', token.String, "#pop"), (".", token.String)],
+        "single-quoted-string__0": [
+            ("(\\\\'|[^'])", token.String.Single),
+            ("'", token.String.Single, "#pop"),
+        ],
+        "double-quoted-string__1": [
+            ('(\\\\"|[^"])', token.String.Double),
+            ('"', token.String.Double, "#pop"),
+        ],
         "root": [
             ("\\s+", token.Whitespace),
             ("\\#[^\\n]*", token.Comment),
@@ -15,7 +22,8 @@ class PytchLexer(RegexLexer):
             ("[a-zA-Z_][a-zA-Z0-9_]*", token.Name),
             ("[0-9]+", token.Number),
             ("=|,|\\+|\\-|\\(|\\)", token.Punctuation),
-            (".", token.String, "root__0"),
+            ("'", token.String.Single, "single-quoted-string__0"),
+            ('"', token.String.Double, "double-quoted-string__1"),
         ],
     }
 

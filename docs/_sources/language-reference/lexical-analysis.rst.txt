@@ -310,7 +310,14 @@ String literals
    string-literal-char ::= <any character but '\' or '\n'>
    escape-sequence     ::= '\' <any character but '\n'>
 
-For example, ``"hello world"`` is a string literal.
+For example:
+
+.. code-block:: pytch
+
+   let str1 = "Hello, world!"
+   let str2 = "Double-quoted strings can embed double-quotes: \""
+   let str3 = 'Strings can be single-quoted or double-quoted.'
+   let str4 = 'Single-quoted strings can embed single-quotes: \''
 
 .. todo::
 

@@ -160,9 +160,9 @@ code in a relatively free-form manner (such as by copying and pasting it).</p>
 <h3>2.6.1. Dummy tokens<a class="headerlink" href="#dummy-tokens" title="Permalink to this headline">¶</a></h3>
 <p>Consider the following code:</p>
 <div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span><span class="k">let</span><span class="w"> </span><span class="n">foo</span><span class="w"> </span><span class="p">=</span><span class="w"></span>
-<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s">&quot;calculating foo&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;foo&quot;</span><span class="w"></span>
-<span class="n">print</span><span class="p">(</span><span class="s">&quot;the value of foo is &quot;</span><span class="w"> </span><span class="p">+</span><span class="w"> </span><span class="n">foo</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;calculating foo&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="s2">&quot;foo&quot;</span><span class="w"></span>
+<span class="n">print</span><span class="p">(</span><span class="s2">&quot;the value of foo is &quot;</span><span class="w"> </span><span class="p">+</span><span class="w"> </span><span class="n">foo</span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
 <p>The first <code class="docutils literal notranslate"><span class="pre">print</span></code> call and the <code class="docutils literal notranslate"><span class="pre">&quot;foo&quot;</span></code> string literal are part of the
@@ -170,10 +170,10 @@ code in a relatively free-form manner (such as by copying and pasting it).</p>
 the <code class="docutils literal notranslate"><span class="pre">let</span></code>-expression. During preparsing, the compiler desugars the above by
 inserting <em>dummy tokens</em>, here denoted in all-caps:</p>
 <div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span><span class="k">let</span><span class="w"> </span><span class="n">foo</span><span class="w"> </span><span class="p">=</span><span class="w"></span>
-<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s">&quot;calculating foo&quot;</span><span class="p">)</span><span class="w"> </span><span class="n">SEMICOLON</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;foo&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;calculating foo&quot;</span><span class="p">)</span><span class="w"> </span><span class="n">SEMICOLON</span><span class="w"></span>
+<span class="w">  </span><span class="s2">&quot;foo&quot;</span><span class="w"></span>
 <span class="n">IN</span><span class="w"></span>
-<span class="n">print</span><span class="p">(</span><span class="s">&quot;the value of foo is &quot;</span><span class="w"> </span><span class="p">+</span><span class="w"> </span><span class="n">foo</span><span class="p">)</span><span class="w"></span>
+<span class="n">print</span><span class="p">(</span><span class="s2">&quot;the value of foo is &quot;</span><span class="w"> </span><span class="p">+</span><span class="w"> </span><span class="n">foo</span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">SEMICOLON</span></code> binary operator introduces a “statement” expression, in
@@ -278,7 +278,13 @@ length.</p>
 <span class="k">escape-sequence</span><span class="w">     </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;\&#39;</span><span class="w"> </span>&lt;any<span class="w"> </span>character<span class="w"> </span>but<span class="w"> </span><span class="s">&#39;\n&#39;</span>&gt;<span class="w"></span>
 </pre></div>
 </div>
-<p>For example, <code class="docutils literal notranslate"><span class="pre">&quot;hello</span> <span class="pre">world&quot;</span></code> is a string literal.</p>
+<p>For example:</p>
+<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span><span class="k">let</span><span class="w"> </span><span class="n">str1</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;Hello, world!&quot;</span><span class="w"></span>
+<span class="k">let</span><span class="w"> </span><span class="n">str2</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;Double-quoted strings can embed double-quotes: \&quot;&quot;</span><span class="w"></span>
+<span class="k">let</span><span class="w"> </span><span class="n">str3</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s1">&#39;Strings can be single-quoted or double-quoted.&#39;</span><span class="w"></span>
+<span class="k">let</span><span class="w"> </span><span class="n">str4</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s1">&#39;Single-quoted strings can embed single-quotes: \&#39;&#39;</span><span class="w"></span>
+</pre></div>
+</div>
 <div class="admonition-todo admonition" id="index-1">
 <p class="first admonition-title">Todo</p>
 <p class="last">Implement richer types of string literals, such as triple-quoted strings,
