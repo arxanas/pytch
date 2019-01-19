@@ -87,6 +87,8 @@ class ErrorCode(Enum):
     INCOMPATIBLE_TYPES = 3000
     EXPECTED_VOID = 3001
     CANNOT_BIND_TO_VOID = 3002
+    TOO_FEW_ARGUMENTS = 3003
+    TOO_MANY_ARGUMENTS = 3004
 
     PARSED_LENGTH_MISMATCH = 9000
     NOT_A_REAL_ERROR = 9001
@@ -790,3 +792,10 @@ def underline_lines(
                 )
             )
     return message_lines
+
+
+def count(count: int, singular: str, plural: str) -> str:
+    if count == 1:
+        return f"{count} {singular}"
+    else:
+        return f"{count} {plural}"

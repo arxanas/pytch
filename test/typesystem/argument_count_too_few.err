@@ -1,0 +1,11 @@
+TOO_FEW_ARGUMENTS[3003] in test/typesystem/argument_count_too_few.pytch, line 4, character 10:
+Error: I was expecting you to pass 2 arguments here, but you passed 1 argument
+instead.
+   +--------------------------------------------------------------------------+
+   | test/typesystem/argument_count_too_few.pytch                             |
+ 3 |                                                                          |
+ 4 | takes_two("foo")                                                         |
+   |          ^~~~~~~ Error: I was expecting you to pass 2 arguments here,    |
+   | but you passed 1 argument instead.                                       |
+   | ^~~~~~~~~ Note: This is the function being called. It takes 2 arguments. |
+   +--------------------------------------------------------------------------+

@@ -1,0 +1,9 @@
+EXPECTED_EXPRESSION[1010] in test/integ/argument_missing.pytch, line 4, character 20:
+Error: I was expecting an expression, but instead got a ','.
+   +------------------------------------------------------------------------+
+   | test/integ/argument_missing.pytch                                      |
+ 3 |                                                                        |
+ 4 | takes_three("foo", , "baz")                                            |
+   |                    ^ Error: I was expecting an expression, but instead |
+   | got a ','.                                                             |
+   +------------------------------------------------------------------------+

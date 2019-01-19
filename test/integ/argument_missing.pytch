@@ -1,0 +1,4 @@
+let takes_three(foo, bar, baz) =
+  None
+
+takes_three("foo", , "baz")

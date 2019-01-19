@@ -4,10 +4,9 @@ import attr
 
 from pytch.binder import Bindation
 from pytch.containers import find, PMap, PVector, take_while
-from pytch.errors import Error, ErrorCode, Note, Severity
+from pytch.errors import count, Error, ErrorCode, Note, Severity
 from pytch.lexer import TokenKind
 from pytch.redcst import (
-    Argument,
     BinaryExpr,
     Expr,
     FunctionCallExpr,
@@ -204,17 +203,9 @@ def do_infer(env: Env, ctx: TypingContext, expr: Expr) -> Tuple[Env, TypingConte
             raise NotImplementedError("TODO(missing): handle missing callee")
 
         (env, ctx, callee_ty) = infer(env, ctx=ctx, expr=n_callee)
-
-        n_argument_list = expr.n_argument_list
-        if n_argument_list is None:
-            raise NotImplementedError("TODO(missing): handle missing argument list")
-        arguments = n_argument_list.arguments
-        if arguments is None:
-            raise NotImplementedError("TODO(missing): handle missing argument list")
-
         callee_ty = ctx.apply_as_substitution(callee_ty)
         return function_application_infer(
-            env, ctx=ctx, ty=callee_ty, arguments=PVector(arguments)
+            env, ctx=ctx, ty=callee_ty, function_call_expr=expr
         )
     elif isinstance(expr, IdentifierExpr):
         target = env.bindation.get(expr)
@@ -338,18 +329,55 @@ def infer_function_definition(
 
 
 def function_application_infer(
-    env: Env, ctx: TypingContext, ty: Ty, arguments: PVector[Argument]
+    env: Env, ctx: TypingContext, ty: Ty, function_call_expr: FunctionCallExpr
 ) -> Tuple[Env, TypingContext, Ty]:
     """The function-application relation ⇒⇒, discussed in Dunfield 2013."""
+    n_callee = function_call_expr.n_callee
+    assert n_callee is not None, "should have been checked by parser"
+
+    n_argument_list = function_call_expr.n_argument_list
+    assert n_argument_list is not None, "should have been checked by parser"
+
+    arguments = n_argument_list.arguments
+    assert arguments is not None, "should have been checked by parser"
+
     if isinstance(ty, FunctionTy):
         if len(arguments) != len(ty.domain):
-            raise NotImplementedError("TODO: handle argument number mismatch")
+            if len(arguments) < len(ty.domain):
+                error_code = ErrorCode.TOO_FEW_ARGUMENTS
+            elif len(arguments) > len(ty.domain):
+                error_code = ErrorCode.TOO_MANY_ARGUMENTS
+            else:
+                raise AssertionError("neither too many nor too few arguments")
 
-        # TODO: use `izip_longest` here instead (not known to Mypy?)
+            actual_num_arguments = count(len(arguments), "argument", "arguments")
+            expected_num_arguments = count(len(ty.domain), "argument", "arguments")
+            env = env.add_error(
+                Error(
+                    file_info=env.file_info,
+                    code=error_code,
+                    severity=Severity.ERROR,
+                    message=(
+                        f"I was expecting you to pass {expected_num_arguments} "
+                        + f"here, but you passed {actual_num_arguments} instead."
+                    ),
+                    range=env.get_range_for_node(n_argument_list),
+                    notes=[
+                        Note(
+                            file_info=env.file_info,
+                            message=(
+                                f"This is the function being called. "
+                                + f"It takes {expected_num_arguments}."
+                            ),
+                            range=env.get_range_for_node(n_callee),
+                        )
+                    ],
+                )
+            )
+
         for argument, argument_ty in zip(arguments, ty.domain):
             n_expr = argument.n_expr
-            if n_expr is None:
-                raise NotImplementedError("TODO(missing): handle missing argument")
+            assert n_expr is not None, "should have been checked by parser"
             (env, ctx, _reason) = check(env, ctx, expr=n_expr, ty=argument_ty)
         return (env, ctx, ty.codomain)
 
@@ -559,7 +587,7 @@ def check_subtype(
     elif isinstance(rhs, TyVar):
         return (env, ctx, SubtypeOfUnboundedGenericReason())
     elif tys_equal(rhs, VOID_TY):
-        assert lhs != VOID_TY, "should be handled in tys_equal case"
+        assert lhs != VOID_TY, "should be checked by parser in tys_equal case"
         (env, ctx, reason) = check_subtype(env, ctx, lhs=lhs, rhs=NONE_TY)
         if reason is not None:
             return (env, ctx, NoneIsSubtypeOfVoidReason())
