@@ -66,22 +66,7 @@ class Env:
                 node = n_body
         return self.file_info.get_range_from_offset_range(node.offset_range)
 
-    def add_error(
-        self,
-        code: ErrorCode,
-        severity: Severity,
-        message: str,
-        notes: List[Note] = None,
-        range: Range = None,
-    ) -> "Env":
-        error = Error(
-            file_info=self.file_info,
-            code=code,
-            severity=severity,
-            message=message,
-            notes=notes if notes is not None else [],
-            range=range,
-        )
+    def add_error(self, error: Error) -> "Env":
         return attr.evolve(self, errors=self.errors.append(error))
 
 
@@ -470,20 +455,23 @@ def check(
             ctx = ctx.add_pattern_ty(n_pattern, value_ty)
             if tys_equal(value_ty, VOID_TY):
                 env = env.add_error(
-                    code=ErrorCode.CANNOT_BIND_TO_VOID,
-                    severity=Severity.ERROR,
-                    message=(
-                        f"This expression has type {ctx.ty_to_string(VOID_TY)}, "
-                        + "so it cannot be bound to a variable."
-                    ),
-                    range=env.get_range_for_node(n_value),
-                    notes=[
-                        Note(
-                            file_info=env.file_info,
-                            message="This is the variable it's being bound to.",
-                            range=env.get_range_for_node(n_pattern),
-                        )
-                    ],
+                    Error(
+                        file_info=env.file_info,
+                        code=ErrorCode.CANNOT_BIND_TO_VOID,
+                        severity=Severity.ERROR,
+                        message=(
+                            f"This expression has type {ctx.ty_to_string(VOID_TY)}, "
+                            + "so it cannot be bound to a variable."
+                        ),
+                        range=env.get_range_for_node(n_value),
+                        notes=[
+                            Note(
+                                file_info=env.file_info,
+                                message="This is the variable it's being bound to.",
+                                range=env.get_range_for_node(n_pattern),
+                            )
+                        ],
+                    )
                 )
 
             n_body = expr.n_body
@@ -529,13 +517,17 @@ def check(
             return (env, ctx, reason)
         else:
             env = env.add_error(
-                code=ErrorCode.INCOMPATIBLE_TYPES,
-                severity=Severity.ERROR,
-                message=(
-                    f"I was expecting this expression to have type {ctx.ty_to_string(ty)}, "
-                    + f"but it actually had type {ctx.ty_to_string(actual_ty)}."
-                ),
-                range=env.get_range_for_node(expr),
+                Error(
+                    file_info=env.file_info,
+                    code=ErrorCode.INCOMPATIBLE_TYPES,
+                    severity=Severity.ERROR,
+                    message=(
+                        f"I was expecting this expression to have type {ctx.ty_to_string(ty)}, "
+                        + f"but it actually had type {ctx.ty_to_string(actual_ty)}."
+                    ),
+                    range=env.get_range_for_node(expr),
+                    notes=[],
+                )
             )
             return (env, ctx, reason)
 
