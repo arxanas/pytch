@@ -11,7 +11,7 @@ HIGHLIGHTER_PYGMENTS_DRIVER = resources/syntax-highlighting/pytchlexer.py.inc
 HIGHLIGHTER_PYGMENTS = website/ext/pytchlexer.py
 HIGHLIGHTER_VSCODE = resources/syntax-highlighting/pytch.tmLanguage.json
 
-all: $(SYNTAX_TREES) $(DOCS) $(HIGHLIGHTER_PYGMENTS)
+all: $(SYNTAX_TREES) $(DOCS) $(HIGHLIGHTER_PYGMENTS) $(HIGHLIGHTER_VSCODE)
 
 pytch/%cst.py: bin/generate_%cst.py $(SYNTAX_TREE_SPEC)
 	$< <$(SYNTAX_TREE_SPEC) >$@

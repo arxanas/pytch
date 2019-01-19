@@ -22,16 +22,35 @@ def compile_contexts(schema: Schema) -> Mapping[str, Any]:
     for context_name, context_rules in schema.contexts.items():
         patterns = []
         for context_rule in context_rules:
-            pattern = {
-                "match": context_rule.regex,
-                "name": schema.get_scope(context_rule.scope_name, context_name).vscode
-                + ".pytch",
-            }
+            pattern: Mapping[str, Any]
             begin_and_end = context_rule.begin_and_end
-            if begin_and_end is not None:
+            if begin_and_end is None:
+                pattern = {
+                    "match": context_rule.regex,
+                    "name": schema.get_scope(
+                        context_rule.scope_name, context_name
+                    ).vscode
+                    + ".pytch",
+                }
+            else:
                 (begin, end) = begin_and_end
-                pattern["begin"] = begin.regex
-                pattern["end"] = end.regex
+                pattern = {
+                    "begin": begin.regex,
+                    "end": end.regex,
+                    "name": schema.get_scope(
+                        context_rule.scope_name, context_name
+                    ).vscode
+                    + ".pytch",
+                    "patterns": [
+                        {
+                            "match": context_rule.regex,
+                            "name": schema.get_scope(
+                                context_rule.scope_name, context_name
+                            ).vscode
+                            + ".pytch",
+                        }
+                    ],
+                }
             patterns.append(pattern)
         result[context_name] = {"patterns": patterns}
     return result

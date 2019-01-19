@@ -28,11 +28,11 @@ scopes:
     pygments: "Punctuation"
 
   single-quoted-string:
-    vscode: "text"
+    vscode: "string.quoted.single"
     pygments: "String.Single"
 
   double-quoted-string:
-    vscode: "text"
+    vscode: "string.quoted.double"
     pygments: "String.Double"
 
 contexts:
