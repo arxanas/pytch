@@ -6,7 +6,7 @@ SyntaxTree
         <missing>
         <missing>
         <missing>
-        Token DUMMY_IN ''
+        Token DUMMY_IN_FOR_LET ''
         LetExpr
             Token 'let'
             VariablePattern
@@ -19,7 +19,7 @@ SyntaxTree
                 Leading ' '
                 Token 'bar'
                 Trailing '\n'
-            Token DUMMY_IN ''
+            Token DUMMY_IN_FOR_LET ''
             LetExpr
                 Token 'let'
                 Trailing '\n'
@@ -27,6 +27,6 @@ SyntaxTree
                 <missing>
                 <missing>
                 <missing>
-                Token DUMMY_IN ''
+                Token DUMMY_IN_FOR_LET ''
                 <missing>
     Token EOF ''

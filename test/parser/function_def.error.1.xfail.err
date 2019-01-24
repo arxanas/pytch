@@ -2,7 +2,7 @@ EXPECTED_END_OF_PARAMETER_LIST[1019] in test/parser/function_def.error.1.pytch, 
 Error: I was expecting a ',' or ')' after the previous parameter.
    +-------------------------------------------------------------------+
    | test/parser/function_def.error.1.pytch                            |
- 1 | let print_fst(x, y =                                              |
+ 1 | def print_fst(x, y =>                                             |
    |                   ^ Error: I was expecting a ',' or ')' after the |
    | previous parameter.                                               |
  2 |   print(x)                                                        |

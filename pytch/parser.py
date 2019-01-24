@@ -358,7 +358,7 @@ class Parser:
         if not t_let:
             return (state, None)
 
-        state = state.push_sync_token_kinds([TokenKind.DUMMY_IN])
+        state = state.push_sync_token_kinds([TokenKind.DUMMY_IN_FOR_LET])
         let_note = Note(
             file_info=state.file_info,
             message="This is the beginning of the let-binding.",
@@ -369,7 +369,9 @@ class Parser:
         (state, n_let_expr) = self.parse_let_expr_binding(
             state, allow_naked_lets=allow_naked_lets, t_let=t_let, notes=notes
         )
-        (state, t_in) = self.expect_token(state, [TokenKind.DUMMY_IN], notes=notes)
+        (state, t_in) = self.expect_token(
+            state, [TokenKind.DUMMY_IN_FOR_LET], notes=notes
+        )
         if allow_naked_lets and state.get_current_token().kind == TokenKind.EOF:
             n_body = None
         else:
@@ -588,7 +590,7 @@ class Parser:
                 # 'let' is *always* paired with a dummy 'in', thanks to the
                 # pre-parser, so make sure to synchronize past that 'in'.
                 # Otherwise we end up with too many 'in's for our 'let's
-                state = self.skip_past(state, TokenKind.DUMMY_IN)
+                state = self.skip_past(state, TokenKind.DUMMY_IN_FOR_LET)
                 continue
 
             if current_token.kind in sync_token_kinds:

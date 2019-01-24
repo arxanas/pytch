@@ -28,6 +28,6 @@ SyntaxTree
                 Leading ' qux'
                 Token ')'
                 Trailing '\n'
-        Token DUMMY_IN ''
+        Token DUMMY_IN_FOR_LET ''
         <missing>
     Token EOF ''

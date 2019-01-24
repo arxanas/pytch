@@ -1,9 +1,7 @@
 SyntaxTree
-    LetExpr
-        Token 'let'
-        VariablePattern
-            Leading ' '
-            Token 'print_fst'
+    DefExpr
+        Token 'def'
+        Token 'print_fst'
         ParameterList
             Token '('
             Parameter
@@ -17,7 +15,7 @@ SyntaxTree
                 <missing>
             Token ')'
         Leading ' '
-        Token '='
+        Token '=>'
         Trailing '\n'
         FunctionCallExpr
             IdentifierExpr
@@ -32,12 +30,10 @@ SyntaxTree
                 Token ')'
                 Trailing '\n'
                 Trailing '\n'
-        Token DUMMY_IN ''
-        LetExpr
-            Token 'let'
-            VariablePattern
-                Leading ' '
-                Token 'print_snd'
+        Token DUMMY_IN_FOR_LET ''
+        DefExpr
+            Token 'def'
+            Token 'print_snd'
             ParameterList
                 Token '('
                 Parameter
@@ -51,7 +47,7 @@ SyntaxTree
                     <missing>
                 Token ')'
             Leading ' '
-            Token '='
+            Token '=>'
             FunctionCallExpr
                 IdentifierExpr
                     Leading ' '
@@ -64,6 +60,6 @@ SyntaxTree
                         <missing>
                     Token ')'
                     Trailing '\n'
-            Token DUMMY_IN ''
+            Token DUMMY_IN_FOR_LET ''
             <missing>
     Token EOF ''

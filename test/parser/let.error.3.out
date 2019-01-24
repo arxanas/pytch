@@ -9,6 +9,6 @@ SyntaxTree
         Token '='
         Trailing '\n'
         <missing>
-        Token DUMMY_IN ''
+        Token DUMMY_IN_FOR_LET ''
         <missing>
     Token EOF ''

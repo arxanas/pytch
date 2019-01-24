@@ -1,0 +1,4 @@
+def print_fst(x, y) =>
+  print(x)
+
+def print_snd(x, y) => print(y)

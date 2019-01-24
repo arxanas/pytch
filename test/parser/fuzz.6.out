@@ -14,6 +14,6 @@ SyntaxTree
         Leading '@'
         Leading 'let'
         Leading ''
-        Token DUMMY_IN ''
+        Token DUMMY_IN_FOR_LET ''
         <missing>
     Token EOF ''

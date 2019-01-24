@@ -19,6 +19,6 @@ SyntaxTree
                     <missing>
                 <missing>
         Leading '!\n'
-        Token DUMMY_IN ''
+        Token DUMMY_IN_FOR_LET ''
         <missing>
     Token EOF ''

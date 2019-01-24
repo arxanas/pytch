@@ -1,0 +1,14 @@
+'def'
+leading whitespace ' '
+identifier 'foo'
+'('
+identifier 'bar'
+')'
+leading whitespace ' '
+'=>'
+trailing newline '\n'
+leading whitespace '  '
+identifier 'baz'
+trailing newline '\n'
+the end of a 'def' binding
+the end of the file

@@ -1,9 +1,7 @@
 SyntaxTree
-    LetExpr
-        Token 'let'
-        VariablePattern
-            Leading ' '
-            Token 'print_fst'
+    DefExpr
+        Token 'def'
+        Token 'print_fst'
         ParameterList
             Token '('
             Parameter
@@ -18,11 +16,11 @@ SyntaxTree
             <missing>
         <missing>
         <missing>
-        Leading ' =\n'
+        Leading ' =>\n'
         Leading '  print'
         Leading '('
         Leading 'x'
         Leading ')\n'
-        Token DUMMY_IN ''
+        Token DUMMY_IN_FOR_LET ''
         <missing>
     Token EOF ''

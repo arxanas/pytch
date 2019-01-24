@@ -71,9 +71,11 @@ class TokenKind(Enum):
     STRING_LITERAL = "string literal"
 
     LET = "'let'"
+    DEF = "'def'"
     COMMA = "','"
     INT_LITERAL = "integer literal"
     EQUALS = "'='"
+    DOUBLE_ARROW = "'=>'"
     LPAREN = "'('"
     RPAREN = "')'"
 
@@ -97,7 +99,8 @@ class TokenKind(Enum):
     """
 
     # Dummy tokens; inserted by the pre-parser.
-    DUMMY_IN = "the end of a 'let' binding"
+    DUMMY_IN_FOR_LET = "the end of a 'let' binding"
+    DUMMY_IN_FOR_DEF = "the end of a 'def' binding"
     DUMMY_SEMICOLON = "the end of a statement"
     DUMMY_ENDIF = "the end of an 'if' expression"
 
@@ -230,7 +233,9 @@ COMMENT_RE = re.compile(r"#[^\n]*\n")
 IDENTIFIER_RE = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*")
 INT_LITERAL_RE = re.compile(r"[0-9]+")
 EQUALS_RE = re.compile(r"=")
+DOUBLE_ARROW_RE = re.compile(r"=>")
 LET_RE = re.compile(r"let")
+DEF_RE = re.compile(r"def")
 COMMA_RE = re.compile(r",")
 LPAREN_RE = re.compile(r"\(")
 RPAREN_RE = re.compile(r"\)")
@@ -354,7 +359,9 @@ class Lexer:
                 {
                     TokenKind.INT_LITERAL: INT_LITERAL_RE,
                     TokenKind.EQUALS: EQUALS_RE,
+                    TokenKind.DOUBLE_ARROW: DOUBLE_ARROW_RE,
                     TokenKind.LET: LET_RE,
+                    TokenKind.DEF: DEF_RE,
                     TokenKind.COMMA: COMMA_RE,
                     TokenKind.LPAREN: LPAREN_RE,
                     TokenKind.RPAREN: RPAREN_RE,
@@ -545,7 +552,11 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
                 # then no matter what, we will treat the following `baz` as the
                 # `let` body, not a new statement.
                 can_be_followed_by_new_statement = False
-                yield make_dummy_token(TokenKind.DUMMY_IN)
+                yield make_dummy_token(TokenKind.DUMMY_IN_FOR_LET)
+            elif top_token.kind == TokenKind.DEF:
+                # Similar to the above for `let`.
+                can_be_followed_by_new_statement = False
+                yield make_dummy_token(TokenKind.DUMMY_IN_FOR_DEF)
             elif (
                 top_token.kind == TokenKind.IF
                 or top_token.kind == TokenKind.THEN
@@ -602,7 +613,7 @@ def preparse(tokens: Iterable[Token]) -> Iterator[Token]:
             yield from unwind(
                 indentation_level, unwind_statements=False, kind=TokenKind.LPAREN
             )
-        elif token.kind == TokenKind.LET:
+        elif token.kind == TokenKind.LET or token.kind == TokenKind.DEF:
             if not maybe_expr_continuation:
                 yield from unwind(indentation_level, unwind_statements=False)
             stack.append((indentation_level, current_line, token))
@@ -677,7 +688,7 @@ def lex(file_info: FileInfo) -> Lexation:
     for token in tokens:
         if token.kind == TokenKind.LET:
             num_lets += 1
-        elif token.kind == TokenKind.DUMMY_IN:
+        elif token.kind == TokenKind.DUMMY_IN_FOR_LET:
             num_ins += 1
     if num_lets != num_ins:
         errors.append(
