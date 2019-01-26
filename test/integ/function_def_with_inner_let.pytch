@@ -1,4 +1,4 @@
-let foo(x) =
+def foo(x) =>
   let x = 2
   x
 

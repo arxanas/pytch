@@ -20,6 +20,7 @@ from .greencst import (
     Argument,
     ArgumentList,
     BinaryExpr,
+    DefExpr,
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
@@ -326,7 +327,7 @@ class Parser:
             return Parsation(green_cst=syntax_tree, errors=state.errors)
 
         try:
-            (state, n_expr) = self.parse_expr(state, allow_naked_lets=True)
+            (state, n_expr) = self.parse_expr(state, allow_naked_bindings=True)
             (state, t_eof) = self.expect_token(state, [TokenKind.EOF])
             syntax_tree = SyntaxTree(n_expr=n_expr, t_eof=t_eof)
 
@@ -351,7 +352,7 @@ class Parser:
             raise UnhandledParserException(state) from e
 
     def parse_let_expr(
-        self, state: State, allow_naked_lets=False
+        self, state: State, allow_naked_bindings: bool
     ) -> Tuple[State, Optional[LetExpr]]:
         t_let_range = state.current_token_range
         (state, t_let) = self.expect_token(state, [TokenKind.LET])
@@ -366,30 +367,36 @@ class Parser:
         )
         notes = [let_note]
 
-        (state, n_let_expr) = self.parse_let_expr_binding(
-            state, allow_naked_lets=allow_naked_lets, t_let=t_let, notes=notes
+        (state, n_pattern) = self.parse_pattern(
+            state,
+            error=Error(
+                file_info=state.file_info,
+                code=ErrorCode.EXPECTED_PATTERN,
+                severity=Severity.ERROR,
+                message="I was expecting a pattern after 'let'.",
+                notes=notes,
+                range=state.current_token_range,
+            ),
         )
+
+        (state, t_equals) = self.expect_token(state, [TokenKind.EQUALS], notes=notes)
+        (state, n_value) = self.parse_expr(state, allow_naked_bindings=False)
         (state, t_in) = self.expect_token(
             state, [TokenKind.DUMMY_IN_FOR_LET], notes=notes
         )
-        if allow_naked_lets and state.get_current_token().kind == TokenKind.EOF:
+        if allow_naked_bindings and state.current_token_kind == TokenKind.EOF:
             n_body = None
         else:
-            (state, n_body) = self.parse_expr(state, allow_naked_lets=allow_naked_lets)
+            (state, n_body) = self.parse_expr(
+                state, allow_naked_bindings=allow_naked_bindings
+            )
 
-        n_pattern = n_let_expr.n_pattern if n_let_expr is not None else None
-        n_parameter_list = (
-            n_let_expr.n_parameter_list if n_let_expr is not None else None
-        )
-        t_equals = n_let_expr.t_equals if n_let_expr is not None else None
-        n_value = n_let_expr.n_value if n_let_expr is not None else None
         state = state.pop_sync_token_kinds()
         return (
             state,
             LetExpr(
                 t_let=t_let,
                 n_pattern=n_pattern,
-                n_parameter_list=n_parameter_list,
                 t_equals=t_equals,
                 n_value=n_value,
                 t_in=t_in,
@@ -397,59 +404,59 @@ class Parser:
             ),
         )
 
-    def parse_let_expr_binding(
-        self, state: State, allow_naked_lets: bool, t_let: Token, notes: List[Note]
-    ) -> Tuple[State, Optional[LetExpr]]:
-        n_pattern: Optional[Pattern]
-        n_parameter_list: Optional[ParameterList] = None
-        if state.get_current_token().kind == TokenKind.EQUALS:
-            # If the token is an equals sign, assume that the name is missing
-            # (e.g. during editing, the user is renaming the variable), but
-            # that the rest of the let-binding is present.
-            n_pattern = None
-            state = state.add_error(
-                Error(
-                    file_info=state.file_info,
-                    code=ErrorCode.EXPECTED_PATTERN,
-                    severity=Severity.ERROR,
-                    message="I was expecting a pattern after 'let'.",
-                    notes=notes,
-                    range=state.current_token_range,
-                )
-            )
-        elif (
-            state.get_current_token().kind == TokenKind.IDENTIFIER
-            and state.next_token.kind == TokenKind.LPAREN
-        ):
-            # Assume it's a function definition.
-            (state, t_identifier) = self.expect_token(state, [TokenKind.IDENTIFIER])
-            n_pattern = VariablePattern(t_identifier=t_identifier)
-            (state, n_parameter_list) = self.parse_parameter_list(state)
+    def parse_def_expr(
+        self, state: State, allow_naked_bindings: bool
+    ) -> Tuple[State, Optional[DefExpr]]:
+        t_def_range = state.current_token_range
+        (state, t_def) = self.expect_token(state, [TokenKind.DEF])
+        if not t_def:
+            return (state, None)
+
+        state = state.push_sync_token_kinds([TokenKind.DUMMY_IN_FOR_DEF])
+        def_note = Note(
+            file_info=state.file_info,
+            message="This is the beginning of the function definition.",
+            range=t_def_range,
+        )
+        notes = [def_note]
+
+        (state, n_name) = self.parse_variable_pattern(
+            state,
+            error=Error(
+                file_info=state.file_info,
+                code=ErrorCode.EXPECTED_FUNCTION_NAME,
+                severity=Severity.ERROR,
+                message="I was expecting a function name after 'def'.",
+                notes=notes,
+                range=state.current_token_range,
+            ),
+        )
+        (state, n_parameter_list) = self.parse_parameter_list(state)
+
+        (state, t_double_arrow) = self.expect_token(
+            state, [TokenKind.DOUBLE_ARROW], notes=notes
+        )
+        (state, n_definition) = self.parse_expr(state, allow_naked_bindings=False)
+        (state, t_in) = self.expect_token(
+            state, [TokenKind.DUMMY_IN_FOR_DEF], notes=notes
+        )
+        if allow_naked_bindings and state.get_current_token().kind == TokenKind.EOF:
+            n_next = None
         else:
-            (state, n_pattern) = self.parse_pattern(
-                state,
-                error=Error(
-                    file_info=state.file_info,
-                    code=ErrorCode.EXPECTED_PATTERN,
-                    severity=Severity.ERROR,
-                    message="I was expecting a pattern after 'let'.",
-                    notes=notes,
-                    range=state.current_token_range,
-                ),
+            (state, n_next) = self.parse_expr(
+                state, allow_naked_bindings=allow_naked_bindings
             )
-        (state, t_equals) = self.expect_token(state, [TokenKind.EQUALS], notes=notes)
-        (state, n_value) = self.parse_expr(state, allow_naked_lets=False)
 
         return (
             state,
-            LetExpr(
-                t_let=t_let,
-                n_pattern=n_pattern,
+            DefExpr(
+                t_def=t_def,
+                n_name=n_name,
                 n_parameter_list=n_parameter_list,
-                t_equals=t_equals,
-                n_value=n_value,
-                t_in=None,  # Parsed by caller.
-                n_body=None,  # Parsed by caller.
+                t_double_arrow=t_double_arrow,
+                n_definition=n_definition,
+                t_in=t_in,
+                n_next=n_next,
             ),
         )
 
@@ -495,11 +502,22 @@ class Parser:
         else:
             return (state, None)
 
+    def parse_variable_pattern(
+        self, state: State, error: Error = None
+    ) -> Tuple[State, Optional[VariablePattern]]:
+        (state, t_identifier) = self.expect_token(
+            state, [TokenKind.IDENTIFIER], error=error
+        )
+        if t_identifier:
+            return (state, VariablePattern(t_identifier=t_identifier))
+        else:
+            return (state, None)
+
     def parse_expr(
         self,
         state: State,
         min_precedence: int = 0,
-        # Set when we allow let-bindings without associated expressions. For
+        # Set when we allow bindings without associated expressions. For
         # example, this at the top-level:
         #
         #     # Non-naked let; has the expression `let bar = 2`
@@ -510,7 +528,7 @@ class Parser:
         #
         #     # Naked let: no expression for this let-binding.
         #     let bar = 2
-        allow_naked_lets: bool = False,
+        allow_naked_bindings: bool = False,
     ) -> Tuple[State, Optional[Expr]]:
         """Parse an expression, even if that parse involves left-recursion.
 
@@ -520,7 +538,7 @@ class Parser:
         https://eli.thegreenplace.net/2012/08/02/parsing-expressions-by-precedence-climbing
         """
         (state, n_expr) = self.parse_non_binary_expr(
-            state, allow_naked_lets=allow_naked_lets
+            state, allow_naked_bindings=allow_naked_bindings
         )
         if n_expr is None:
             return (state, None)
@@ -545,15 +563,17 @@ class Parser:
             (state, n_rhs) = self.parse_expr(
                 state,
                 min_precedence=next_min_precedence,
-                allow_naked_lets=allow_naked_lets,
+                allow_naked_bindings=allow_naked_bindings,
             )
             n_expr = BinaryExpr(n_lhs=n_expr, t_operator=t_operator, n_rhs=n_rhs)
         return (state, n_expr)
 
     def parse_non_binary_expr(
-        self, state: State, allow_naked_lets: bool
+        self, state: State, allow_naked_bindings: bool
     ) -> Tuple[State, Optional[Expr]]:
-        (state, n_expr) = self.parse_atom(state, allow_naked_lets=allow_naked_lets)
+        (state, n_expr) = self.parse_atom(
+            state, allow_naked_bindings=allow_naked_bindings
+        )
         while n_expr is not None:
             token = state.get_current_token()
             if token.kind == TokenKind.EOF:
@@ -599,7 +619,7 @@ class Parser:
         return state
 
     def parse_atom(
-        self, state: State, allow_naked_lets: bool = False
+        self, state: State, allow_naked_bindings: bool
     ) -> Tuple[State, Optional[Expr]]:
         token = state.get_current_token()
         if token.kind == TokenKind.IDENTIFIER:
@@ -609,7 +629,9 @@ class Parser:
         elif token.kind == TokenKind.STRING_LITERAL:
             return self.parse_string_literal(state)
         elif token.kind == TokenKind.LET:
-            return self.parse_let_expr(state, allow_naked_lets=allow_naked_lets)
+            return self.parse_let_expr(state, allow_naked_bindings=allow_naked_bindings)
+        elif token.kind == TokenKind.DEF:
+            return self.parse_def_expr(state, allow_naked_bindings=allow_naked_bindings)
         elif token.kind == TokenKind.IF:
             return self.parse_if_expr(state)
         else:

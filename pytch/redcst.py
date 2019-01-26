@@ -253,7 +253,6 @@ class LetExpr(Expr):
         self.origin = origin
         self.offset = offset
         self._n_pattern: Optional[Pattern] = None
-        self._n_parameter_list: Optional[ParameterList] = None
         self._n_value: Optional[Expr] = None
         self._n_body: Optional[Expr] = None
 
@@ -275,23 +274,6 @@ class LetExpr(Expr):
         return result
 
     @property
-    def n_parameter_list(self) -> Optional[ParameterList]:
-        if self.origin.n_parameter_list is None:
-            return None
-        if self._n_parameter_list is not None:
-            return self._n_parameter_list
-        offset = (
-            self.offset
-            + (self.t_let.full_width if self.t_let is not None else 0)
-            + (self.n_pattern.full_width if self.n_pattern is not None else 0)
-        )
-        result = ParameterList(
-            parent=self, origin=self.origin.n_parameter_list, offset=offset
-        )
-        self._n_parameter_list = result
-        return result
-
-    @property
     def t_equals(self) -> Optional[Token]:
         return self.origin.t_equals
 
@@ -305,11 +287,6 @@ class LetExpr(Expr):
             self.offset
             + (self.t_let.full_width if self.t_let is not None else 0)
             + (self.n_pattern.full_width if self.n_pattern is not None else 0)
-            + (
-                self.n_parameter_list.full_width
-                if self.n_parameter_list is not None
-                else 0
-            )
             + (self.t_equals.full_width if self.t_equals is not None else 0)
         )
         result = GREEN_TO_RED_NODE_MAP[self.origin.n_value.__class__](
@@ -332,11 +309,6 @@ class LetExpr(Expr):
             self.offset
             + (self.t_let.full_width if self.t_let is not None else 0)
             + (self.n_pattern.full_width if self.n_pattern is not None else 0)
-            + (
-                self.n_parameter_list.full_width
-                if self.n_parameter_list is not None
-                else 0
-            )
             + (self.t_equals.full_width if self.t_equals is not None else 0)
             + (self.n_value.full_width if self.n_value is not None else 0)
             + (self.t_in.full_width if self.t_in is not None else 0)
@@ -369,11 +341,140 @@ class LetExpr(Expr):
         return [
             self.t_let,
             self.n_pattern,
-            self.n_parameter_list,
             self.t_equals,
             self.n_value,
             self.t_in,
             self.n_body,
+        ]
+
+
+class DefExpr(Expr):
+    def __init__(
+        self, parent: Optional[Node], origin: greencst.DefExpr, offset: int
+    ) -> None:
+        super().__init__(parent)
+        self.origin = origin
+        self.offset = offset
+        self._n_name: Optional[VariablePattern] = None
+        self._n_parameter_list: Optional[ParameterList] = None
+        self._n_definition: Optional[Expr] = None
+        self._n_next: Optional[Expr] = None
+
+    @property
+    def t_def(self) -> Optional[Token]:
+        return self.origin.t_def
+
+    @property
+    def n_name(self) -> Optional[VariablePattern]:
+        if self.origin.n_name is None:
+            return None
+        if self._n_name is not None:
+            return self._n_name
+        offset = self.offset + (self.t_def.full_width if self.t_def is not None else 0)
+        result = VariablePattern(parent=self, origin=self.origin.n_name, offset=offset)
+        self._n_name = result
+        return result
+
+    @property
+    def n_parameter_list(self) -> Optional[ParameterList]:
+        if self.origin.n_parameter_list is None:
+            return None
+        if self._n_parameter_list is not None:
+            return self._n_parameter_list
+        offset = (
+            self.offset
+            + (self.t_def.full_width if self.t_def is not None else 0)
+            + (self.n_name.full_width if self.n_name is not None else 0)
+        )
+        result = ParameterList(
+            parent=self, origin=self.origin.n_parameter_list, offset=offset
+        )
+        self._n_parameter_list = result
+        return result
+
+    @property
+    def t_double_arrow(self) -> Optional[Token]:
+        return self.origin.t_double_arrow
+
+    @property
+    def n_definition(self) -> Optional[Expr]:
+        if self.origin.n_definition is None:
+            return None
+        if self._n_definition is not None:
+            return self._n_definition
+        offset = (
+            self.offset
+            + (self.t_def.full_width if self.t_def is not None else 0)
+            + (self.n_name.full_width if self.n_name is not None else 0)
+            + (
+                self.n_parameter_list.full_width
+                if self.n_parameter_list is not None
+                else 0
+            )
+            + (self.t_double_arrow.full_width if self.t_double_arrow is not None else 0)
+        )
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_definition.__class__](
+            parent=self, origin=self.origin.n_definition, offset=offset
+        )
+        self._n_definition = result
+        return result
+
+    @property
+    def t_in(self) -> Optional[Token]:
+        return self.origin.t_in
+
+    @property
+    def n_next(self) -> Optional[Expr]:
+        if self.origin.n_next is None:
+            return None
+        if self._n_next is not None:
+            return self._n_next
+        offset = (
+            self.offset
+            + (self.t_def.full_width if self.t_def is not None else 0)
+            + (self.n_name.full_width if self.n_name is not None else 0)
+            + (
+                self.n_parameter_list.full_width
+                if self.n_parameter_list is not None
+                else 0
+            )
+            + (self.t_double_arrow.full_width if self.t_double_arrow is not None else 0)
+            + (self.n_definition.full_width if self.n_definition is not None else 0)
+            + (self.t_in.full_width if self.t_in is not None else 0)
+        )
+        result = GREEN_TO_RED_NODE_MAP[self.origin.n_next.__class__](
+            parent=self, origin=self.origin.n_next, offset=offset
+        )
+        self._n_next = result
+        return result
+
+    @property
+    def text(self) -> str:
+        return self.origin.text
+
+    @property
+    def full_text(self) -> str:
+        return self.origin.full_text
+
+    @property
+    def full_width(self) -> int:
+        return self.origin.full_width
+
+    @property
+    def offset_range(self) -> OffsetRange:
+        start = self.offset + self.origin.leading_width
+        return OffsetRange(start=start, end=start + self.origin.width)
+
+    @property
+    def children(self) -> List[Optional[Union[Token, Node]]]:
+        return [
+            self.t_def,
+            self.n_name,
+            self.n_parameter_list,
+            self.t_double_arrow,
+            self.n_definition,
+            self.t_in,
+            self.n_next,
         ]
 
 
@@ -828,6 +929,7 @@ GREEN_TO_RED_NODE_MAP = {
     greencst.Parameter: Parameter,
     greencst.ParameterList: ParameterList,
     greencst.LetExpr: LetExpr,
+    greencst.DefExpr: DefExpr,
     greencst.IfExpr: IfExpr,
     greencst.IdentifierExpr: IdentifierExpr,
     greencst.IntLiteralExpr: IntLiteralExpr,

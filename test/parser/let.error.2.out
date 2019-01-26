@@ -5,14 +5,12 @@ SyntaxTree
         <missing>
         <missing>
         <missing>
-        <missing>
         Token DUMMY_IN_FOR_LET ''
         LetExpr
             Token 'let'
             VariablePattern
                 Leading ' '
                 Token 'foo'
-            <missing>
             Leading ' '
             Token '='
             IdentifierExpr
@@ -23,7 +21,6 @@ SyntaxTree
             LetExpr
                 Token 'let'
                 Trailing '\n'
-                <missing>
                 <missing>
                 <missing>
                 <missing>

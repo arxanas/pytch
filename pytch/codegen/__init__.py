@@ -23,6 +23,7 @@ from ..errors import Error
 from ..lexer import TokenKind
 from ..redcst import (
     BinaryExpr,
+    DefExpr,
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
@@ -68,6 +69,13 @@ class Env:
         return attr.evolve(self, **kwargs)
 
     def push_scope(self) -> "Env":
+        """Push a new Python scope for variable bindings.
+
+        This should be called before entering a new lexical Python scope
+        (e.g. when emitting a function definition). This way, we can re-use
+        variable names when they're not in the same scope, such as if two
+        functions use a local variable of the same name.
+        """
         return self._update(scopes=self.scopes + [Scope.empty()])
 
     def pop_scope(self) -> "Env":
@@ -156,6 +164,8 @@ def compile_expr(
 ]:
     if isinstance(expr, LetExpr):
         return compile_let_expr(env, expr)
+    elif isinstance(expr, DefExpr):
+        return compile_def_expr(env, expr)
     elif isinstance(expr, IfExpr):
         return compile_if_expr(env, expr)
     elif isinstance(expr, FunctionCallExpr):
@@ -237,33 +247,54 @@ def compile_let_expr(
     n_value = let_expr.n_value
     py_binding_statements: PyStmtList
     if n_pattern is not None and n_value is not None:
-        n_parameter_list = None
-        if let_expr.n_parameter_list is not None:
-            n_parameter_list = let_expr.n_parameter_list.parameters
-
-        if n_parameter_list is None:
-            if target is not None:
-                (env, py_binding_statements) = compile_expr_target(
-                    env, n_value, target=target, preferred_name="_tmp_let"
-                )
-            else:
-                (env, py_binding_statements) = compile_assign_to_pattern(
-                    env, expr=n_value, pattern=n_pattern
-                )
+        if target is not None:
+            (env, py_binding_statements) = compile_expr_target(
+                env, n_value, target=target, preferred_name="_tmp_let"
+            )
         else:
-            assert isinstance(
-                n_pattern, VariablePattern
-            ), f"Bad pattern type {n_pattern.__class__.__name__} for function"
+            (env, py_binding_statements) = compile_assign_to_pattern(
+                env, expr=n_value, pattern=n_pattern
+            )
 
-            t_identifier = n_pattern.t_identifier
-            if t_identifier is None:
-                return (env, PyUnavailableExpr("missing let-binding function name"), [])
+    if let_expr.n_body is not None:
+        (env, body_expr, body_statements) = compile_expr(env, let_expr.n_body)
+    else:
+        body_expr = PyUnavailableExpr("missing let-expr body")
+        body_statements = []
 
+    return (env, body_expr, py_binding_statements + body_statements)
+
+
+def compile_def_expr(
+    env: Env, def_expr: DefExpr, target: PyIdentifierExpr = None
+) -> Tuple[Env, PyExpr, PyStmtList]:
+    n_name = def_expr.n_name
+    function_name = None
+    if n_name is not None:
+        t_identifier = n_name.t_identifier
+        if t_identifier is not None:
             function_name = t_identifier.text
 
-            env = env.push_scope()
-            py_parameters = []
-            for n_parameter in n_parameter_list:
+    n_definition = def_expr.n_definition
+    py_function_body_statements: PyStmtList
+    py_binding_statements: PyStmtList
+    if n_definition is None:
+        py_binding_statements = []
+        py_function_body_statements = []
+    else:
+        n_parameters = None
+        if def_expr.n_parameter_list is not None:
+            n_parameters = def_expr.n_parameter_list.parameters
+
+        if n_name is not None and function_name is not None:
+            (env, actual_function_name) = env.add_binding(
+                n_name, preferred_name=function_name
+            )
+
+        py_parameters = []
+        env = env.push_scope()
+        if n_parameters is not None:
+            for n_parameter in n_parameters:
                 n_parameter_pattern = n_parameter.n_pattern
                 if n_parameter_pattern is None:
                     continue
@@ -282,31 +313,26 @@ def compile_let_expr(
                 )
                 py_parameters.append(PyParameter(name=parameter_name))
 
-            (
-                env,
-                py_function_body_return_expr,
-                py_function_body_statements,
-            ) = compile_expr(env, n_value)
-            env = env.pop_scope()
-            (env, actual_function_name) = env.add_binding(
-                n_pattern, preferred_name=function_name
+        (env, py_function_body_return_expr, py_function_body_statements) = compile_expr(
+            env, n_definition
+        )
+        env = env.pop_scope()
+        py_binding_statements = [
+            PyFunctionStmt(
+                name=actual_function_name,
+                parameters=py_parameters,
+                body_statements=py_function_body_statements,
+                return_expr=py_function_body_return_expr,
             )
-            py_binding_statements = [
-                PyFunctionStmt(
-                    name=actual_function_name,
-                    parameters=py_parameters,
-                    body_statements=py_function_body_statements,
-                    return_expr=py_function_body_return_expr,
-                )
-            ]
+        ]
 
-    if let_expr.n_body is not None:
-        (env, body_expr, body_statements) = compile_expr(env, let_expr.n_body)
+    n_next = def_expr.n_next
+    if n_next is not None:
+        (env, next_expr, next_statements) = compile_expr(env, n_next)
     else:
-        body_expr = PyUnavailableExpr("missing let-expr body")
-        body_statements = []
-
-    return (env, body_expr, py_binding_statements + body_statements)
+        next_expr = PyUnavailableExpr("missing let-expr body")
+        next_statements = []
+    return (env, next_expr, py_binding_statements + next_statements)
 
 
 def compile_if_expr(

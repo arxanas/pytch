@@ -1,4 +1,4 @@
-let takes_one(foo) =
+def takes_one(foo) =>
   None
 
 takes_one("foo", "bar")

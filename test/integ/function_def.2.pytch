@@ -1,2 +1,0 @@
-let takes_unit() = print(1)
-takes_unit()

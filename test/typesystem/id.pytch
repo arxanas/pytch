@@ -1,2 +1,2 @@
-let id(x) = x
+def id(x) => x
 show_type(id)

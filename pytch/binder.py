@@ -10,7 +10,15 @@ import attr
 import distance
 
 from .errors import Error, ErrorCode, Note, Severity
-from .redcst import IdentifierExpr, LetExpr, Node, Pattern, SyntaxTree, VariablePattern
+from .redcst import (
+    DefExpr,
+    IdentifierExpr,
+    LetExpr,
+    Node,
+    Pattern,
+    SyntaxTree,
+    VariablePattern,
+)
 from .utils import FileInfo, Range
 
 
@@ -33,22 +41,27 @@ class Bindation:
         return self.bindings.get(node)
 
 
-def get_names_bound_for_let_expr_value(
+def get_names_bound_for_let_expr_body(
     n_let_expr: LetExpr,
 ) -> Mapping[str, List[VariablePattern]]:
-    """Get the names bound in a let-expression's value.
+    if n_let_expr.n_pattern is None:
+        return {}
+    return get_names_bound_by_pattern(n_let_expr.n_pattern)
 
-    That is, for function let expressions, get the names of the parameters
-    that should be bound inside the function's definition. For example:
 
-        let foo(bar, baz) =
+def get_names_bound_for_def_expr(
+    n_def_expr: DefExpr,
+) -> Mapping[str, List[VariablePattern]]:
+    """Get the names bound in a function's definition (its parameters).
+
+        def foo(bar, baz) =>
           bar + baz  # bar and baz should be bound here...
         foo(1, 2) # ...but not here.
 
     TODO: Additionally, if the function is marked as `rec`, bind the function
     name itself inside the function body.
     """
-    n_parameter_list = n_let_expr.n_parameter_list
+    n_parameter_list = n_def_expr.n_parameter_list
     if n_parameter_list is None:
         return {}
 
@@ -65,12 +78,15 @@ def get_names_bound_for_let_expr_value(
     return bindings
 
 
-def get_names_bound_for_let_expr_body(
-    n_let_expr: LetExpr,
+def get_names_bound_for_def_expr_next(
+    n_def_expr: DefExpr,
 ) -> Mapping[str, List[VariablePattern]]:
-    if n_let_expr.n_pattern is None:
+    n_name = n_def_expr.n_name
+    if n_name is None:
         return {}
-    return get_names_bound_by_pattern(n_let_expr.n_pattern)
+    else:
+        # TODO: warn about overlapping name-bindings.
+        return get_names_bound_by_pattern(n_name)
 
 
 def get_names_bound_by_pattern(
@@ -157,14 +173,10 @@ def bind(
                     bindings[node] = identifier_binding
                 errors.extend(identifier_errors)
 
-        if isinstance(node, LetExpr):
+        elif isinstance(node, LetExpr):
             if node.n_value is not None:
-                value_names_in_scope = {
-                    **names_in_scope,
-                    **get_names_bound_for_let_expr_value(node),
-                }
                 (value_bindings, value_errors) = bind_node(
-                    node=node.n_value, names_in_scope=value_names_in_scope
+                    node=node.n_value, names_in_scope=names_in_scope
                 )
                 bindings.update(value_bindings)
                 errors.extend(value_errors)
@@ -179,6 +191,29 @@ def bind(
                 )
                 bindings.update(body_bindings)
                 errors.extend(body_errors)
+
+        elif isinstance(node, DefExpr):
+            if node.n_definition is not None:
+                value_names_in_scope = {
+                    **names_in_scope,
+                    **get_names_bound_for_def_expr(node),
+                }
+                (value_bindings, value_errors) = bind_node(
+                    node=node.n_definition, names_in_scope=value_names_in_scope
+                )
+                bindings.update(value_bindings)
+                errors.extend(value_errors)
+
+            if node.n_next is not None:
+                next_names_in_scope = {
+                    **names_in_scope,
+                    **get_names_bound_for_def_expr_next(node),
+                }
+                (next_bindings, next_errors) = bind_node(
+                    node=node.n_next, names_in_scope=next_names_in_scope
+                )
+                bindings.update(next_bindings)
+                errors.extend(next_errors)
         else:
             for child in node.children:
                 if isinstance(child, Node):

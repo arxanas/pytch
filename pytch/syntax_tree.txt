@@ -21,15 +21,19 @@ ParameterList(Node)
 LetExpr(Expr)
     t_let: Optional[Token]
     n_pattern: Optional[Pattern]
-
-    # Only present if the `let`-expr is a function declaration. If present,
-    # `n_pattern` is expected to be a `VariablePattern`.
-    n_parameter_list: Optional[ParameterList]
-
     t_equals: Optional[Token]
     n_value: Optional[Expr]
     t_in: Optional[Token]
     n_body: Optional[Expr]
+
+DefExpr(Expr)
+    t_def: Optional[Token]
+    n_name: Optional[VariablePattern]
+    n_parameter_list: Optional[ParameterList]
+    t_double_arrow: Optional[Token]
+    n_definition: Optional[Expr]
+    t_in: Optional[Token]
+    n_next: Optional[Expr]
 
 IfExpr(Expr)
     t_if: Optional[Token]

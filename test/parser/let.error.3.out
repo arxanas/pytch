@@ -4,7 +4,6 @@ SyntaxTree
         VariablePattern
             Leading ' '
             Token 'foo'
-        <missing>
         Leading ' '
         Token '='
         Trailing '\n'

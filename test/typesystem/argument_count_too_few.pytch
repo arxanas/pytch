@@ -1,4 +1,4 @@
-let takes_two(foo, bar) =
+def takes_two(foo, bar) =>
   foo
 
 takes_two("foo")

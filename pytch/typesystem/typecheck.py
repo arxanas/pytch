@@ -8,6 +8,7 @@ from pytch.errors import count, Error, ErrorCode, Note, Severity
 from pytch.lexer import TokenKind
 from pytch.redcst import (
     BinaryExpr,
+    DefExpr,
     Expr,
     FunctionCallExpr,
     IdentifierExpr,
@@ -57,12 +58,17 @@ class Env:
         range. Instead, we only want to flag the innermost `let`-expression
         body.
         """
-        while isinstance(node, LetExpr):
-            n_body = node.n_body
-            if n_body is None:
+        while isinstance(node, (LetExpr, DefExpr)):
+            next_node = None
+            if isinstance(node, LetExpr):
+                next_node = node.n_body
+            elif isinstance(node, DefExpr):
+                next_node = node.n_definition
+
+            if next_node is None:
                 break
             else:
-                node = n_body
+                node = next_node
         return self.file_info.get_range_from_offset_range(node.offset_range)
 
     def add_error(self, error: Error) -> "Env":
@@ -296,15 +302,15 @@ def infer(env: Env, ctx: TypingContext, expr: Expr) -> Tuple[Env, TypingContext,
 
 
 def infer_function_definition(
-    env: Env, ctx: TypingContext, expr: LetExpr
+    env: Env, ctx: TypingContext, expr: DefExpr
 ) -> Tuple[Env, TypingContext, Ty]:
     def error(ctx: TypingContext):
         function_ty = ERR_TY
-        n_pattern = expr.n_pattern
+        n_name = expr.n_name
         assert isinstance(
-            n_pattern, VariablePattern
+            n_name, VariablePattern
         ), "Function let-exprs should be VariablePatterns"
-        ctx = ctx.add_pattern_ty(pattern=n_pattern, ty=function_ty)
+        ctx = ctx.add_pattern_ty(pattern=n_name, ty=function_ty)
         return (env, ctx, function_ty)
 
     n_parameter_list = expr.n_parameter_list
@@ -321,11 +327,11 @@ def infer_function_definition(
             return error(ctx)
         parameters = parameters.append(n_parameter)
 
-    n_value = expr.n_value
-    if n_value is None:
+    n_definition = expr.n_definition
+    if n_definition is None:
         return error(ctx)
 
-    return infer_lambda(env, ctx, parameters=parameters, body=n_value)
+    return infer_lambda(env, ctx, parameters=parameters, body=n_definition)
 
 
 def function_application_infer(
@@ -464,80 +470,89 @@ def check(
         #     Ψ ⊢ e ⇒ A   Ψ, x:A ⊢ e' ⇐ C
         #     ---------------------------  let
         #       Ψ ⊢ let x = e in e' ⇐ C
-        #
-        # Note that we have to adapt this for function definitions by also
-        # using the rule for typing lambdas.
         n_pattern = expr.n_pattern
         if n_pattern is None:
             return (env, ctx, InvalidSyntaxReason())
 
-        if expr.n_parameter_list is None:
-            n_value = expr.n_value
-            if n_value is None:
-                return (env, ctx, InvalidSyntaxReason())
-            (env, ctx, value_ty) = infer(env, ctx, n_value)
-            if not isinstance(n_pattern, VariablePattern):
-                raise NotImplementedError(
-                    "TODO: patterns other than VariablePattern not supported"
+        n_value = expr.n_value
+        if n_value is None:
+            return (env, ctx, InvalidSyntaxReason())
+        (env, ctx, value_ty) = infer(env, ctx, n_value)
+        if not isinstance(n_pattern, VariablePattern):
+            raise NotImplementedError(
+                "TODO: patterns other than VariablePattern not supported"
+            )
+        ctx = ctx.add_pattern_ty(n_pattern, value_ty)
+        if tys_equal(value_ty, VOID_TY):
+            env = env.add_error(
+                Error(
+                    file_info=env.file_info,
+                    code=ErrorCode.CANNOT_BIND_TO_VOID,
+                    severity=Severity.ERROR,
+                    message=(
+                        f"This expression has type {ctx.ty_to_string(VOID_TY)}, "
+                        + "so it cannot be bound to a variable."
+                    ),
+                    range=env.get_range_for_node(n_value),
+                    notes=[
+                        Note(
+                            file_info=env.file_info,
+                            message="This is the variable it's being bound to.",
+                            range=env.get_range_for_node(n_pattern),
+                        )
+                    ],
                 )
-            ctx = ctx.add_pattern_ty(n_pattern, value_ty)
-            if tys_equal(value_ty, VOID_TY):
-                env = env.add_error(
-                    Error(
-                        file_info=env.file_info,
-                        code=ErrorCode.CANNOT_BIND_TO_VOID,
-                        severity=Severity.ERROR,
-                        message=(
-                            f"This expression has type {ctx.ty_to_string(VOID_TY)}, "
-                            + "so it cannot be bound to a variable."
-                        ),
-                        range=env.get_range_for_node(n_value),
-                        notes=[
-                            Note(
-                                file_info=env.file_info,
-                                message="This is the variable it's being bound to.",
-                                range=env.get_range_for_node(n_pattern),
-                            )
-                        ],
-                    )
-                )
+            )
 
-            n_body = expr.n_body
-            if n_body is None:
-                return (env, ctx, InvalidSyntaxReason())
+        n_next = expr.n_body
+        if n_next is None:
+            return (env, ctx, InvalidSyntaxReason())
 
-            return check(env, ctx, expr=n_body, ty=ty)
-        else:
-            n_parameter_list = expr.n_parameter_list
-            if n_parameter_list is None:
-                return (env, ctx, True)
+        return check(env, ctx, expr=n_next, ty=ty)
 
-            parameters = n_parameter_list.parameters
-            if parameters is None:
-                raise NotImplementedError(
-                    "TODO(missing): raise error for missing parameters"
-                )
+    elif isinstance(expr, DefExpr):
+        # The typing rule for let-bindings is
+        #
+        #     Ψ ⊢ e ⇒ A   Ψ, x:A ⊢ e' ⇐ C
+        #     ---------------------------  let
+        #       Ψ ⊢ let x = e in e' ⇐ C
+        #
+        # Note that we have to adapt this for function definitions by also
+        # using the rule for typing lambdas.
+        n_name = expr.n_name
+        if n_name is None:
+            return (env, ctx, InvalidSyntaxReason())
 
-            (env, ctx, function_ty) = infer_function_definition(env, ctx, expr)
-            n_body = expr.n_body
-            if n_body is None:
-                raise NotImplementedError(
-                    "TODO(missing): raise error for missing function body"
-                )
+        n_parameter_list = expr.n_parameter_list
+        if n_parameter_list is None:
+            return (env, ctx, InvalidSyntaxReason())
 
-            # parameters_with_tys: PVector[CtxElemExprHasTy] = PVector()
-            # for n_argument, argument_ty in zip(parameters, ty.domain):
-            #     n_expr = n_argument.n_expr
-            #     if n_expr is None:
-            #         return (env, ctx, True)
-            #     parameters_with_tys = parameters_with_tys.append(
-            #         CtxElemExprHasTy(expr=n_expr, ty=argument_ty)
-            #     )
-            # ctx = ctx.add_elem(CtxElemExprsHaveTys(expr_tys=parameters_with_tys))
+        parameters = n_parameter_list.parameters
+        if parameters is None:
+            raise NotImplementedError(
+                "TODO(missing): raise error for missing parameters"
+            )
 
-            assert isinstance(n_pattern, VariablePattern)
-            ctx = ctx.add_pattern_ty(n_pattern, function_ty)
-            return check(env, ctx, expr=n_body, ty=ty)
+        (env, ctx, function_ty) = infer_function_definition(env, ctx, expr)
+        n_next = expr.n_next
+        if n_next is None:
+            raise NotImplementedError(
+                "TODO(missing): raise error for missing function body"
+            )
+
+        # parameters_with_tys: PVector[CtxElemExprHasTy] = PVector()
+        # for n_argument, argument_ty in zip(parameters, ty.domain):
+        #     n_expr = n_argument.n_expr
+        #     if n_expr is None:
+        #         return (env, ctx, True)
+        #     parameters_with_tys = parameters_with_tys.append(
+        #         CtxElemExprHasTy(expr=n_expr, ty=argument_ty)
+        #     )
+        # ctx = ctx.add_elem(CtxElemExprsHaveTys(expr_tys=parameters_with_tys))
+
+        assert isinstance(n_name, VariablePattern)
+        ctx = ctx.add_pattern_ty(n_name, function_ty)
+        return check(env, ctx, expr=n_next, ty=ty)
     else:
         (env, ctx, actual_ty) = infer(env, ctx, expr=expr)
         (env, ctx, reason) = check_subtype(env, ctx, lhs=actual_ty, rhs=ty)

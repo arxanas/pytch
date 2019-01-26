@@ -1,4 +1,4 @@
-let print_two(x, y) =
+def print_two(x, y) =>
   print(x)
   print(y)
 print_two(

@@ -1,0 +1,2 @@
+def takes_no_arguments() => print(1)
+takes_no_arguments()

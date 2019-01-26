@@ -1,7 +1,9 @@
 SyntaxTree
     DefExpr
         Token 'def'
-        Token 'print_fst'
+        VariablePattern
+            Leading ' '
+            Token 'print_fst'
         ParameterList
             Token '('
             Parameter
@@ -30,10 +32,12 @@ SyntaxTree
                 Token ')'
                 Trailing '\n'
                 Trailing '\n'
-        Token DUMMY_IN_FOR_LET ''
+        Token DUMMY_IN_FOR_DEF ''
         DefExpr
             Token 'def'
-            Token 'print_snd'
+            VariablePattern
+                Leading ' '
+                Token 'print_snd'
             ParameterList
                 Token '('
                 Parameter
@@ -60,6 +64,6 @@ SyntaxTree
                         <missing>
                     Token ')'
                     Trailing '\n'
-            Token DUMMY_IN_FOR_LET ''
+            Token DUMMY_IN_FOR_DEF ''
             <missing>
     Token EOF ''

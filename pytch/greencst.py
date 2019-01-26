@@ -192,18 +192,14 @@ class LetExpr(Expr):
         self,
         t_let: Optional[Token],
         n_pattern: Optional[Pattern],
-        n_parameter_list: Optional[ParameterList],
         t_equals: Optional[Token],
         n_value: Optional[Expr],
         t_in: Optional[Token],
         n_body: Optional[Expr],
     ) -> None:
-        super().__init__(
-            [t_let, n_pattern, n_parameter_list, t_equals, n_value, t_in, n_body]
-        )
+        super().__init__([t_let, n_pattern, t_equals, n_value, t_in, n_body])
         self._t_let = t_let
         self._n_pattern = n_pattern
-        self._n_parameter_list = n_parameter_list
         self._t_equals = t_equals
         self._n_value = n_value
         self._t_in = t_in
@@ -216,10 +212,6 @@ class LetExpr(Expr):
     @property
     def n_pattern(self) -> Optional[Pattern]:
         return self._n_pattern
-
-    @property
-    def n_parameter_list(self) -> Optional[ParameterList]:
-        return self._n_parameter_list
 
     @property
     def t_equals(self) -> Optional[Token]:
@@ -236,6 +228,65 @@ class LetExpr(Expr):
     @property
     def n_body(self) -> Optional[Expr]:
         return self._n_body
+
+
+class DefExpr(Expr):
+    def __init__(
+        self,
+        t_def: Optional[Token],
+        n_name: Optional[VariablePattern],
+        n_parameter_list: Optional[ParameterList],
+        t_double_arrow: Optional[Token],
+        n_definition: Optional[Expr],
+        t_in: Optional[Token],
+        n_next: Optional[Expr],
+    ) -> None:
+        super().__init__(
+            [
+                t_def,
+                n_name,
+                n_parameter_list,
+                t_double_arrow,
+                n_definition,
+                t_in,
+                n_next,
+            ]
+        )
+        self._t_def = t_def
+        self._n_name = n_name
+        self._n_parameter_list = n_parameter_list
+        self._t_double_arrow = t_double_arrow
+        self._n_definition = n_definition
+        self._t_in = t_in
+        self._n_next = n_next
+
+    @property
+    def t_def(self) -> Optional[Token]:
+        return self._t_def
+
+    @property
+    def n_name(self) -> Optional[VariablePattern]:
+        return self._n_name
+
+    @property
+    def n_parameter_list(self) -> Optional[ParameterList]:
+        return self._n_parameter_list
+
+    @property
+    def t_double_arrow(self) -> Optional[Token]:
+        return self._t_double_arrow
+
+    @property
+    def n_definition(self) -> Optional[Expr]:
+        return self._n_definition
+
+    @property
+    def t_in(self) -> Optional[Token]:
+        return self._t_in
+
+    @property
+    def n_next(self) -> Optional[Expr]:
+        return self._n_next
 
 
 class IfExpr(Expr):
