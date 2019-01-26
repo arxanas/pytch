@@ -35,6 +35,7 @@ When making a change to the language, make sure that all of the following areas 
   - [ ] Binder
   - [ ] Codegen
   - [ ] Typechecker
+  - [ ] Formatter
   - [ ] Syntax highlighters
   - [ ] Refactorings
   - [ ] Documentation
