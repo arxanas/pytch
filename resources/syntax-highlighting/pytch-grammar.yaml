@@ -46,6 +46,7 @@ contexts:
     - scope: keyword
       regex: |-
         and
+        | def
         | else
         | if
         | let
@@ -59,7 +60,10 @@ contexts:
       regex: "[0-9]+"
 
     - scope: punctuation
+      # These are greedily matched, so be sure to put longer punctuation before
+      # shorter punctuation:
       regex: |-
+        => |
         =  |
         ,  |
         \+ |

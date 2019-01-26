@@ -22,7 +22,7 @@
                     "name": "comment.pytch"
                 },
                 {
-                    "match": "and|else|if|let|or|then",
+                    "match": "and|def|else|if|let|or|then",
                     "name": "keyword.pytch"
                 },
                 {
@@ -34,7 +34,7 @@
                     "name": "constant.numeric.pytch"
                 },
                 {
-                    "match": "=|,|\\+|\\-|\\(|\\)",
+                    "match": "=>|=|,|\\+|\\-|\\(|\\)",
                     "name": "punctuation.pytch"
                 },
                 {
