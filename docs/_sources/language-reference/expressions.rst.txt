@@ -21,6 +21,41 @@ These are the possible expressions:
           | let-expr
           | literal-expr
 
+Literal expressions
+-------------------
+
+Literal expressions consist directly of a lexed :ref:`literal
+<lexical-analysis-literals>`:
+
+.. code-block:: ebnf
+
+   literal-expr ::= integer-literal
+                  | string-literal
+
+Their values correspond to the value written in the source code.
+
+``if``-expressions
+------------------
+
+``if``-expressions consist of a condition, a ``then``-clause, and optionally
+an ``else``-clause:
+
+.. code-block:: ebnf
+
+   if-expr ::= "if" expr "then" expr ["else" expr]
+
+The result of an ``if``-expression is the result of evaluating the condition;
+then, if the condition is truthy, evaluating en``-clause and
+returning the result, or otherwise evaluating the ``else``-clause and
+returning the result.
+
+Exactly one of the clauses will be evaluated.
+
+In the event that the ``else``-clause is absent, the ``if``-expression is
+considered to return a "void" result, the value of which is indeterminate. It
+should be used with the statement expression, so that the resulting value is
+thrown away.
+
 Binary expressions
 ------------------
 
@@ -82,52 +117,6 @@ right, and then calling the callee expression with the given arguments.
 
    Implement keyword arguments and splats.
 
-Function definition expressions
--------------------------------
-
-Function definitions consist of a name, a parameter list, and a body,
-followed by the next expression.
-
-.. code-block:: ebnf
-
-   function-definition-expr ::= 'def' identifier '(' parameter-list ')' '=>' expr [IN expr]
-   parameter-list           ::= [parameter (',' parameter)* [',']]
-   parameter                ::= identifier
-
-For example:
-
-.. code-block:: pytch
-
-   def foo(bar, baz) =>
-     bar + baz
-
-The result of evaluating a function definition is to put the function
-definition in scope available under its name. It can be called with a
-:ref:`function call expression <function-call-expressions>`.
-
-
-``if``-expressions
-------------------
-
-``if``-expressions consist of a condition, a ``then``-clause, and optionally
-an ``else``-clause:
-
-.. code-block:: ebnf
-
-   if-expr ::= "if" expr "then" expr ["else" expr]
-
-The result of an ``if``-expression is the result of evaluating the condition;
-then, if the condition is truthy, evaluating en``-clause and
-returning the result, or otherwise evaluating the ``else``-clause and
-returning the result.
-
-Exactly one of the clauses will be evaluated.
-
-In the event that the ``else``-clause is absent, the ``if``-expression is
-considered to return a "void" result, the value of which is indeterminate. It
-should be used with the statement expression, so that the resulting value is
-thrown away.
-
 ``let``-expressions
 -------------------
 
@@ -152,15 +141,25 @@ and made available as an export of the module.
 
    Implement support for patterns other than identifier patterns.
 
-Literal expressions
--------------------
+Function definition expressions
+-------------------------------
 
-Literal expressions consist directly of a lexed :ref:`literal
-<lexical-analysis-literals>`:
+Function definitions consist of a name, a parameter list, and a body,
+followed by the next expression.
 
 .. code-block:: ebnf
 
-   literal-expr ::= integer-literal
-                  | string-literal
+   function-definition-expr ::= 'def' identifier '(' parameter-list ')' '=>' expr [IN expr]
+   parameter-list           ::= [parameter (',' parameter)* [',']]
+   parameter                ::= identifier
 
-Their values correspond to the value written in the source code.
+For example:
+
+.. code-block:: pytch
+
+   def foo(bar, baz) =>
+     bar + baz
+
+The result of evaluating a function definition is to put the function
+definition in scope available under its name. It can be called with a
+:ref:`function call expression <function-call-expressions>`.

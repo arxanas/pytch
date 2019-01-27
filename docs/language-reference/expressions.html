@@ -48,8 +48,34 @@ all-caps, such as <code class="docutils literal notranslate"><span class="pre">S
 <span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="k">literal-expr</span><span class="w"></span>
 </pre></div>
 </div>
+<div class="section" id="literal-expressions">
+<h2>3.1. Literal expressions<a class="headerlink" href="#literal-expressions" title="Permalink to this headline">¶</a></h2>
+<p>Literal expressions consist directly of a lexed <a class="reference internal" href="lexical-analysis.html#lexical-analysis-literals"><span class="std std-ref">literal</span></a>:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">literal-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">integer-literal</span><span class="w"></span>
+<span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="k">string-literal</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Their values correspond to the value written in the source code.</p>
+</div>
+<div class="section" id="if-expressions">
+<h2>3.2. <code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions<a class="headerlink" href="#if-expressions" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions consist of a condition, a <code class="docutils literal notranslate"><span class="pre">then</span></code>-clause, and optionally
+an <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause:</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">if-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&quot;if&quot;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="s">&quot;then&quot;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;else&quot;</span><span class="w"> </span><span class="k">expr</span><span class="p">]</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The result of an <code class="docutils literal notranslate"><span class="pre">if</span></code>-expression is the result of evaluating the condition;
+then, if the condition is truthy, evaluating en``-clause and
+returning the result, or otherwise evaluating the <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause and
+returning the result.</p>
+<p>Exactly one of the clauses will be evaluated.</p>
+<p>In the event that the <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause is absent, the <code class="docutils literal notranslate"><span class="pre">if</span></code>-expression is
+considered to return a “void” result, the value of which is indeterminate. It
+should be used with the statement expression, so that the resulting value is
+thrown away.</p>
+</div>
 <div class="section" id="binary-expressions">
-<h2>3.1. Binary expressions<a class="headerlink" href="#binary-expressions" title="Permalink to this headline">¶</a></h2>
+<h2>3.3. Binary expressions<a class="headerlink" href="#binary-expressions" title="Permalink to this headline">¶</a></h2>
 <p>Binary expressions consist of two operands separated by a <a class="reference internal" href="lexical-analysis.html#lexical-analysis-binary-operators"><span class="std std-ref">binary
 operator</span></a>:</p>
 <div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">binary-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="k">binary-operator</span><span class="w"> </span><span class="k">expr</span><span class="w"></span>
@@ -65,7 +91,7 @@ to introduce a <em>statement expression</em>.</li>
 <li>All others: same as in Python.</li>
 </ul>
 <div class="section" id="operator-precedence">
-<h3>3.1.1. Operator precedence<a class="headerlink" href="#operator-precedence" title="Permalink to this headline">¶</a></h3>
+<h3>3.3.1. Operator precedence<a class="headerlink" href="#operator-precedence" title="Permalink to this headline">¶</a></h3>
 <p>The operators have the following <a class="reference external" href="https://en.wikipedia.org/wiki/Order_of_operations">precedences</a> and <a class="reference external" href="https://en.wikipedia.org/wiki/Operator_associativity">associativities</a>, indicated from
 lowest precedence (least binding) to highest precedence (most binding):</p>
 <table border="1" class="docutils">
@@ -96,7 +122,7 @@ lowest precedence (least binding) to highest precedence (most binding):</p>
 </div>
 </div>
 <div class="section" id="function-call-expressions">
-<span id="id1"></span><h2>3.2. Function call expressions<a class="headerlink" href="#function-call-expressions" title="Permalink to this headline">¶</a></h2>
+<span id="id1"></span><h2>3.4. Function call expressions<a class="headerlink" href="#function-call-expressions" title="Permalink to this headline">¶</a></h2>
 <p>Function calls consist of a callee and any number of arguments:</p>
 <div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">function-call-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="s">&#39;(&#39;</span><span class="w"> </span><span class="k">argument-list</span><span class="w"> </span><span class="s">&#39;)&#39;</span><span class="w"></span>
 <span class="k">argument-list</span><span class="w">      </span><span class="o">::=</span><span class="w"> </span><span class="p">[</span><span class="k">argument</span><span class="w"> </span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="w"> </span><span class="k">argument</span><span class="p">)</span><span class="o">*</span><span class="w"> </span><span class="p">[</span><span class="s">&#39;,&#39;</span><span class="p">]]</span><span class="w"></span>
@@ -110,41 +136,6 @@ right, and then calling the callee expression with the given arguments.</p>
 <p class="first admonition-title">Todo</p>
 <p class="last">Implement keyword arguments and splats.</p>
 </div>
-</div>
-<div class="section" id="function-definition-expressions">
-<h2>3.3. Function definition expressions<a class="headerlink" href="#function-definition-expressions" title="Permalink to this headline">¶</a></h2>
-<p>Function definitions consist of a name, a parameter list, and a body,
-followed by the next expression.</p>
-<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">function-definition-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;def&#39;</span><span class="w"> </span><span class="k">identifier</span><span class="w"> </span><span class="s">&#39;(&#39;</span><span class="w"> </span><span class="k">parameter-list</span><span class="w"> </span><span class="s">&#39;)&#39;</span><span class="w"> </span><span class="s">&#39;=&gt;&#39;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="p">[</span><span class="k">IN</span><span class="w"> </span><span class="k">expr</span><span class="p">]</span><span class="w"></span>
-<span class="k">parameter-list</span><span class="w">           </span><span class="o">::=</span><span class="w"> </span><span class="p">[</span><span class="k">parameter</span><span class="w"> </span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="w"> </span><span class="k">parameter</span><span class="p">)</span><span class="o">*</span><span class="w"> </span><span class="p">[</span><span class="s">&#39;,&#39;</span><span class="p">]]</span><span class="w"></span>
-<span class="k">parameter</span><span class="w">                </span><span class="o">::=</span><span class="w"> </span><span class="k">identifier</span><span class="w"></span>
-</pre></div>
-</div>
-<p>For example:</p>
-<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">,</span><span class="w"> </span><span class="n">baz</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">bar</span><span class="w"> </span><span class="p">+</span><span class="w"> </span><span class="n">baz</span><span class="w"></span>
-</pre></div>
-</div>
-<p>The result of evaluating a function definition is to put the function
-definition in scope available under its name. It can be called with a
-<a class="reference internal" href="#function-call-expressions"><span class="std std-ref">function call expression</span></a>.</p>
-</div>
-<div class="section" id="if-expressions">
-<h2>3.4. <code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions<a class="headerlink" href="#if-expressions" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions consist of a condition, a <code class="docutils literal notranslate"><span class="pre">then</span></code>-clause, and optionally
-an <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause:</p>
-<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">if-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&quot;if&quot;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="s">&quot;then&quot;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;else&quot;</span><span class="w"> </span><span class="k">expr</span><span class="p">]</span><span class="w"></span>
-</pre></div>
-</div>
-<p>The result of an <code class="docutils literal notranslate"><span class="pre">if</span></code>-expression is the result of evaluating the condition;
-then, if the condition is truthy, evaluating en``-clause and
-returning the result, or otherwise evaluating the <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause and
-returning the result.</p>
-<p>Exactly one of the clauses will be evaluated.</p>
-<p>In the event that the <code class="docutils literal notranslate"><span class="pre">else</span></code>-clause is absent, the <code class="docutils literal notranslate"><span class="pre">if</span></code>-expression is
-considered to return a “void” result, the value of which is indeterminate. It
-should be used with the statement expression, so that the resulting value is
-thrown away.</p>
 </div>
 <div class="section" id="let-expressions">
 <h2>3.5. <code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions<a class="headerlink" href="#let-expressions" title="Permalink to this headline">¶</a></h2>
@@ -166,14 +157,23 @@ and made available as an export of the module.</p>
 <p class="last">Implement support for patterns other than identifier patterns.</p>
 </div>
 </div>
-<div class="section" id="literal-expressions">
-<h2>3.6. Literal expressions<a class="headerlink" href="#literal-expressions" title="Permalink to this headline">¶</a></h2>
-<p>Literal expressions consist directly of a lexed <a class="reference internal" href="lexical-analysis.html#lexical-analysis-literals"><span class="std std-ref">literal</span></a>:</p>
-<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">literal-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="k">integer-literal</span><span class="w"></span>
-<span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="k">string-literal</span><span class="w"></span>
+<div class="section" id="function-definition-expressions">
+<h2>3.6. Function definition expressions<a class="headerlink" href="#function-definition-expressions" title="Permalink to this headline">¶</a></h2>
+<p>Function definitions consist of a name, a parameter list, and a body,
+followed by the next expression.</p>
+<div class="highlight-ebnf notranslate"><div class="highlight"><pre><span></span><span class="k">function-definition-expr</span><span class="w"> </span><span class="o">::=</span><span class="w"> </span><span class="s">&#39;def&#39;</span><span class="w"> </span><span class="k">identifier</span><span class="w"> </span><span class="s">&#39;(&#39;</span><span class="w"> </span><span class="k">parameter-list</span><span class="w"> </span><span class="s">&#39;)&#39;</span><span class="w"> </span><span class="s">&#39;=&gt;&#39;</span><span class="w"> </span><span class="k">expr</span><span class="w"> </span><span class="p">[</span><span class="k">IN</span><span class="w"> </span><span class="k">expr</span><span class="p">]</span><span class="w"></span>
+<span class="k">parameter-list</span><span class="w">           </span><span class="o">::=</span><span class="w"> </span><span class="p">[</span><span class="k">parameter</span><span class="w"> </span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="w"> </span><span class="k">parameter</span><span class="p">)</span><span class="o">*</span><span class="w"> </span><span class="p">[</span><span class="s">&#39;,&#39;</span><span class="p">]]</span><span class="w"></span>
+<span class="k">parameter</span><span class="w">                </span><span class="o">::=</span><span class="w"> </span><span class="k">identifier</span><span class="w"></span>
 </pre></div>
 </div>
-<p>Their values correspond to the value written in the source code.</p>
+<p>For example:</p>
+<div class="highlight-pytch notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">,</span><span class="w"> </span><span class="n">baz</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="n">bar</span><span class="w"> </span><span class="p">+</span><span class="w"> </span><span class="n">baz</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The result of evaluating a function definition is to put the function
+definition in scope available under its name. It can be called with a
+<a class="reference internal" href="#function-call-expressions"><span class="std std-ref">function call expression</span></a>.</p>
 </div>
 </div>
 
@@ -207,15 +207,15 @@ and made available as an export of the module.</p>
 <li class="toctree-l3"><a class="reference internal" href="notation.html">1. Notation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="lexical-analysis.html">2. Lexical Analysis</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">3. Expressions</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#binary-expressions">3.1. Binary expressions</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="#operator-precedence">3.1.1. Operator precedence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#literal-expressions">3.1. Literal expressions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#if-expressions">3.2. <code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#binary-expressions">3.3. Binary expressions</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#operator-precedence">3.3.1. Operator precedence</a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="#function-call-expressions">3.2. Function call expressions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#function-definition-expressions">3.3. Function definition expressions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#if-expressions">3.4. <code class="docutils literal notranslate"><span class="pre">if</span></code>-expressions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#function-call-expressions">3.4. Function call expressions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#let-expressions">3.5. <code class="docutils literal notranslate"><span class="pre">let</span></code>-expressions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#literal-expressions">3.6. Literal expressions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#function-definition-expressions">3.6. Function definition expressions</a></li>
 </ul>
 </li>
 </ul>
