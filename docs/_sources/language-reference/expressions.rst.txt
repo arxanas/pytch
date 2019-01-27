@@ -16,6 +16,7 @@ These are the possible expressions:
 
    expr ::= binary-expr
           | function-call-expr
+          | function-definition-expr
           | if-expr
           | let-expr
           | literal-expr
@@ -60,6 +61,8 @@ lowest precedence (least binding) to highest precedence (most binding):
 | ``+``, ``-``   | Left          |
 +----------------+---------------+
 
+.. _function-call-expressions:
+
 Function call expressions
 -------------------------
 
@@ -68,7 +71,7 @@ Function calls consist of a callee and any number of arguments:
 .. code-block:: ebnf
 
    function-call-expr ::= expr '(' argument-list ')'
-   argument-list      ::= argument (',' argument)* [',']
+   argument-list      ::= [argument (',' argument)* [',']]
    argument           ::= expr
 
 The result of a function call expression is the result of evaluating the
@@ -78,6 +81,30 @@ right, and then calling the callee expression with the given arguments.
 .. todo::
 
    Implement keyword arguments and splats.
+
+Function definition expressions
+-------------------------------
+
+Function definitions consist of a name, a parameter list, and a body,
+followed by the next expression.
+
+.. code-block:: ebnf
+
+   function-definition-expr ::= 'def' identifier '(' parameter-list ')' '=>' expr [IN expr]
+   parameter-list           ::= [parameter (',' parameter)* [',']]
+   parameter                ::= identifier
+
+For example:
+
+.. code-block:: pytch
+
+   def foo(bar, baz) =>
+     bar + baz
+
+The result of evaluating a function definition is to put the function
+definition in scope available under its name. It can be called with a
+:ref:`function call expression <function-call-expressions>`.
+
 
 ``if``-expressions
 ------------------

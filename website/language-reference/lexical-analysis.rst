@@ -96,6 +96,7 @@ parser.
 This is the current list of keywords in Pytch:
 
 * ``and``
+* ``def``
 * ``else``
 * ``if``
 * ``let``

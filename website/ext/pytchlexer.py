@@ -21,7 +21,7 @@ class PytchLexer(RegexLexer):
             ("and|def|else|if|let|or|then", token.Keyword),
             ("[a-zA-Z_][a-zA-Z0-9_]*", token.Name),
             ("[0-9]+", token.Number),
-            ("=|=>|,|\\+|\\-|\\(|\\)", token.Punctuation),
+            ("=>|=|,|\\+|\\-|\\(|\\)", token.Punctuation),
             ("'", token.String.Single, "single-quoted-string__0"),
             ('"', token.String.Double, "double-quoted-string__1"),
         ],
