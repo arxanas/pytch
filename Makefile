@@ -4,11 +4,11 @@ SYNTAX_TREES = pytch/greencst.py pytch/redcst.py
 SYNTAX_TREE_SPEC = pytch/syntax_tree.txt
 
 DOCS = docs
-DOCS_SOURCE = website
+DOCS_SOURCE = resources/website
 
 HIGHLIGHTER_SOURCE = resources/syntax-highlighting/pytch-grammar.yaml
 HIGHLIGHTER_PYGMENTS_DRIVER = resources/syntax-highlighting/pytchlexer.py.inc
-HIGHLIGHTER_PYGMENTS = website/ext/pytchlexer.py
+HIGHLIGHTER_PYGMENTS = $(DOCS_SOURCE)/ext/pytchlexer.py
 HIGHLIGHTER_VSCODE = resources/syntax-highlighting/pytch.tmLanguage.json
 
 all: $(SYNTAX_TREES) $(DOCS) $(HIGHLIGHTER_PYGMENTS) $(HIGHLIGHTER_VSCODE)

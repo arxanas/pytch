@@ -11,12 +11,13 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
 
 from pytch import __version__ as pytch_version
+
+sys.path.insert(0, os.path.abspath("."))
 
 # -- Project information -----------------------------------------------------
 
@@ -45,10 +46,10 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx_sitemap",
-    "website.ext.designnote",
-    "website.ext.ebnflexer",
-    "website.ext.githubpagescname",
-    "website.ext.pytchlexer",
+    "ext.designnote",
+    "ext.ebnflexer",
+    "ext.githubpagescname",
+    "ext.pytchlexer",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
